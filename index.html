@@ -918,15 +918,8 @@ function applyCloudData(data) {
     localStorage.setItem(STORE_USERS, JSON.stringify(data.users));
   }
   if (Array.isArray(data.documents)) {
-    // ลบเอกสารที่เก่ากว่า 7 วันออกอัตโนมัติ
-    const cutoff = Date.now() - TTL_MS;
-    const fresh = data.documents.filter(d => !d.createdAt || d.createdAt > cutoff);
-    if (fresh.length < data.documents.length) {
-      const removed = data.documents.length - fresh.length;
-      console.log('Auto-purged ' + removed + ' document(s) older than 7 days');
-      scheduleSave(); // will save back the filtered list
-    }
-    localStorage.setItem(STORE_DOCS, JSON.stringify(fresh));
+    // ไม่ลบเอกสารเก่า — เก็บทุกอย่างไว้
+    localStorage.setItem(STORE_DOCS, JSON.stringify(data.documents));
   }
   // sync background image URL from cloud
   if (typeof data.bgUrl === 'string') {
@@ -936,6 +929,30 @@ function applyCloudData(data) {
       localStorage.removeItem(LS_BG);
     }
     applyBg(data.bgUrl);
+  }
+}
+
+// merge: รวมข้อมูล local กับ cloud โดยใช้ id เป็น key — เอาอันที่ใหม่กว่าเป็นหลัก
+function mergeCloudData(cloudData) {
+  if (!cloudData) return;
+  // Users: cloud wins ถ้ามีข้อมูล
+  if (Array.isArray(cloudData.users) && cloudData.users.length > 0) {
+    localStorage.setItem(STORE_USERS, JSON.stringify(cloudData.users));
+  }
+  // Documents: merge — ถ้า id ซ้ำให้เอา cloud version; เพิ่มของ local ที่ไม่มีใน cloud
+  if (Array.isArray(cloudData.documents)) {
+    const localDocs  = loadDocs();
+    const cloudIds   = new Set(cloudData.documents.map(d => d.id));
+    const localOnly  = localDocs.filter(d => !cloudIds.has(d.id));
+    const merged     = [...cloudData.documents, ...localOnly];
+    localStorage.setItem(STORE_DOCS, JSON.stringify(merged));
+    // ถ้ามีของ local ที่ไม่อยู่ใน cloud → push ขึ้น cloud ด้วย
+    if (localOnly.length > 0) scheduleSave();
+  }
+  if (typeof cloudData.bgUrl === 'string') {
+    if (cloudData.bgUrl) localStorage.setItem(LS_BG, cloudData.bgUrl);
+    else localStorage.removeItem(LS_BG);
+    applyBg(cloudData.bgUrl);
   }
 }
 
@@ -997,10 +1014,10 @@ async function doAuth() {
   const btn = document.querySelector('.auth-btn-main');
   btn.textContent = '⏳ กำลังโหลด…'; btn.disabled = true;
 
-  // Pull latest data from cloud first
+  // Pull + merge latest data from cloud
   if (hasCloud()) {
     const data = await cloudGet();
-    if (data) applyCloudData(data);
+    if (data) mergeCloudData(data);
   }
 
   btn.textContent = 'เข้าสู่ระบบ'; btn.disabled = false;
@@ -1066,18 +1083,39 @@ async function tryAutoLogin() {
     return;
   }
 
-  // ดึงข้อมูลล่าสุดจาก Firebase ก่อนเสมอ
+  // แสดง loading badge ขณะดึงข้อมูล
+  const authEl = document.getElementById('auth');
+  authEl.style.display = 'flex';
+  setSyncBadge('saving', 'กำลังโหลดข้อมูล…');
+
   const cloudData = await cloudGet();
-  if (cloudData) applyCloudData(cloudData);
+  if (cloudData) {
+    mergeCloudData(cloudData);   // merge แทน overwrite
+  } else if (hasCloud()) {
+    // cloud ดึงไม่ได้ — ใช้ local แล้ว push ขึ้นทีหลัง
+    setSyncBadge('error', 'offline — ใช้ข้อมูลในเครื่อง');
+    setTimeout(() => setSyncBadge('', ''), 4000);
+  }
 
   const session = loadSession();
-  if (!session) { setTimeout(() => document.getElementById('auth-user').focus(), 50); return; }
+  if (!session) {
+    setSyncBadge('ok', 'พร้อมใช้งาน');
+    setTimeout(() => setSyncBadge('', ''), 2000);
+    setTimeout(() => document.getElementById('auth-user').focus(), 50);
+    return;
+  }
 
   const users = loadUsers();
   const user  = users.find(u => u.id === session.id);
-  if (!user) { clearSession(); setTimeout(() => document.getElementById('auth-user').focus(), 50); return; }
+  if (!user) {
+    clearSession();
+    setSyncBadge('ok', 'พร้อมใช้งาน');
+    setTimeout(() => document.getElementById('auth-user').focus(), 50);
+    return;
+  }
   currentUser = { id:user.id, username:user.username, isAdmin:!!user.isAdmin };
   documents   = loadDocs();
+  setSyncBadge('ok', 'ซิงค์แล้ว');
   enterMain();
 }
 
@@ -1795,7 +1833,7 @@ async function fsConnect() {
     // ดึงข้อมูลทั้งหมดจาก JSONBin
     const rj = await r.json();
     const data = rj.record || null;
-    if (data) applyCloudData(data);
+    if (data) mergeCloudData(data);
 
     updateCloudAuthBadge();
     setSyncBadge('ok', 'Cloud ✓');
