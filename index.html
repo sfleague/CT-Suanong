@@ -350,9 +350,15 @@
   <div class="fs-box">
     <div class="fs-icon">☁️</div>
     <h2>ตั้งค่า JSONBin</h2>
-    <p class="fs-sub">กรอก Master Key จาก <a href="https://jsonbin.io" target="_blank" style="color:#2980b9">jsonbin.io</a> ครั้งเดียว บราวเซอร์จะจำไว้อัตโนมัติ<br>หากยังไม่มี Bin ID ให้เว้นว่างไว้ — ระบบจะสร้างให้อัตโนมัติ</p>
+    <!-- hint: มี key แต่ไม่มี bin (เบราว์เซอร์ใหม่) -->
+    <div id="fs-setup-hint" style="display:none;background:#fff8e1;border:1.5px solid #ffe082;border-radius:8px;padding:10px 14px;font-size:12.5px;color:#795548;margin-bottom:16px;line-height:1.7;text-align:left">
+      🔑 พบ Key แล้ว — กรุณาใส่ <b>Bin ID</b> จากเครื่องเดิม<br>
+      <span style="color:#aaa">เปิดแอปบนเครื่องเดิม → ⚙️ ตั้งค่า → Cloud Storage → คัดลอก Bin ID</span>
+    </div>
+    <!-- hint: ยังไม่มีอะไรเลย (ครั้งแรก) -->
+    <p id="fs-setup-new" class="fs-sub">กรอก Master Key จาก <a href="https://jsonbin.io" target="_blank" style="color:#2980b9">jsonbin.io</a> ครั้งเดียว<br>เว้น Bin ID ว่างไว้เพื่อสร้าง Bin ใหม่อัตโนมัติ</p>
     <div class="fs-field">
-      <label>Bin ID <span style="font-weight:400;color:#aaa">(ไม่บังคับ — เว้นว่างเพื่อสร้างใหม่)</span></label>
+      <label>Bin ID <span style="font-weight:400;color:#aaa">(เว้นว่างเพื่อสร้างใหม่)</span></label>
       <input id="fs-url" class="auth-input" type="text"
         placeholder="66xxxxxxxxxxxxxxxxxxxxxx"
         autocomplete="off" style="margin-bottom:0">
@@ -738,8 +744,12 @@
         <div style="display:flex;flex-direction:column;gap:10px">
           <div>
             <label class="field-label">Bin ID <span style="font-weight:400;color:#aaa">(เว้นว่างเพื่อสร้างใหม่)</span></label>
-            <input id="set-fb-url" class="field-input" type="text"
-              placeholder="66xxxxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+            <div style="display:flex;gap:6px;align-items:center">
+              <input id="set-fb-url" class="field-input" type="text"
+                placeholder="66xxxxxxxxxxxxxxxxxxxxxx" autocomplete="off" style="flex:1">
+              <button class="btn btn-outline btn-sm" title="คัดลอก Bin ID" onclick="copyBinId()" style="flex-shrink:0;white-space:nowrap">📋 คัดลอก</button>
+            </div>
+            <div id="set-bin-copy-ok" style="display:none;font-size:11px;color:#2e7d32;margin-top:3px">✅ คัดลอกแล้ว — นำไปใส่บนเครื่องใหม่ได้เลย</div>
           </div>
           <div>
             <label class="field-label">Master Key</label>
@@ -1033,34 +1043,26 @@ function logout() {
 async function tryAutoLogin() {
   updateCloudAuthBadge();
 
-  // ถ้ามี key แต่ไม่มี bin → สร้าง bin อัตโนมัติเงียบๆ
-  if (!cloudBin && cloudKey) {
-    try {
-      const initData = { users: [{id:1,username:'admin',password:'1234',isAdmin:true}], documents: [], bgUrl: '' };
-      const cr = await fetch('https://api.jsonbin.io/v3/b', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Master-Key': cloudKey, 'X-Bin-Name': 'ct-sournong' },
-        body: JSON.stringify(initData)
-      });
-      if (cr.ok) {
-        const cj = await cr.json();
-        cloudBin = cj.metadata.id;
-        localStorage.setItem(LS_JBBIN, cloudBin);
-        localStorage.setItem(LS_JBKEY, cloudKey);
-      }
-    } catch(e) { /* ล้มเหลว → ไปหน้าตั้งค่า */ }
-  }
-
-  // ถ้าไม่มี credentials เลย → แสดงหน้าตั้งค่าครั้งแรก
+  // ถ้าไม่มี credentials ครบ → แสดงหน้าตั้งค่า
   if (!hasCloud()) {
     document.getElementById('first-setup').style.display = 'flex';
     document.getElementById('auth').style.display = 'none';
+    // pre-fill ค่าที่ embed ไว้
     if (EMBED_JB_BIN) document.getElementById('fs-url').value = EMBED_JB_BIN;
     if (EMBED_JB_KEY) document.getElementById('fs-key').value = EMBED_JB_KEY;
-    setTimeout(() => {
-      const el = document.getElementById(EMBED_JB_BIN ? 'fs-key' : 'fs-url');
-      if (el) el.focus();
-    }, 80);
+    // ถ้ามี key แต่ไม่มี bin → โฟกัสที่ช่อง Bin ID และแสดงข้อความแนะนำ
+    if (!cloudBin && cloudKey) {
+      document.getElementById('fs-setup-hint').style.display = '';
+      document.getElementById('fs-setup-new').style.display  = 'none';
+      setTimeout(() => document.getElementById('fs-url').focus(), 80);
+    } else {
+      document.getElementById('fs-setup-hint').style.display = 'none';
+      document.getElementById('fs-setup-new').style.display  = '';
+      setTimeout(() => {
+        const el = document.getElementById(EMBED_JB_BIN ? 'fs-key' : 'fs-url');
+        if (el) el.focus();
+      }, 80);
+    }
     return;
   }
 
@@ -1683,6 +1685,19 @@ async function adminConnectCloud() {
   } finally {
     if (btn) { btn.textContent = '☁️ เชื่อมต่อ JSONBin'; btn.disabled = false; }
   }
+}
+
+function copyBinId() {
+  if (!cloudBin) { toast('ยังไม่มี Bin ID'); return; }
+  navigator.clipboard.writeText(cloudBin).then(() => {
+    const ok = document.getElementById('set-bin-copy-ok');
+    if (ok) { ok.style.display = ''; setTimeout(() => ok.style.display = 'none', 3000); }
+  }).catch(() => {
+    // fallback
+    const el = document.getElementById('set-fb-url');
+    if (el) { el.select(); document.execCommand('copy'); }
+    toast('คัดลอก Bin ID แล้ว: ' + cloudBin);
+  });
 }
 
 function adminDisconnectCloud() {
