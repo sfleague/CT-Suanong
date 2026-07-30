@@ -714,6 +714,13 @@
             <button id="set-fb-disconnect" class="btn btn-danger btn-sm" onclick="adminDisconnectCloud()" style="display:none">ยกเลิกการเชื่อมต่อ</button>
             <button class="btn btn-blue btn-sm" onclick="adminConnectCloud()" style="min-width:140px">🔥 เชื่อมต่อ Firebase</button>
           </div>
+          <div id="set-fb-bake-box" style="display:none;margin-top:8px;background:#fff8e1;border:1.5px solid #ffe082;border-radius:8px;padding:10px 14px;font-size:12px;color:#795548;line-height:1.6">
+            ✅ Firebase เชื่อมต่อแล้ว — กดปุ่มด้านล่างเพื่อสร้างไฟล์ใหม่ที่<b>ฝัง Firebase ไว้ในตัว</b><br>
+            ทุกเบราว์เซอร์ที่เปิดไฟล์นี้จะ<b>เชื่อมต่อ Firebase อัตโนมัติ</b> โดยไม่ต้องตั้งค่าอีก
+            <div style="margin-top:8px">
+              <button class="btn btn-success btn-sm" onclick="downloadBakedFile()" style="width:100%">📥 ดาวน์โหลดไฟล์ฝัง Firebase (แจกจ่ายได้เลย)</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -736,8 +743,19 @@ const LS_FBKEY  = 'firebase_key_v1';
 const LS_CACHE  = 'parcel_cache_v2';
 const TTL_MS    = 7 * 24 * 60 * 60 * 1000; // 7 วัน
 
-let cloudUrl = localStorage.getItem(LS_FBURL) || '';
-let cloudKey = localStorage.getItem(LS_FBKEY) || '';
+// ── Embedded credentials (baked into file by admin) ──────────────────
+// เมื่อ admin กด "ดาวน์โหลดไฟล์ฝัง Firebase" ค่าด้านล่างจะถูกใส่อัตโนมัติ
+// ทุกเบราว์เซอร์ที่เปิดไฟล์นี้จะเชื่อมต่อ Firebase ทันทีโดยไม่ต้องตั้งค่า
+const EMBED_FB_URL = '';
+const EMBED_FB_KEY = '';
+// ─────────────────────────────────────────────────────────────────────
+
+let cloudUrl = localStorage.getItem(LS_FBURL) || EMBED_FB_URL;
+let cloudKey = localStorage.getItem(LS_FBKEY) || EMBED_FB_KEY;
+
+// ถ้ามี embedded credentials ให้บันทึกลง localStorage ด้วยเพื่อให้ใช้ได้ต่อเนื่อง
+if (EMBED_FB_URL && cloudUrl) localStorage.setItem(LS_FBURL, cloudUrl);
+if (EMBED_FB_KEY && cloudKey) localStorage.setItem(LS_FBKEY, cloudKey);
 let syncTimer = null;
 let syncPending = false;
 
@@ -1541,17 +1559,41 @@ function loadBgSetting() {
 
 
 function openSettingsModalRefreshFb() {
-  // populate Firebase fields
-  const urlEl = document.getElementById('set-fb-url');
-  const keyEl = document.getElementById('set-fb-key');
+  const urlEl   = document.getElementById('set-fb-url');
+  const keyEl   = document.getElementById('set-fb-key');
   const discBtn = document.getElementById('set-fb-disconnect');
   const status  = document.getElementById('set-fb-status');
-  if (urlEl) urlEl.value = cloudUrl;
-  if (keyEl) keyEl.value = cloudKey ? '••••••••' : '';
-  if (discBtn) discBtn.style.display = (cloudUrl && cloudKey) ? '' : 'none';
-  if (status) status.innerHTML = (cloudUrl && cloudKey)
+  const bakeBox = document.getElementById('set-fb-bake-box');
+  const connected = !!(cloudUrl && cloudKey);
+  if (urlEl)   urlEl.value = cloudUrl;
+  if (keyEl)   keyEl.value = cloudKey ? '••••••••' : '';
+  if (discBtn) discBtn.style.display = connected ? '' : 'none';
+  if (bakeBox) bakeBox.style.display = connected ? '' : 'none';
+  if (status)  status.innerHTML = connected
     ? '<div style="background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:8px 12px;font-size:12px;color:#2e7d32;font-weight:600">✅ Firebase เชื่อมต่อแล้ว</div>'
     : '';
+}
+
+function downloadBakedFile() {
+  if (!cloudUrl || !cloudKey) { toast('ยังไม่ได้เชื่อมต่อ Firebase'); return; }
+  // อ่าน HTML ต้นฉบับแล้วแทนที่ค่า embedded credentials
+  let html = document.documentElement.outerHTML;
+  // แทนที่บรรทัด EMBED_FB_URL และ EMBED_FB_KEY
+  html = html.replace(
+    /const EMBED_FB_URL\s*=\s*'[^']*';/,
+    "const EMBED_FB_URL = " + JSON.stringify(cloudUrl) + ";"
+  );
+  html = html.replace(
+    /const EMBED_FB_KEY\s*=\s*'[^']*';/,
+    "const EMBED_FB_KEY = " + JSON.stringify(cloudKey) + ";"
+  );
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ct-sournong-firebase.html';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast('📥 ดาวน์โหลดไฟล์ฝัง Firebase แล้ว — นำไปแทนที่ไฟล์เดิมได้เลย');
 }
 
 async function adminConnectCloud() {
