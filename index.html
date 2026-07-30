@@ -873,10 +873,33 @@ function scheduleSave() {
 function updateCloudAuthBadge() {
   const el = document.getElementById('cloud-status-auth');
   if (!el) return;
-  // แสดงเฉพาะเมื่อเชื่อมต่อสำเร็จ — ไม่มี link หรือ onclick
   el.innerHTML = hasCloud()
     ? '<span class="sync-badge sync-ok"><span class="sync-dot"></span>Cloud ✓</span>'
     : '';
+}
+
+function setAuthCloudStatus(state, msg) {
+  const el = document.getElementById('cloud-status-auth');
+  if (!el) return;
+  const colors = {
+    loading: { bg:'#e3f2fd', border:'#90caf9', color:'#1565c0' },
+    ok:      { bg:'#e8f5e9', border:'#a5d6a7', color:'#2e7d32' },
+    error:   { bg:'#fde8e8', border:'#ef9a9a', color:'#c62828' },
+  };
+  const c = colors[state] || colors.ok;
+  el.innerHTML = `<div style="background:${c.bg};border:1.5px solid ${c.border};border-radius:8px;padding:8px 12px;font-size:12px;color:${c.color};font-weight:600">${msg}</div>`;
+}
+
+async function retryCloudLoad() {
+  setAuthCloudStatus('loading', '⏳ กำลังดึงข้อมูลจาก Cloud…');
+  const cloudData = await cloudGet();
+  if (cloudData) {
+    mergeCloudData(cloudData);
+    const n = (cloudData.documents||[]).length;
+    setAuthCloudStatus('ok', '☁️ Cloud: พบ ' + n + ' รายการ — รีเฟรชหน้าเพื่อโหลดใหม่');
+  } else {
+    setAuthCloudStatus('error', '❌ ยังดึงไม่ได้ — ตรวจสอบ Internet แล้วลองใหม่ &nbsp;<a href="#" onclick="event.preventDefault();retryCloudLoad()" style="color:#c62828;font-weight:700">↺ ลองใหม่</a>');
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -1084,24 +1107,26 @@ async function tryAutoLogin() {
     return;
   }
 
-  // แสดง loading badge ขณะดึงข้อมูล
+  // แสดง auth พร้อม loading status
   const authEl = document.getElementById('auth');
   authEl.style.display = 'flex';
-  setSyncBadge('saving', 'กำลังโหลดข้อมูล…');
+  setAuthCloudStatus('loading', '⏳ กำลังดึงข้อมูลจาก Cloud…');
 
   const cloudData = await cloudGet();
+
   if (cloudData) {
-    mergeCloudData(cloudData);   // merge แทน overwrite
+    mergeCloudData(cloudData);
+    const n = (cloudData.documents||[]).length;
+    setAuthCloudStatus('ok', '☁️ Cloud: พบ ' + n + ' รายการ');
   } else if (hasCloud()) {
-    // cloud ดึงไม่ได้ — ใช้ local แล้ว push ขึ้นทีหลัง
-    setSyncBadge('error', 'offline — ใช้ข้อมูลในเครื่อง');
-    setTimeout(() => setSyncBadge('', ''), 4000);
+    const localN = loadDocs().length;
+    setAuthCloudStatus('error',
+      '⚠️ ดึง Cloud ไม่ได้ — ใช้ข้อมูลในเครื่อง (' + localN + ' รายการ) &nbsp;' +
+      '<a href="#" onclick="event.preventDefault();retryCloudLoad()" style="color:#c62828;font-weight:700">↺ ลองใหม่</a>');
   }
 
   const session = loadSession();
   if (!session) {
-    setSyncBadge('ok', 'พร้อมใช้งาน');
-    setTimeout(() => setSyncBadge('', ''), 2000);
     setTimeout(() => document.getElementById('auth-user').focus(), 50);
     return;
   }
@@ -1110,18 +1135,21 @@ async function tryAutoLogin() {
   const user  = users.find(u => u.id === session.id);
   if (!user) {
     clearSession();
-    setSyncBadge('ok', 'พร้อมใช้งาน');
     setTimeout(() => document.getElementById('auth-user').focus(), 50);
     return;
   }
   currentUser = { id:user.id, username:user.username, isAdmin:!!user.isAdmin };
   documents   = loadDocs();
-  setSyncBadge('ok', 'ซิงค์แล้ว');
   enterMain();
-  // ถ้า cloudData ว่างแต่ local มีข้อมูล → push ขึ้น cloud ทันที
+  // ถ้า cloud ว่างแต่ local มีข้อมูล → push ขึ้น cloud ทันที
   if (hasCloud() && (!cloudData || (cloudData.documents||[]).length === 0) && documents.length > 0) {
+    setSyncBadge('saving', 'กำลัง Push ข้อมูลขึ้น Cloud…');
     const data = { users: loadUsers(), documents: loadDocs(), bgUrl: localStorage.getItem(LS_BG) || '' };
-    cloudPut(data).then(() => setSyncBadge('ok', 'ซิงค์แล้ว'));
+    cloudPut(data).then(ok => {
+      setSyncBadge(ok ? 'ok' : 'error', ok ? 'Push สำเร็จ (' + data.documents.length + ' รายการ)' : 'Push ไม่สำเร็จ ⚠️');
+    });
+  } else {
+    setSyncBadge('ok', 'ซิงค์แล้ว');
   }
 }
 
