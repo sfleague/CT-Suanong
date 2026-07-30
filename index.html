@@ -60,6 +60,34 @@
     .cloud-setup-link { display: inline-block; margin-top: 8px; font-size: 12px; color: #2980b9; cursor: pointer; text-decoration: underline; }
     .cloud-setup-link:hover { color: #1a6ea8; }
 
+    /* ── Cloud Setup Screen ── */
+    #cloud-setup {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, #0f1d35 0%, #1b2a4a 40%, #1a3a5c 70%, #0d2137 100%);
+      position: relative;
+    }
+    #cloud-setup::before {
+      content: ''; position: absolute; inset: 0;
+      background: rgba(10,20,40,.62); backdrop-filter: blur(2px);
+    }
+    .cloud-setup-box {
+      position: relative; z-index: 1;
+      background: rgba(255,255,255,.97); border-radius: 16px; padding: 36px 40px;
+      width: 480px; max-width: 95vw;
+      box-shadow: 0 12px 48px rgba(0,0,0,.45);
+    }
+    .cloud-setup-box h1 { font-size: 20px; font-weight: 700; color: #1b2a4a; margin-bottom: 6px; }
+    .cloud-setup-box .cs-sub { font-size: 13px; color: #888; margin-bottom: 20px; line-height: 1.5; }
+    .cs-steps { list-style: none; counter-reset: step; margin-bottom: 20px; }
+    .cs-steps li { counter-increment: step; margin: 7px 0; display: flex; gap: 10px; font-size: 13px; color: #555; align-items: flex-start; }
+    .cs-steps li::before {
+      content: counter(step); min-width: 22px; height: 22px; background: #1b2a4a; color: #fff;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px;
+    }
+    .cs-skip-link { font-size: 11.5px; color: #bbb; cursor: pointer; text-decoration: underline; display: inline-block; margin-top: 10px; }
+    .cs-skip-link:hover { color: #888; }
+
     /* ── Sync indicator ── */
     .sync-badge {
       display: inline-flex; align-items: center; gap: 5px;
@@ -318,6 +346,37 @@
 </head>
 <body>
 
+<!-- CLOUD SETUP (shown on new browser before auth) -->
+<div id="cloud-setup" style="display:none">
+  <div class="cloud-setup-box">
+    <div class="auth-brand">SF International</div>
+    <div style="font-size:32px;margin:6px 0 10px">🔥</div>
+    <h1>เชื่อมต่อ Firebase</h1>
+    <p class="cs-sub">บราวเซอร์นี้ยังไม่ได้เชื่อมต่อคลาวด์ — กรอก Firebase URL และ Secret เพื่อดึงข้อมูลมาใช้งาน</p>
+    <ol class="cs-steps">
+      <li>ไปที่ <a href="https://console.firebase.google.com" target="_blank" style="color:#e65100;font-weight:700">console.firebase.google.com</a> → เปิด Project ของคุณ</li>
+      <li>คัดลอก <b>Database URL</b> จาก Realtime Database<br><code style="font-size:11px;background:#f5f5f5;padding:2px 6px;border-radius:3px">https://project-id-default-rtdb.firebaseio.com</code></li>
+      <li>คัดลอก <b>Database Secret</b> จาก Project Settings → Service accounts</li>
+      <li>วางด้านล่าง แล้วกด <b>เชื่อมต่อ</b></li>
+    </ol>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div>
+        <label class="field-label">Database URL</label>
+        <input id="cs-url" class="auth-input" type="text" placeholder="https://your-project-default-rtdb.firebaseio.com" autocomplete="off" style="margin-bottom:0">
+      </div>
+      <div>
+        <label class="field-label">Database Secret</label>
+        <input id="cs-key" class="auth-input" type="password" placeholder="Firebase Database Secret" autocomplete="off" style="margin-bottom:0">
+      </div>
+      <div class="auth-err" id="cs-err"></div>
+      <button class="auth-btn auth-btn-main" onclick="csConnect()">🔥 เชื่อมต่อและดึงข้อมูล</button>
+    </div>
+    <div style="text-align:center">
+      <span class="cs-skip-link" onclick="csSkip()">ใช้งานแบบออฟไลน์ (ไม่แนะนำ — ข้อมูลจะไม่ซิงค์)</span>
+    </div>
+  </div>
+</div>
+
 <!-- AUTH -->
 <div id="auth" class="auth-wrap">
   <div class="auth-box">
@@ -325,7 +384,7 @@
     <div class="auth-icon" style="font-size:36px;margin:8px 0 10px">📦</div>
     <h1>CT ซั่วหน่อง</h1>
     <p>เข้าสู่ระบบเพื่อใช้งาน</p>
-    <div id="cloud-status-auth" style="margin-bottom:12px;cursor:pointer" onclick="openCloudModal()" title="คลิกเพื่อตั้งค่า Firebase"></div>
+    <div id="cloud-status-auth" style="margin-bottom:12px"></div>
     <form onsubmit="event.preventDefault();doAuth()" autocomplete="on">
       <input id="auth-user" class="auth-input" type="text" placeholder="Username" maxlength="50" name="username" autocomplete="username">
       <input id="auth-inp"  class="auth-input" type="password" placeholder="Password" maxlength="50" name="password" autocomplete="current-password">
@@ -355,47 +414,6 @@
   <div id="app"></div>
 </div>
 
-<!-- ══ Cloud Setup ══ -->
-<div id="cloud-modal" class="modal-overlay" onclick="if(event.target===this)closeCloudModal()">
-  <div class="modal-box">
-    <div class="modal-head">
-      <div><h2>🔥 Cloud Storage — Firebase</h2>
-        <div class="mh-sub">เชื่อมต่อข้อมูลกลาง ใช้ได้ทุกเครื่อง · ข้อมูลเก่า 7 วันลบอัตโนมัติ</div>
-      </div>
-      <button class="modal-close" onclick="closeCloudModal()">×</button>
-    </div>
-    <div class="modal-body">
-      <div class="cloud-info-box">
-        <b>วิธีตั้งค่าครั้งแรก (ฟรี ไม่มีค่าใช้จ่าย):</b>
-        <ol class="cloud-steps" style="margin-top:10px">
-          <li>ไปที่ <a href="https://console.firebase.google.com" target="_blank" style="color:#e65100;font-weight:700">console.firebase.google.com</a> → สร้าง Project ใหม่</li>
-          <li>เลือก <b>Realtime Database</b> → สร้าง database (เลือก mode: test หรือ locked)</li>
-          <li>copy <b>Database URL</b> เช่น <code style="background:#f5f5f5;padding:1px 5px;border-radius:3px;word-break:break-all;font-size:11px">https://project-id-default-rtdb.firebaseio.com</code></li>
-          <li>ไปที่ <b>Project Settings → Service accounts → Database secrets</b> → สร้างและ copy Secret</li>
-          <li>วาง URL และ Secret ด้านล่าง แล้วกด เชื่อมต่อ 🔥</li>
-        </ol>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:14px">
-        <div>
-          <label class="field-label">Database URL</label>
-          <input id="cloud-url" class="field-input" type="text" placeholder="https://your-project-default-rtdb.firebaseio.com" autocomplete="off">
-        </div>
-        <div>
-          <label class="field-label">Database Secret</label>
-          <input id="cloud-key" class="field-input key-input" type="password" placeholder="Firebase Database Secret" autocomplete="off">
-          <div style="font-size:11px;color:#aaa;margin-top:4px">เก็บใน localStorage ของเครื่องนี้เท่านั้น · ข้อมูลพัสดุเก่ากว่า 7 วันจะถูกลบอัตโนมัติ</div>
-        </div>
-        <div class="auth-err" id="cloud-err" style="text-align:left"></div>
-        <div id="cloud-status-box"></div>
-      </div>
-    </div>
-    <div class="modal-foot">
-      <button class="btn btn-outline" onclick="closeCloudModal()">ปิด</button>
-      <button id="btn-cloud-disconnect" class="btn btn-danger btn-sm" onclick="disconnectCloud()" style="display:none;margin-right:auto">ยกเลิกการเชื่อมต่อ</button>
-      <button class="btn btn-blue" onclick="connectCloud()" style="min-width:120px">🔥 เชื่อมต่อ</button>
-    </div>
-  </div>
-</div>
 
 <!-- ══ Reset admin ══ -->
 <div id="reset-confirm" class="modal-overlay" onclick="if(event.target===this)closeResetConfirm()">
@@ -811,89 +829,14 @@ function scheduleSave() {
   }, 800);
 }
 
-// ── Cloud Modal ──
-function openCloudModal() {
-  document.getElementById('cloud-url').value = cloudUrl;
-  document.getElementById('cloud-key').value = cloudKey ? '••••••••' : '';
-  document.getElementById('cloud-err').textContent = '';
-  const discBtn = document.getElementById('btn-cloud-disconnect');
-  if (cloudUrl && cloudKey) {
-    discBtn.style.display = '';
-    document.getElementById('cloud-status-box').innerHTML =
-      '<div style="background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:10px 14px;font-size:13px;color:#2e7d32;font-weight:600">✅ เชื่อมต่อ Firebase แล้ว — ข้อมูลซิงค์อัตโนมัติ · ข้อมูลเก่า 7 วันลบอัตโนมัติ</div>';
-  } else {
-    discBtn.style.display = 'none';
-    document.getElementById('cloud-status-box').innerHTML = '';
-  }
-  document.getElementById('cloud-modal').classList.add('open');
-}
-function closeCloudModal() { document.getElementById('cloud-modal').classList.remove('open'); }
-
-async function connectCloud() {
-  const urlEl = document.getElementById('cloud-url');
-  const keyEl = document.getElementById('cloud-key');
-  const err   = document.getElementById('cloud-err');
-  const url   = (urlEl.value || '').trim();
-  let key     = (keyEl.value || '').trim();
-  if (key === '••••••••') key = cloudKey;
-  if (!url) { err.textContent = 'กรุณาใส่ Database URL'; return; }
-  if (!key) { err.textContent = 'กรุณาใส่ Database Secret'; return; }
-
-  err.textContent = '';
-  const btn = document.querySelector('#cloud-modal .btn-blue');
-  btn.textContent = '⏳ กำลังเชื่อมต่อ…'; btn.disabled = true;
-
-  try {
-    const testEndpoint = url.replace(/\/+$/, '') + '/sfintl.json?auth=' + key;
-    const initData = { users: loadUsers(), documents: loadDocs() };
-    const r = await fetch(testEndpoint, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(initData)
-    });
-    if (!r.ok) {
-      const t = await r.text();
-      throw new Error(t);
-    }
-
-    cloudUrl = url;
-    cloudKey = key;
-    localStorage.setItem(LS_FBURL, cloudUrl);
-    localStorage.setItem(LS_FBKEY, cloudKey);
-
-    // ดึงข้อมูลจาก Firebase มาใส่เครื่องนี้ทันที
-    const pulled = await cloudGet();
-    if (pulled) applyCloudData(pulled);
-
-    document.getElementById('btn-cloud-disconnect').style.display = '';
-    document.getElementById('cloud-status-box').innerHTML =
-      '<div style="background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:10px 14px;font-size:13px;color:#2e7d32;font-weight:600">✅ เชื่อมต่อ Firebase สำเร็จ! ดึงข้อมูลล่าสุดมาแล้ว · ซิงค์อัตโนมัติทุกเครื่อง</div>';
-    setSyncBadge('ok', 'ซิงค์แล้ว');
-    updateCloudAuthBadge();
-    toast('เชื่อมต่อ Firebase สำเร็จ 🔥 ดึงข้อมูลมาแล้ว');
-  } catch(e) {
-    err.textContent = 'เชื่อมต่อไม่ได้: ' + (e.message || String(e));
-  } finally {
-    if (btn) { btn.textContent = '🔥 เชื่อมต่อ'; btn.disabled = false; }
-  }
-}
-
-function disconnectCloud() {
-  if (!confirm('ยกเลิกการเชื่อมต่อ Firebase ใช่ไหม?\nข้อมูลในเครื่องนี้จะยังอยู่ แต่จะไม่ซิงค์แล้ว')) return;
-  cloudUrl = ''; cloudKey = '';
-  localStorage.removeItem(LS_FBURL); localStorage.removeItem(LS_FBKEY);
-  closeCloudModal();
-  setSyncBadge('', '');
-  updateCloudAuthBadge();
-  toast('ยกเลิกการเชื่อมต่อ Firebase แล้ว');
-}
 
 function updateCloudAuthBadge() {
   const el = document.getElementById('cloud-status-auth');
   if (!el) return;
+  // แสดงเฉพาะเมื่อเชื่อมต่อสำเร็จ — ไม่มี link หรือ onclick
   el.innerHTML = hasCloud()
-    ? '<span class="sync-badge sync-ok"><span class="sync-dot"></span>Firebase เชื่อมต่อแล้ว ✓</span>'
-    : '<span class="sync-badge" style="background:#fff3e0;border:1px solid #ffcc80;color:#e65100"><span class="sync-dot" style="background:#e65100"></span>ยังไม่ได้เชื่อมต่อ Firebase — คลิกตั้งค่า 🔥</span>';
+    ? '<span class="sync-badge sync-ok"><span class="sync-dot"></span>Cloud ✓</span>'
+    : '';
 }
 
 // ══════════════════════════════════════════════
@@ -1034,20 +977,27 @@ function logout() {
   document.getElementById('auth-inp').value  = '';
   document.getElementById('auth-err').textContent = '';
   ['create-popup','detail-popup','entry-popup','dup-popup','delete-popup',
-   'edit-modal','pw-modal','users-modal','upload-create-popup','reset-confirm','cloud-modal']
+   'edit-modal','pw-modal','users-modal','upload-create-popup','reset-confirm']
     .forEach(id => document.getElementById(id).classList.remove('open'));
 }
 
 async function tryAutoLogin() {
   updateCloudAuthBadge();
+
+  // ── If no Firebase credentials on this browser, show setup screen first ──
+  if (!hasCloud()) {
+    document.getElementById('cloud-setup').style.display = 'flex';
+    document.getElementById('auth').style.display = 'none';
+    setTimeout(() => { const el = document.getElementById('cs-url'); if (el) el.focus(); }, 80);
+    return;
+  }
+
+  // Pull latest cloud data before checking session
+  const cloudData = await cloudGet();
+  if (cloudData) applyCloudData(cloudData);
+
   const session = loadSession();
   if (!session) { setTimeout(() => document.getElementById('auth-user').focus(), 50); return; }
-
-  // Pull cloud data silently
-  if (hasCloud()) {
-    const data = await cloudGet();
-    if (data) applyCloudData(data);
-  }
 
   const users = loadUsers();
   const user  = users.find(u => u.id === session.id);
@@ -1678,6 +1628,79 @@ function saveBg() {
 function clearBg() {
   document.getElementById('set-bg-url').value = '';
   previewBg('');
+}
+
+// ══════════════════════════════════════════════
+//  CLOUD SETUP SCREEN
+// ══════════════════════════════════════════════
+async function csConnect() {
+  const url = (document.getElementById('cs-url').value || '').trim();
+  const key = (document.getElementById('cs-key').value || '').trim();
+  const err = document.getElementById('cs-err');
+  if (!url) { err.textContent = 'กรุณาใส่ Database URL'; return; }
+  if (!key) { err.textContent = 'กรุณาใส่ Database Secret'; return; }
+  err.textContent = '';
+
+  const btn = document.querySelector('#cloud-setup .auth-btn-main');
+  btn.textContent = '⏳ กำลังเชื่อมต่อ…'; btn.disabled = true;
+
+  try {
+    const endpoint = url.replace(/\/+$/, '') + '/sfintl.json?auth=' + key;
+    // Test connection and push current local data
+    const initData = { users: loadUsers(), documents: loadDocs(), bgUrl: localStorage.getItem(LS_BG) || '' };
+    const r = await fetch(endpoint, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    // If error, try a GET first to verify credentials
+    const rGet = await fetch(endpoint);
+    if (!rGet.ok) throw new Error('status ' + rGet.status);
+
+    // Save credentials
+    cloudUrl = url; cloudKey = key;
+    localStorage.setItem(LS_FBURL, cloudUrl);
+    localStorage.setItem(LS_FBKEY, cloudKey);
+
+    // Pull all data from Firebase
+    const pulled = await cloudGet();
+    if (pulled && (Array.isArray(pulled.users) && pulled.users.length > 0 || Array.isArray(pulled.documents))) {
+      applyCloudData(pulled);
+    }
+
+    updateCloudAuthBadge();
+    setSyncBadge('ok', 'Cloud เชื่อมต่อ');
+
+    // Proceed to login
+    document.getElementById('cloud-setup').style.display = 'none';
+    document.getElementById('auth').style.display = 'flex';
+    updateCloudAuthBadge();
+
+    // Try auto-login from session
+    const session = loadSession();
+    if (session) {
+      const users = loadUsers();
+      const user = users.find(u => u.id === session.id);
+      if (user) {
+        currentUser = { id:user.id, username:user.username, isAdmin:!!user.isAdmin };
+        documents = loadDocs();
+        enterMain();
+        return;
+      }
+    }
+    setTimeout(() => { const el = document.getElementById('auth-user'); if (el) el.focus(); }, 80);
+  } catch(e) {
+    err.textContent = 'เชื่อมต่อไม่ได้: ' + (e.message || String(e)) + ' — ตรวจสอบ URL และ Secret อีกครั้ง';
+  } finally {
+    btn.textContent = '🔥 เชื่อมต่อและดึงข้อมูล'; btn.disabled = false;
+  }
+}
+
+function csSkip() {
+  if (!confirm('ต้องการใช้งานแบบออฟไลน์ใช่ไหม?\nข้อมูลจะไม่ซิงค์กับคลาวด์ และจะหายไปเมื่อล้างบราวเซอร์')) return;
+  document.getElementById('cloud-setup').style.display = 'none';
+  document.getElementById('auth').style.display = 'flex';
+  setTimeout(() => { const el = document.getElementById('auth-user'); if (el) el.focus(); }, 80);
 }
 
 // ══════════════════════════════════════════════
