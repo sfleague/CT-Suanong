@@ -171,8 +171,10 @@
     .tbl-wrap th { font-size: 10.5px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .4px; background: #f9fafb; }
     .tbl-wrap tfoot td { font-weight: 700; background: #f6f8fa; font-size: 12px; }
     .td-num { font-variant-numeric: tabular-nums; }
-    .btn-del-row { background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 13px; padding: 3px 8px; border-radius: 4px; }
-    .btn-del-row:hover { background: #fde8e8; }
+    .btn-del-row  { background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 13px; padding: 3px 8px; border-radius: 4px; }
+    .btn-del-row:hover  { background: #fde8e8; }
+    .btn-edit-row { background: none; border: none; color: #2980b9; cursor: pointer; font-size: 13px; padding: 3px 8px; border-radius: 4px; }
+    .btn-edit-row:hover { background: #e8f4fb; }
     .mono { font-family: monospace; letter-spacing: .3px; }
     .sum-bar { display: flex; gap: 20px; font-size: 13px; color: #555; }
     .sum-bar strong { color: #1b2a4a; }
@@ -209,7 +211,8 @@
 
     /* ── Specific modals ── */
     #detail-popup .modal-box { max-width: 820px; }
-    #entry-popup  .modal-box { max-width: 380px; }
+    #entry-popup       .modal-box { max-width: 380px; }
+    #edit-entry-popup  .modal-box { max-width: 380px; }
     #dup-popup    .modal-box { max-width: 400px; }
     #create-popup .modal-box { max-width: 560px; }
     #delete-popup .modal-box { max-width: 380px; }
@@ -599,6 +602,36 @@
   </div>
 </div>
 
+<!-- ══ Edit Entry ══ -->
+<div id="edit-entry-popup" class="modal-overlay" onclick="if(event.target===this)closeEditEntry()">
+  <div class="modal-box">
+    <div class="modal-head"><h2>✏️ แก้ไขรายการ</h2><button class="modal-close" onclick="closeEditEntry()">×</button></div>
+    <div class="modal-body">
+      <div class="ep-bagno-box">
+        <div class="ep-lbl">Bag No</div>
+        <input id="ee-bagno" class="ep-input" type="text" style="font-size:18px;font-weight:700;font-family:monospace;text-align:center;width:100%;margin-top:6px"
+          onkeydown="if(event.key==='Enter')document.getElementById('ee-ship').focus()">
+      </div>
+      <div class="ep-fields">
+        <div class="ep-field">
+          <label class="field-label">จำนวนชิ้น (Shipment)</label>
+          <input id="ee-ship" class="ep-input" type="number" min="0" step="1"
+            onkeydown="if(event.key==='Enter')document.getElementById('ee-wt').focus()">
+        </div>
+        <div class="ep-field">
+          <label class="field-label">น้ำหนัก (Kg)</label>
+          <input id="ee-wt" class="ep-input" type="number" min="0" step="0.01" placeholder="0.00"
+            onkeydown="if(event.key==='Enter')saveEditEntry()">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeEditEntry()">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveEditEntry()" style="min-width:110px;font-size:15px">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ Delete ══ -->
 <div id="delete-popup" class="modal-overlay" onclick="if(event.target===this)closeDeletePopup()">
   <div class="modal-box">
@@ -928,6 +961,8 @@ let currentUser  = null;
 let currentDocId = null;
 let editingDocId = null;
 let entryBagNo   = '';
+let editEntryDocId  = null;
+let editEntryId     = null;
 let deleteTargetId = null;
 let uploadData   = [], uploadColumns = [];
 let ucBagIdx=-1, ucShipIdx=-1, ucWtIdx=-1, ucFileReady=false;
@@ -990,7 +1025,7 @@ function logout() {
   document.getElementById('auth-user').value = '';
   document.getElementById('auth-inp').value  = '';
   document.getElementById('auth-err').textContent = '';
-  ['create-popup','detail-popup','entry-popup','dup-popup','delete-popup',
+  ['create-popup','detail-popup','entry-popup','edit-entry-popup','dup-popup','delete-popup',
    'edit-modal','pw-modal','users-modal','upload-create-popup','reset-confirm']
     .forEach(id => document.getElementById(id).classList.remove('open'));
 }
@@ -1176,8 +1211,8 @@ function refreshDetailPopup(doc) {
   document.getElementById('entries-body').innerHTML=entries.length===0
     ? '<div style="text-align:center;padding:28px;color:#bbb;font-size:13.5px">ยังไม่มีรายการ — ยิงเลข Bag No เพื่อเริ่มบันทึก</div>'
     : `<div class="tbl-wrap"><table>
-        <thead><tr><th style="width:36px">#</th><th>Bag No</th><th style="width:110px">Shipment</th><th style="width:120px">Weight (Kg)</th><th style="width:50px"></th></tr></thead>
-        <tbody>${entries.map((e,i)=>`<tr><td style="color:#ccc;font-size:11px">${i+1}</td><td class="mono">${esc(e.bagNo)}</td><td class="td-num">${e.shipment}</td><td class="td-num">${Number(e.weight).toFixed(2)}</td><td><button class="btn-del-row" onclick="deleteEntry(${doc.id},${e.id})">ลบ</button></td></tr>`).join('')}</tbody>
+        <thead><tr><th style="width:36px">#</th><th>Bag No</th><th style="width:110px">Shipment</th><th style="width:120px">Weight (Kg)</th><th style="width:90px"></th></tr></thead>
+        <tbody>${entries.map((e,i)=>`<tr><td style="color:#ccc;font-size:11px">${i+1}</td><td class="mono">${esc(e.bagNo)}</td><td class="td-num">${e.shipment}</td><td class="td-num">${Number(e.weight).toFixed(2)}</td><td style="white-space:nowrap"><button class="btn-edit-row" onclick="openEditEntry(${doc.id},${e.id})">✏️</button><button class="btn-del-row" onclick="deleteEntry(${doc.id},${e.id})">ลบ</button></td></tr>`).join('')}</tbody>
         <tfoot><tr><td colspan="2" style="text-align:right;color:#888;font-size:11.5px">รวม</td><td class="td-num">${t.shipment}</td><td class="td-num">${t.weight.toFixed(2)}</td><td></td></tr></tfoot>
       </table></div>`;
   document.getElementById('inp-bag').value='';
@@ -1292,6 +1327,33 @@ function deleteEntry(docId,entryId) {
   const doc=getDocById(docId); if (!doc) return;
   doc.entries=(doc.entries||[]).filter(e=>e.id!==entryId);
   saveDocs(documents); refreshDetailPopup(doc); renderList();
+}
+
+function openEditEntry(docId,entryId) {
+  const doc=getDocById(docId); if (!doc) return;
+  const entry=(doc.entries||[]).find(e=>e.id===entryId); if (!entry) return;
+  editEntryDocId=docId; editEntryId=entryId;
+  document.getElementById('ee-bagno').value=entry.bagNo;
+  document.getElementById('ee-ship').value=entry.shipment;
+  document.getElementById('ee-wt').value=Number(entry.weight).toFixed(2);
+  document.getElementById('edit-entry-popup').classList.add('open');
+  setTimeout(()=>document.getElementById('ee-bagno').focus(),80);
+}
+function closeEditEntry() {
+  document.getElementById('edit-entry-popup').classList.remove('open');
+  editEntryDocId=null; editEntryId=null;
+}
+function saveEditEntry() {
+  const doc=getDocById(editEntryDocId); if (!doc) return;
+  const idx=(doc.entries||[]).findIndex(e=>e.id===editEntryId); if (idx===-1) return;
+  const bagNo=(document.getElementById('ee-bagno').value||'').trim();
+  if (!bagNo) { document.getElementById('ee-bagno').focus(); return; }
+  const shipment=parseFloat(document.getElementById('ee-ship').value)||1;
+  const weight=parseFloat(document.getElementById('ee-wt').value)||0;
+  doc.entries[idx]={...doc.entries[idx],bagNo,shipment,weight};
+  saveDocs(documents); refreshDetailPopup(doc); renderList();
+  toast('แก้ไข '+bagNo+' แล้ว ✅');
+  closeEditEntry();
 }
 
 // ══════════════════════════════════════════════
