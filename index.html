@@ -1,0 +1,1658 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SF International — CT ซั่วหน่อง</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background: #f0f2f5; color: #222; min-height: 100vh; }
+
+
+    /* ── Site Settings (admin) ── */
+    .settings-preview {
+      width: 100%; height: 130px; border-radius: 8px; border: 1.5px solid #e8e8e8;
+      background: linear-gradient(135deg,#0f1d35,#1b2a4a,#1a3a5c,#0d2137);
+      background-size: cover; background-position: center;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; color: rgba(255,255,255,.65); margin-top: 8px;
+      transition: all .4s; overflow: hidden; position: relative;
+    }
+    .settings-preview-inner {
+      background: rgba(10,20,40,.55); width:100%; height:100%;
+      display:flex; align-items:center; justify-content:center; font-size:12px;
+    }
+    /* ── Auth ── */
+    .auth-wrap {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, #0f1d35 0%, #1b2a4a 40%, #1a3a5c 70%, #0d2137 100%);
+      background-size: cover; background-position: center;
+      position: relative;
+    }
+    .auth-wrap::before {
+      content: ''; position: absolute; inset: 0;
+      background: rgba(10,20,40,.62); backdrop-filter: blur(2px);
+    }
+    .auth-box {
+      position: relative; z-index: 1;
+      background: rgba(255,255,255,.97); border-radius: 16px; padding: 44px 40px;
+      width: 390px; text-align: center;
+      box-shadow: 0 12px 48px rgba(0,0,0,.45);
+    }
+    .auth-logo { margin-bottom: 10px; }
+    .auth-logo img { max-height: 48px; width: auto; object-fit: contain; display: block; }
+    .auth-brand { font-size: 13px; font-weight: 700; color: #1b2a4a; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px; }
+    .auth-box h1 { font-size: 20px; font-weight: 700; color: #1b2a4a; margin-bottom: 6px; }
+    .auth-box p  { font-size: 13px; color: #888; margin-bottom: 22px; }
+    .auth-input {
+      width: 100%; border: 1.5px solid #ddd; border-radius: 8px;
+      padding: 11px 14px; font-size: 15px; margin-bottom: 10px; transition: border-color .15s;
+    }
+    .auth-input:focus { outline: none; border-color: #2980b9; }
+    .auth-err  { color: #e74c3c; font-size: 12.5px; min-height: 18px; margin-bottom: 10px; }
+    .auth-btn  { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; margin-bottom: 8px; transition: background .15s; }
+    .auth-btn-main { background: #1b2a4a; color: #fff; }
+    .auth-btn-main:hover { background: #2c4170; }
+    .auth-hint { font-size: 11px; color: #bbb; margin-top: 10px; }
+    .auth-reset-link { display: inline-block; margin-top: 14px; font-size: 12px; color: #aaa; cursor: pointer; text-decoration: underline; }
+    .auth-reset-link:hover { color: #e74c3c; }
+    .cloud-setup-link { display: inline-block; margin-top: 8px; font-size: 12px; color: #2980b9; cursor: pointer; text-decoration: underline; }
+    .cloud-setup-link:hover { color: #1a6ea8; }
+
+    /* ── Sync indicator ── */
+    .sync-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 600;
+    }
+    .sync-ok     { background: #e8f5e9; color: #2e7d32; }
+    .sync-saving { background: #fff8e1; color: #f57f17; }
+    .sync-error  { background: #fde8e8; color: #c62828; }
+    .sync-dot    { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+    /* ── Header ── */
+    .header {
+      background: #1b2a4a; color: #fff; padding: 0 20px; height: 56px;
+      display: flex; align-items: center; gap: 10px;
+      position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    }
+    .h-logo  { font-size: 22px; }
+    .h-title { font-size: 17px; font-weight: 700; letter-spacing: .3px; }
+    .h-user  { font-size: 12px; color: rgba(255,255,255,.6); }
+    .h-sp    { flex: 1; }
+    .h-acts  { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 7px 14px; border: none; border-radius: 6px;
+      cursor: pointer; font-size: 13px; font-weight: 600;
+      transition: opacity .15s, transform .1s; white-space: nowrap;
+    }
+    .btn:hover  { opacity: .86; }
+    .btn:active { transform: scale(.97); }
+    .btn-primary { background: #e67e22; color: #fff; }
+    .btn-success { background: #27ae60; color: #fff; }
+    .btn-blue    { background: #2980b9; color: #fff; }
+    .btn-teal    { background: #16a085; color: #fff; }
+    .btn-danger  { background: #e74c3c; color: #fff; }
+    .btn-ghost   { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.2); }
+    .btn-outline { background: #fff; color: #555; border: 1.5px solid #ddd; }
+    .btn-sm  { padding: 5px 10px; font-size: 12px; }
+    .btn-xs  { padding: 4px 8px;  font-size: 11px; }
+
+    /* ── Page ── */
+    .page { max-width: 1100px; margin: 0 auto; padding: 28px 20px; }
+    .page-head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 22px; }
+    .page-head h2 { font-size: 22px; font-weight: 700; color: #1b2a4a; }
+    .page-head p  { font-size: 13px; color: #888; margin-top: 3px; }
+
+    /* ── doc-table ── */
+    .doc-table { width: 100%; border-collapse: separate; border-spacing: 0 6px; }
+    .doc-table thead th {
+      font-size: 11px; font-weight: 700; color: #aaa; text-transform: uppercase;
+      letter-spacing: .5px; padding: 6px 12px; text-align: left; border-bottom: 1px solid #e8e8e8;
+    }
+    .doc-row { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+    .doc-row:hover { box-shadow: 0 2px 8px rgba(0,0,0,.10); }
+    .doc-row td { padding: 12px 12px; vertical-align: middle; }
+    .doc-row td:first-child { border-radius: 8px 0 0 8px; }
+    .doc-row td:last-child  { border-radius: 0 8px 8px 0; }
+    .dtr-num    { color: #ccc; font-size: 11px; width: 32px; }
+    .dtr-gw     { font-size: 14px; font-weight: 700; color: #1b2a4a; }
+    .dtr-flight { font-size: 11.5px; color: #e67e22; margin-top: 2px; }
+    .dtr-code   { font-size: 10px; color: #bbb; font-family: monospace; margin-top: 2px; }
+    .dtr-date   { font-size: 12px; color: #666; }
+    .dtr-stat   { text-align: center; }
+    .dtr-sval   { font-size: 15px; font-weight: 700; }
+    .dtr-remark { font-size: 11.5px; color: #888; max-width: 160px; }
+    .dtr-actions { white-space: nowrap; }
+
+    /* ── field ── */
+    .field-label { font-size: 10.5px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .5px; display: block; margin-bottom: 5px; }
+    .field-input {
+      width: 100%; border: 1.5px solid #e8e8e8; border-radius: 8px;
+      padding: 9px 12px; font-size: 14px; color: #222; background: #fafafa; transition: border-color .15s;
+    }
+    .field-input:focus { outline: none; border-color: #2980b9; background: #fff; }
+
+    /* ── meta-grid ── */
+    .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 480px) { .meta-grid { grid-template-columns: 1fr; } }
+
+    /* ── tbl-wrap ── */
+    .tbl-wrap { overflow-x: auto; }
+    .tbl-wrap table { width: 100%; border-collapse: collapse; }
+    .tbl-wrap th, .tbl-wrap td { padding: 9px 12px; border-bottom: 1px solid #eee; font-size: 13px; text-align: left; }
+    .tbl-wrap th { font-size: 10.5px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .4px; background: #f9fafb; }
+    .tbl-wrap tfoot td { font-weight: 700; background: #f6f8fa; font-size: 12px; }
+    .td-num { font-variant-numeric: tabular-nums; }
+    .btn-del-row { background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 13px; padding: 3px 8px; border-radius: 4px; }
+    .btn-del-row:hover { background: #fde8e8; }
+    .mono { font-family: monospace; letter-spacing: .3px; }
+    .sum-bar { display: flex; gap: 20px; font-size: 13px; color: #555; }
+    .sum-bar strong { color: #1b2a4a; }
+
+    /* ── Modal base ── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.45);
+      display: none; align-items: center; justify-content: center;
+      z-index: 500; padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: #fff; border-radius: 12px; width: 100%; max-width: 680px;
+      max-height: 92vh; overflow-y: auto;
+      box-shadow: 0 16px 48px rgba(0,0,0,.28);
+      animation: mSlide .18s ease;
+    }
+    @keyframes mSlide { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+    .modal-head {
+      padding: 16px 20px; border-bottom: 1px solid #eee;
+      display: flex; justify-content: space-between; align-items: center;
+      position: sticky; top: 0; background: #fff; z-index: 2;
+    }
+    .modal-head h2 { font-size: 15px; font-weight: 700; color: #1b2a4a; }
+    .modal-head .mh-sub { font-size: 11px; color: #aaa; margin-top: 1px; }
+    .modal-close { background: none; border: none; font-size: 22px; color: #aaa; cursor: pointer; line-height: 1; padding: 0 4px; }
+    .modal-close:hover { color: #555; }
+    .modal-body { padding: 20px; }
+    .modal-foot {
+      padding: 14px 20px; border-top: 1px solid #eee;
+      display: flex; gap: 8px; justify-content: flex-end;
+      position: sticky; bottom: 0; background: #fff; z-index: 2;
+    }
+
+    /* ── Specific modals ── */
+    #detail-popup .modal-box { max-width: 820px; }
+    #entry-popup  .modal-box { max-width: 380px; }
+    #dup-popup    .modal-box { max-width: 400px; }
+    #create-popup .modal-box { max-width: 560px; }
+    #delete-popup .modal-box { max-width: 380px; }
+    #edit-modal   .modal-box { max-width: 600px; }
+    #pw-modal     .modal-box { max-width: 380px; }
+    #users-modal  .modal-box { max-width: 600px; }
+    #reset-confirm .modal-box { max-width: 380px; }
+    #cloud-modal  .modal-box { max-width: 480px; }
+    #upload-create-popup .modal-box { max-width: 680px; }
+
+    .detail-meta {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px; background: #f6f8fa; border-radius: 10px; padding: 16px; margin-bottom: 16px;
+    }
+    .dm-item .dm-label { font-size: 10px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .5px; }
+    .dm-item .dm-value { font-size: 13px; font-weight: 600; color: #222; margin-top: 2px; }
+
+    .scan-box {
+      display: flex; gap: 10px; align-items: center;
+      background: #fff9f2; border: 2px solid #e67e22;
+      border-radius: 10px; padding: 14px 16px; margin-bottom: 8px;
+    }
+    .scan-box input {
+      flex: 1; border: none; background: transparent;
+      font-size: 17px; font-weight: 600; color: #1b2a4a; outline: none;
+    }
+    .scan-box input::placeholder { color: #ccc; font-weight: 400; }
+    .scan-hint { font-size: 11.5px; color: #aaa; margin-bottom: 8px; }
+
+    .upload-zone {
+      display: flex; gap: 10px; align-items: center;
+      background: #f0f8ff; border: 2px dashed #2980b9;
+      border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; cursor: pointer;
+      transition: background .15s, border-color .15s;
+    }
+    .upload-zone:hover { background: #e8f4fc; border-color: #1a6ea8; }
+    .upload-zone-text .uz-title { font-size: 14px; font-weight: 600; color: #1b2a4a; }
+    .upload-zone-text .uz-sub   { font-size: 11.5px; color: #888; margin-top: 2px; }
+
+    .entries-area { border: 1px solid #eee; border-radius: 8px; overflow: hidden; }
+    .entries-head {
+      padding: 10px 16px; background: #f6f8fa; border-bottom: 1px solid #eee;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .entries-head span { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: .6px; }
+
+    .ep-bagno-box { background: #f0f4fa; border: 1.5px solid #d0daea; border-radius: 8px; padding: 12px 16px; margin-bottom: 18px; }
+    .ep-bagno-box .ep-lbl { font-size: 10px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .6px; }
+    .ep-bagno-box .ep-val { font-size: 20px; font-weight: 700; font-family: monospace; color: #1b2a4a; margin-top: 2px; }
+    .ep-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .ep-field  { display: flex; flex-direction: column; gap: 6px; }
+    .ep-input {
+      width: 100%; border: 1.5px solid #e8e8e8; border-radius: 8px;
+      padding: 10px 12px; font-size: 24px; font-weight: 700;
+      color: #1b2a4a; background: #fafafa; text-align: center; transition: border-color .15s;
+    }
+    .ep-input:focus { outline: none; border-color: #e67e22; background: #fff; }
+
+    .dup-existing { background: #fff4f4; border: 1.5px solid #f5c6c6; border-radius: 8px; padding: 12px 16px; margin-top: 14px; display: flex; flex-direction: column; gap: 4px; }
+    .dup-existing .dup-row { display: flex; justify-content: space-between; font-size: 13px; }
+    .dup-existing .dup-lbl { color: #aaa; }
+    .dup-existing .dup-val { font-weight: 700; color: #1b2a4a; }
+
+    .upload-preview-table { max-height: 300px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
+    .upload-stats { display: flex; gap: 16px; padding: 12px 0; font-size: 13px; }
+    .upload-stat { display: flex; align-items: center; gap: 6px; }
+    .stat-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .stat-dot-green  { background: #27ae60; }
+    .stat-dot-orange { background: #e67e22; }
+
+    .create-form { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    .user-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+    .user-item {
+      display: flex; align-items: center; gap: 12px;
+      background: #f6f8fa; border-radius: 8px; padding: 10px 14px; border: 1px solid #eee;
+    }
+    .user-item .ui-name { font-size: 14px; font-weight: 600; color: #1b2a4a; flex: 1; }
+    .user-item .ui-role { font-size: 11px; color: #aaa; }
+    .user-item .ui-badge { background: #e8f5e9; color: #2e7d32; border-radius: 20px; padding: 2px 8px; font-size: 10px; font-weight: 700; }
+    .add-user-form { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; margin-top: 12px; }
+
+    .autofill-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #e8f5e9; border: 1px solid #a5d6a7;
+      border-radius: 20px; padding: 3px 10px;
+      font-size: 11px; font-weight: 600; color: #2e7d32; margin-bottom: 14px;
+    }
+
+    /* ── Cloud info box ── */
+    .cloud-info-box {
+      background: #f0f7ff; border: 1.5px solid #bbdefb; border-radius: 10px;
+      padding: 14px 16px; margin-bottom: 16px; font-size: 13px; color: #1565c0; line-height: 1.7;
+    }
+    .cloud-info-box b { color: #0d47a1; }
+    .cloud-steps { list-style: none; counter-reset: step; }
+    .cloud-steps li { counter-increment: step; margin: 6px 0; display: flex; gap: 8px; align-items: flex-start; }
+    .cloud-steps li::before {
+      content: counter(step); background: #1b2a4a; color: #fff;
+      width: 20px; height: 20px; border-radius: 50%; display: inline-flex;
+      align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 2px;
+    }
+    .key-input { font-family: monospace; font-size: 12px; letter-spacing: .3px; overflow: hidden; text-overflow: ellipsis; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 26px; right: 26px;
+      background: #1b2a4a; color: #fff; padding: 10px 18px; border-radius: 8px;
+      font-size: 13px; font-weight: 600; box-shadow: 0 4px 16px rgba(0,0,0,.2);
+      opacity: 0; transform: translateY(8px); transition: opacity .25s, transform .25s;
+      pointer-events: none; z-index: 9999; max-width: 320px;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+
+    .uc-section-divider { border: none; border-top: 1.5px dashed #e8e8e8; margin: 18px 0; }
+
+    @media (max-width: 600px) {
+      .auth-box { padding: 32px 22px; width: 95%; }
+      .create-form, .ep-fields { grid-template-columns: 1fr; }
+      .detail-meta { grid-template-columns: 1fr 1fr; }
+      .add-user-form { grid-template-columns: 1fr; }
+      .h-acts .btn-sm span { display: none; }
+    }
+    @media print {
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      body { background: #fff !important; }
+      .modal-overlay, .header { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth" class="auth-wrap">
+  <div class="auth-box">
+    <div class="auth-brand">SF International</div>
+    <div class="auth-icon" style="font-size:36px;margin:8px 0 10px">📦</div>
+    <h1>CT ซั่วหน่อง</h1>
+    <p>เข้าสู่ระบบเพื่อใช้งาน</p>
+    <div id="cloud-status-auth" style="margin-bottom:12px"></div>
+    <form onsubmit="event.preventDefault();doAuth()" autocomplete="on">
+      <input id="auth-user" class="auth-input" type="text" placeholder="Username" maxlength="50" name="username" autocomplete="username">
+      <input id="auth-inp"  class="auth-input" type="password" placeholder="Password" maxlength="50" name="password" autocomplete="current-password">
+      <div class="auth-err" id="auth-err"></div>
+      <button type="submit" class="auth-btn auth-btn-main">เข้าสู่ระบบ</button>
+    </form>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main" style="display:none">
+  <div class="header">
+    <span class="h-logo">📦</span>
+    <span class="h-title">SF International</span>
+    <span class="h-user" id="h-username"></span>
+    <span class="h-sp"></span>
+    <div class="h-acts">
+      <span id="h-sync-badge"></span>
+      <button class="btn btn-primary" onclick="createDocument()">+ สร้างชีทใหม่</button>
+      <button class="btn btn-success" onclick="openUploadCreateModal()">📂 Upload</button>
+      <button class="btn btn-ghost btn-sm" id="btn-users" onclick="openUsersModal()" style="display:none" title="จัดการผู้ใช้งาน"><span>👥</span></button>
+      <button class="btn btn-ghost btn-sm" id="btn-site-settings" onclick="openSettingsModal()" style="display:none" title="ตั้งค่าเว็บไซต์ / Firebase"><span>⚙️</span></button>
+      <button class="btn btn-ghost btn-sm" onclick="openPwModal()" title="เปลี่ยนรหัสผ่าน"><span>🔑</span></button>
+      <button class="btn btn-ghost btn-sm" onclick="logout()" title="ออกจากระบบ"><span>ออก</span></button>
+    </div>
+  </div>
+  <div id="app"></div>
+</div>
+
+<!-- ══ Cloud Setup ══ -->
+<div id="cloud-modal" class="modal-overlay" onclick="if(event.target===this)closeCloudModal()">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div><h2>🔥 Cloud Storage — Firebase</h2>
+        <div class="mh-sub">เชื่อมต่อข้อมูลกลาง ใช้ได้ทุกเครื่อง · ข้อมูลเก่า 7 วันลบอัตโนมัติ</div>
+      </div>
+      <button class="modal-close" onclick="closeCloudModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="cloud-info-box">
+        <b>วิธีตั้งค่าครั้งแรก (ฟรี ไม่มีค่าใช้จ่าย):</b>
+        <ol class="cloud-steps" style="margin-top:10px">
+          <li>ไปที่ <a href="https://console.firebase.google.com" target="_blank" style="color:#e65100;font-weight:700">console.firebase.google.com</a> → สร้าง Project ใหม่</li>
+          <li>เลือก <b>Realtime Database</b> → สร้าง database (เลือก mode: test หรือ locked)</li>
+          <li>copy <b>Database URL</b> เช่น <code style="background:#f5f5f5;padding:1px 5px;border-radius:3px;word-break:break-all;font-size:11px">https://project-id-default-rtdb.firebaseio.com</code></li>
+          <li>ไปที่ <b>Project Settings → Service accounts → Database secrets</b> → สร้างและ copy Secret</li>
+          <li>วาง URL และ Secret ด้านล่าง แล้วกด เชื่อมต่อ 🔥</li>
+        </ol>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div>
+          <label class="field-label">Database URL</label>
+          <input id="cloud-url" class="field-input" type="text" placeholder="https://your-project-default-rtdb.firebaseio.com" autocomplete="off">
+        </div>
+        <div>
+          <label class="field-label">Database Secret</label>
+          <input id="cloud-key" class="field-input key-input" type="password" placeholder="Firebase Database Secret" autocomplete="off">
+          <div style="font-size:11px;color:#aaa;margin-top:4px">เก็บใน localStorage ของเครื่องนี้เท่านั้น · ข้อมูลพัสดุเก่ากว่า 7 วันจะถูกลบอัตโนมัติ</div>
+        </div>
+        <div class="auth-err" id="cloud-err" style="text-align:left"></div>
+        <div id="cloud-status-box"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeCloudModal()">ปิด</button>
+      <button id="btn-cloud-disconnect" class="btn btn-danger btn-sm" onclick="disconnectCloud()" style="display:none;margin-right:auto">ยกเลิกการเชื่อมต่อ</button>
+      <button class="btn btn-blue" onclick="connectCloud()" style="min-width:120px">🔥 เชื่อมต่อ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Reset admin ══ -->
+<div id="reset-confirm" class="modal-overlay" onclick="if(event.target===this)closeResetConfirm()">
+  <div class="modal-box">
+    <div class="modal-head"><h2>🔓 รีเซ็ตรหัสผ่าน Admin</h2><button class="modal-close" onclick="closeResetConfirm()">×</button></div>
+    <div class="modal-body" style="text-align:center;padding:28px 20px">
+      <div style="font-size:44px;margin-bottom:14px">⚠️</div>
+      <div style="font-size:15px;font-weight:600;color:#1b2a4a;margin-bottom:10px">รีเซ็ต Admin เป็นค่าเริ่มต้น</div>
+      <div style="font-size:13px;color:#888;line-height:1.7;margin-bottom:16px">
+        จะ<b>ลบข้อมูลผู้ใช้ทั้งหมด</b> และสร้าง admin ใหม่ด้วย<br>username: <b>admin</b> / password: <b>1234</b><br>
+        <span style="color:#27ae60">✔ ข้อมูลพัสดุและเอกสารยังคงอยู่</span>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeResetConfirm()">ยกเลิก</button>
+      <button class="btn btn-danger" onclick="confirmResetAdmin()" style="min-width:140px">🔓 รีเซ็ต Admin</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Upload+Create ══ -->
+<div id="upload-create-popup" class="modal-overlay" onclick="if(event.target===this)closeUploadCreateModal()">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div><h2>📂 สร้างชีทจากไฟล์</h2></div>
+      <button class="modal-close" onclick="closeUploadCreateModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="upload-zone" onclick="document.getElementById('uc-file-input').click()">
+        <span style="font-size:24px">📄</span>
+        <div class="upload-zone-text">
+          <div class="uz-title">เลือกไฟล์ Excel หรือ CSV</div>
+          <div class="uz-sub" id="uc-filename">รองรับ .xlsx, .xls, .csv</div>
+        </div>
+        <button class="btn btn-blue btn-sm" style="pointer-events:none">เลือกไฟล์</button>
+      </div>
+      <input type="file" id="uc-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleUCFileUpload(event)">
+      <div id="uc-file-section" style="display:none">
+        <div id="uc-col-info" style="font-size:12px;color:#2980b9;margin-bottom:8px"></div>
+        <div class="upload-stats" id="uc-upload-stats"></div>
+        <div class="upload-preview-table" style="margin-top:10px">
+          <table>
+            <thead><tr><th>#</th><th>Bag No</th><th>Shipment</th><th>Weight (Kg)</th><th>สถานะ</th></tr></thead>
+            <tbody id="uc-preview-body"></tbody>
+          </table>
+        </div>
+        <div style="font-size:11px;color:#aaa;margin-top:6px">แสดง 50 แถวแรก</div>
+      </div>
+      <hr class="uc-section-divider">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;cursor:pointer" onclick="toggleUCFlight()">
+        <div style="font-size:11px;font-weight:700;color:#e67e22;text-transform:uppercase;letter-spacing:.5px">✈ ข้อมูลไฟลท์ (ไม่บังคับ)</div>
+        <span id="uc-flight-toggle" style="font-size:12px;color:#e67e22;font-weight:700">▼ ขยาย</span>
+      </div>
+      <div id="uc-flight-section" style="display:none">
+        <div class="create-form">
+          <div><label class="field-label">Flight No</label><input id="uc-flightNo" class="field-input" type="text" placeholder="เช่น TG123" style="font-size:16px;font-weight:700"></div>
+          <div><label class="field-label">Flight Time</label><input id="uc-flightTime" class="field-input" type="text" placeholder="เช่น 08:30"></div>
+          <div><label class="field-label">Gateway</label><input id="uc-gateway" class="field-input" type="text" placeholder="เช่น BKK"></div>
+          <div><label class="field-label">Destination</label><input id="uc-destination" class="field-input" type="text" placeholder="ปลายทาง"></div>
+          <div><label class="field-label">Shift</label><input id="uc-shift" class="field-input" type="text" placeholder="A / B / C"></div>
+          <div><label class="field-label">Export Date</label><input id="uc-exportDate" class="field-input" type="date"></div>
+          <div><label class="field-label">Document Date</label><input id="uc-documentDate" class="field-input" type="date"></div>
+          <div><label class="field-label">Car Tag</label><input id="uc-carTag" class="field-input" type="text" placeholder="ทะเบียนรถ"></div>
+          <div style="grid-column:1/-1"><label class="field-label">MAWB</label><input id="uc-mawb" class="field-input" type="text" placeholder="Master Air Waybill"></div>
+          <div style="grid-column:1/-1"><label class="field-label">Remark</label><input id="uc-remark" class="field-input" type="text" placeholder="หมายเหตุ (ถ้ามี)"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeUploadCreateModal()">ยกเลิก</button>
+      <button class="btn btn-success" id="btn-uc-create" onclick="confirmUploadCreate()" style="min-width:160px">📂 สร้างชีท</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Create Blank ══ -->
+<div id="create-popup" class="modal-overlay" onclick="if(event.target===this)closeCreatePopup()">
+  <div class="modal-box">
+    <div class="modal-head"><div><h2>สร้างชีทใหม่</h2><div class="mh-sub">รหัสจะสร้างอัตโนมัติ</div></div>
+      <button class="modal-close" onclick="closeCreatePopup()">×</button></div>
+    <div class="modal-body">
+      <div id="create-autofill-badge" class="autofill-badge" style="display:none">✨ ดึงข้อมูลไฟลท์ล่าสุดมาให้อัตโนมัติ</div>
+      <div class="create-form">
+        <div><label class="field-label">Gateway</label><input id="cf-gateway" class="field-input" type="text" placeholder="เช่น BKK"></div>
+        <div><label class="field-label">Destination</label><input id="cf-destination" class="field-input" type="text" placeholder="ปลายทาง"></div>
+        <div><label class="field-label">Export Date</label><input id="cf-exportDate" class="field-input" type="date"></div>
+        <div><label class="field-label">Document Date</label><input id="cf-documentDate" class="field-input" type="date"></div>
+        <div><label class="field-label">Shift</label><input id="cf-shift" class="field-input" type="text" placeholder="A / B / C"></div>
+        <div><label class="field-label">Flight No</label><input id="cf-flightNo" class="field-input" type="text" placeholder="เช่น TG123"></div>
+        <div><label class="field-label">Flight Time</label><input id="cf-flightTime" class="field-input" type="text" placeholder="เช่น 08:30"></div>
+        <div><label class="field-label">Car Tag</label><input id="cf-carTag" class="field-input" type="text" placeholder="ทะเบียนรถ"></div>
+        <div style="grid-column:1/-1"><label class="field-label">MAWB</label><input id="cf-mawb" class="field-input" type="text"></div>
+        <div style="grid-column:1/-1"><label class="field-label">Remark</label><input id="cf-remark" class="field-input" type="text" placeholder="หมายเหตุ"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeCreatePopup()">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="confirmCreateDocument()">📄 สร้างชีท</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Detail ══ -->
+<div id="detail-popup" class="modal-overlay" onclick="if(event.target===this)closeDetailPopup()">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div><h2 id="detail-title">—</h2><div class="mh-sub" id="detail-subtitle"></div></div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="btn btn-outline btn-sm" style="font-size:15px;padding:8px 14px" title="แก้ไขเอกสาร" onclick="openEditModalCurrent()">✏️ แก้ไข</button>
+        <button class="btn btn-teal btn-sm" style="font-size:15px;padding:8px 14px" title="พิมพ์ / บันทึก PDF" onclick="printCurrent()">🖨 PDF</button>
+        <button class="btn btn-blue btn-sm" style="font-size:15px;padding:8px 14px" title="ส่งออกเป็น Excel" onclick="exportExcelCurrent()">📊 Excel</button>
+        <button class="btn btn-danger btn-sm" style="font-size:15px;padding:8px 14px" title="ลบเอกสารนี้" onclick="deleteDocumentCurrent()">🗑 ลบ</button>
+        <button class="modal-close" onclick="closeDetailPopup()" style="margin-left:4px" title="ปิด">×</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="detail-meta" id="detail-meta"></div>
+      <div class="scan-box">
+        <span style="font-size:20px">📷</span>
+        <input id="inp-bag" type="text" placeholder="ยิงบาร์โค้ดหรือพิมพ์ Bag No…" onkeydown="if(event.key==='Enter')openEntryPopup()">
+        <button class="btn btn-primary btn-sm" onclick="openEntryPopup()">▶ ถัดไป</button>
+      </div>
+      <div class="scan-hint">⌨️ กด Enter หลังยิงเลข Bag No</div>
+      <div class="entries-area">
+        <div class="entries-head">
+          <span id="entries-count-label">รายการพัสดุ</span>
+          <div class="sum-bar" id="entries-sum-bar"></div>
+        </div>
+        <div id="entries-body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Invalid Bag ══ -->
+<div id="invalid-bag-popup" class="modal-overlay" onclick="if(event.target===this)closeInvalidBagPopup()">
+  <div class="modal-box">
+    <div class="modal-head"><h2>⚠️ รูปแบบไม่ถูกต้อง</h2><button class="modal-close" onclick="closeInvalidBagPopup()">×</button></div>
+    <div class="modal-body" style="text-align:center;padding:22px 20px 18px">
+      <div style="font-size:42px;margin-bottom:10px">🚫</div>
+      <div id="invalid-bag-scanned" style="font-size:20px;font-weight:700;font-family:monospace;color:#e74c3c;margin-bottom:12px;word-break:break-all"></div>
+      <div id="invalid-bag-msg" style="font-size:14px;color:#555;line-height:1.6;margin-bottom:14px"></div>
+      <div style="font-size:12px;color:#aaa;background:#f8f8f8;border-radius:8px;padding:10px 12px;text-align:left">
+        <div style="font-weight:700;color:#888;margin-bottom:4px">รูปแบบที่รองรับ:</div>
+        <div>📦 <span style="font-family:monospace">SF</span> + ตัวเลข <b>13 หลัก</b> → <span style="font-family:monospace;color:#27ae60">SF1234567890123</span></div>
+        <div style="margin-top:4px">🔢 ตัวเลขล้วน → <span style="font-family:monospace;color:#27ae60">943276203568</span></div>
+      </div>
+    </div>
+    <div class="modal-foot" style="justify-content:center">
+      <button class="btn btn-primary" onclick="closeInvalidBagPopup()">รับทราบ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Dup ══ -->
+<div id="dup-popup" class="modal-overlay" onclick="if(event.target===this)closeDupPopup()">
+  <div class="modal-box">
+    <div class="modal-head"><h2>⚠️ เลขซ้ำ</h2><button class="modal-close" onclick="closeDupPopup()">×</button></div>
+    <div class="modal-body" style="text-align:center;padding:22px 20px 18px">
+      <div style="font-size:42px;margin-bottom:10px">🚫</div>
+      <div id="dup-bagno" style="font-size:22px;font-weight:700;font-family:monospace;color:#e74c3c;margin-bottom:6px"></div>
+      <div class="dup-existing" id="dup-existing-info"></div>
+    </div>
+    <div class="modal-foot" style="justify-content:center">
+      <button class="btn btn-primary" onclick="closeDupPopup()">รับทราบ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Entry ══ -->
+<div id="entry-popup" class="modal-overlay" onclick="if(event.target===this)closeEntryPopup(true)">
+  <div class="modal-box">
+    <div class="modal-head"><h2>CT ซั่วหน่อง</h2><button class="modal-close" onclick="closeEntryPopup(true)">×</button></div>
+    <div class="modal-body">
+      <div class="ep-bagno-box"><div class="ep-lbl">Bag No</div><div class="ep-val" id="ep-bagno-display">—</div></div>
+      <div class="ep-fields">
+        <div class="ep-field">
+          <label class="field-label">จำนวนชิ้น (Shipment)</label>
+          <input id="ep-ship" class="ep-input" type="number" value="1" min="0" step="1" onkeydown="if(event.key==='Enter')document.getElementById('ep-wt').focus()">
+        </div>
+        <div class="ep-field">
+          <label class="field-label">น้ำหนัก (Kg)</label>
+          <input id="ep-wt" class="ep-input" type="number" value="" min="0" step="0.01" placeholder="0.00" onkeydown="if(event.key==='Enter')saveEntryPopup()">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeEntryPopup(true)">ยกเลิก</button>
+      <button class="btn btn-success" onclick="saveEntryPopup()" style="min-width:110px;font-size:15px">✓ บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Delete ══ -->
+<div id="delete-popup" class="modal-overlay" onclick="if(event.target===this)closeDeletePopup()">
+  <div class="modal-box">
+    <div class="modal-head"><h2>ยืนยันการลบ</h2><button class="modal-close" onclick="closeDeletePopup()">×</button></div>
+    <div class="modal-body" style="text-align:center;padding:28px 20px">
+      <div style="font-size:44px;margin-bottom:14px">🗑️</div>
+      <div style="font-size:15px;font-weight:600;color:#1b2a4a;margin-bottom:6px">ลบชีท <span id="delete-doc-code" style="color:#e74c3c;font-family:monospace"></span> ใช่ไหม?</div>
+      <div style="font-size:13px;color:#888">ไม่สามารถกู้คืนได้</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeDeletePopup()">ยกเลิก</button>
+      <button class="btn btn-danger" onclick="confirmDeleteDocument()">🗑 ลบชีท</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Edit ══ -->
+<div id="edit-modal" class="modal-overlay" onclick="if(event.target===this)closeEditModal()">
+  <div class="modal-box">
+    <div class="modal-head"><h2 id="edit-modal-title">แก้ไขเอกสาร</h2><button class="modal-close" onclick="closeEditModal()">×</button></div>
+    <div class="modal-body"><div class="meta-grid" id="edit-fields"></div></div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeEditModal()">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveEditModal()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PW ══ -->
+<div id="pw-modal" class="modal-overlay" onclick="if(event.target===this)closePwModal()">
+  <div class="modal-box">
+    <div class="modal-head"><h2>เปลี่ยนรหัสผ่าน</h2><button class="modal-close" onclick="closePwModal()">×</button></div>
+    <div class="modal-body">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div><label class="field-label">รหัสปัจจุบัน</label><input id="pw-old" type="password" class="field-input" placeholder="รหัสเดิม"></div>
+        <div><label class="field-label">รหัสใหม่</label><input id="pw-new" type="password" class="field-input" placeholder="รหัสใหม่"></div>
+        <div><label class="field-label">ยืนยันรหัสใหม่</label><input id="pw-confirm" type="password" class="field-input" placeholder="ยืนยันรหัสใหม่" onkeydown="if(event.key==='Enter')savePw()"></div>
+        <div class="auth-err" id="pw-err" style="text-align:left"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closePwModal()">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="savePw()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Users ══ -->
+<div id="users-modal" class="modal-overlay" onclick="if(event.target===this)closeUsersModal()">
+  <div class="modal-box">
+    <div class="modal-head"><h2>👥 จัดการผู้ใช้</h2><button class="modal-close" onclick="closeUsersModal()">×</button></div>
+    <div class="modal-body">
+      <div id="user-list" class="user-list"></div>
+      <div style="border-top:1px solid #eee;padding-top:16px;margin-top:4px">
+        <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">เพิ่มผู้ใช้ใหม่</div>
+        <div class="add-user-form">
+          <div><label class="field-label">Username</label><input id="new-username" class="field-input" type="text" placeholder="ชื่อผู้ใช้"></div>
+          <div><label class="field-label">Password</label><input id="new-password" class="field-input" type="password" placeholder="รหัสผ่าน"></div>
+          <button class="btn btn-success" onclick="addUser()" style="margin-top:18px">+ เพิ่ม</button>
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="new-isadmin"> ให้สิทธิ์ Admin
+        </label>
+        <div class="auth-err" id="add-user-err" style="text-align:left;margin-top:6px"></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-primary" onclick="closeUsersModal()">ปิด</button></div>
+  </div>
+</div>
+
+
+<!-- ══ Site Settings (admin) ══ -->
+<div id="settings-modal" class="modal-overlay" onclick="if(event.target===this)closeSettingsModal()">
+  <div class="modal-box" style="max-width:520px">
+    <div class="modal-head">
+      <div><h2>⚙️ ตั้งค่าเว็บไซต์</h2><div class="mh-sub">สำหรับ Admin เท่านั้น</div></div>
+      <button class="modal-close" onclick="closeSettingsModal()">×</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:18px">
+
+      <!-- พื้นหลัง -->
+      <div>
+        <label class="field-label">URL รูปพื้นหลัง (หน้า Login &amp; หน้าหลัก)</label>
+        <input id="set-bg-url" class="field-input" type="text" placeholder="https://example.com/background.jpg"
+          oninput="previewBg(this.value)" autocomplete="off">
+        <div style="font-size:11px;color:#aaa;margin-top:4px">วางลิงก์รูปภาพ แล้วดูตัวอย่างด้านล่าง · ปล่อยว่างเพื่อใช้สีพื้นหลังเดิม</div>
+      </div>
+      <div>
+        <label class="field-label">ตัวอย่างพื้นหลัง</label>
+        <div class="settings-preview" id="settings-preview-box">
+          <div class="settings-preview-inner" id="settings-preview-inner">ตัวอย่างพื้นหลัง</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-danger btn-sm" onclick="clearBg()">🗑 ลบรูปพื้นหลัง</button>
+        <button class="btn btn-primary btn-sm" onclick="saveBg()">💾 บันทึกพื้นหลัง</button>
+      </div>
+
+      <!-- ── Firebase ── -->
+      <hr style="border:none;border-top:1.5px dashed #e8e8e8;margin:0">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#1b2a4a;margin-bottom:10px">🔥 Cloud Storage — Firebase</div>
+        <div id="set-fb-status" style="margin-bottom:10px"></div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div>
+            <label class="field-label">Database URL</label>
+            <input id="set-fb-url" class="field-input" type="text"
+              placeholder="https://your-project-default-rtdb.firebaseio.com" autocomplete="off">
+          </div>
+          <div>
+            <label class="field-label">Database Secret</label>
+            <input id="set-fb-key" class="field-input key-input" type="password"
+              placeholder="Firebase Database Secret" autocomplete="off">
+            <div style="font-size:11px;color:#aaa;margin-top:4px">เก็บใน localStorage ของเครื่องนี้เท่านั้น · ข้อมูลเก่ากว่า 7 วันจะถูกลบอัตโนมัติ</div>
+          </div>
+          <div class="auth-err" id="set-fb-err" style="text-align:left"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button id="set-fb-disconnect" class="btn btn-danger btn-sm" onclick="adminDisconnectCloud()" style="display:none">ยกเลิกการเชื่อมต่อ</button>
+            <button class="btn btn-blue btn-sm" onclick="adminConnectCloud()" style="min-width:140px">🔥 เชื่อมต่อ Firebase</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeSettingsModal()">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+// ══════════════════════════════════════════════
+//  CLOUD — Firebase Realtime Database
+// ══════════════════════════════════════════════
+const LS_FBURL  = 'firebase_url_v1';
+const LS_FBKEY  = 'firebase_key_v1';
+const LS_CACHE  = 'parcel_cache_v2';
+const TTL_MS    = 7 * 24 * 60 * 60 * 1000; // 7 วัน
+
+let cloudUrl = localStorage.getItem(LS_FBURL) || '';
+let cloudKey = localStorage.getItem(LS_FBKEY) || '';
+let syncTimer = null;
+let syncPending = false;
+
+function hasCloud() { return !!(cloudUrl && cloudKey); }
+function fbEndpoint() { return cloudUrl.replace(/\/+$/, '') + '/sfintl.json?auth=' + cloudKey; }
+
+function setSyncBadge(state, text) {
+  const el = document.getElementById('h-sync-badge');
+  if (!el) return;
+  if (!hasCloud()) { el.innerHTML = ''; return; }
+  const cls = { ok:'sync-ok', saving:'sync-saving', error:'sync-error' }[state] || 'sync-ok';
+  el.innerHTML = `<span class="sync-badge ${cls}"><span class="sync-dot"></span>${text}</span>`;
+}
+
+async function cloudGet() {
+  if (!hasCloud()) return null;
+  try {
+    const r = await fetch(fbEndpoint());
+    if (!r.ok) throw new Error('status ' + r.status);
+    return await r.json();
+  } catch(e) {
+    console.warn('firebase get error', e);
+    return null;
+  }
+}
+
+async function cloudPut(data) {
+  if (!hasCloud()) return false;
+  try {
+    setSyncBadge('saving', 'กำลังบันทึก…');
+    const r = await fetch(fbEndpoint(), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!r.ok) throw new Error('status ' + r.status);
+    setSyncBadge('ok', 'ซิงค์แล้ว');
+    localStorage.setItem(LS_CACHE, JSON.stringify(data));
+    return true;
+  } catch(e) {
+    setSyncBadge('error', 'ซิงค์ไม่ได้ ⚠️');
+    return false;
+  }
+}
+
+function scheduleSave() {
+  syncPending = true;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(async () => {
+    if (!syncPending) return;
+    syncPending = false;
+    const data = { users: loadUsers(), documents: loadDocs(), bgUrl: localStorage.getItem(LS_BG) || '' };
+    if (hasCloud()) {
+      await cloudPut(data);
+    } else {
+      localStorage.setItem(LS_CACHE, JSON.stringify(data));
+    }
+  }, 800);
+}
+
+// ── Cloud Modal ──
+function openCloudModal() {
+  document.getElementById('cloud-url').value = cloudUrl;
+  document.getElementById('cloud-key').value = cloudKey ? '••••••••' : '';
+  document.getElementById('cloud-err').textContent = '';
+  const discBtn = document.getElementById('btn-cloud-disconnect');
+  if (cloudUrl && cloudKey) {
+    discBtn.style.display = '';
+    document.getElementById('cloud-status-box').innerHTML =
+      '<div style="background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:10px 14px;font-size:13px;color:#2e7d32;font-weight:600">✅ เชื่อมต่อ Firebase แล้ว — ข้อมูลซิงค์อัตโนมัติ · ข้อมูลเก่า 7 วันลบอัตโนมัติ</div>';
+  } else {
+    discBtn.style.display = 'none';
+    document.getElementById('cloud-status-box').innerHTML = '';
+  }
+  document.getElementById('cloud-modal').classList.add('open');
+}
+function closeCloudModal() { document.getElementById('cloud-modal').classList.remove('open'); }
+
+async function connectCloud() {
+  const urlEl = document.getElementById('cloud-url');
+  const keyEl = document.getElementById('cloud-key');
+  const err   = document.getElementById('cloud-err');
+  const url   = (urlEl.value || '').trim();
+  let key     = (keyEl.value || '').trim();
+  if (key === '••••••••') key = cloudKey;
+  if (!url) { err.textContent = 'กรุณาใส่ Database URL'; return; }
+  if (!key) { err.textContent = 'กรุณาใส่ Database Secret'; return; }
+
+  err.textContent = '';
+  const btn = document.querySelector('#cloud-modal .btn-blue');
+  btn.textContent = '⏳ กำลังเชื่อมต่อ…'; btn.disabled = true;
+
+  try {
+    const testEndpoint = url.replace(/\/+$/, '') + '/sfintl.json?auth=' + key;
+    const initData = { users: loadUsers(), documents: loadDocs() };
+    const r = await fetch(testEndpoint, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(initData)
+    });
+    if (!r.ok) {
+      const t = await r.text();
+      throw new Error(t);
+    }
+
+    cloudUrl = url;
+    cloudKey = key;
+    localStorage.setItem(LS_FBURL, cloudUrl);
+    localStorage.setItem(LS_FBKEY, cloudKey);
+
+    document.getElementById('btn-cloud-disconnect').style.display = '';
+    document.getElementById('cloud-status-box').innerHTML =
+      '<div style="background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:10px 14px;font-size:13px;color:#2e7d32;font-weight:600">✅ เชื่อมต่อ Firebase สำเร็จ! ข้อมูลซิงค์อัตโนมัติทุกเครื่อง · ข้อมูลเก่า 7 วันลบอัตโนมัติ</div>';
+    setSyncBadge('ok', 'ซิงค์แล้ว');
+    updateCloudAuthBadge();
+    toast('เชื่อมต่อ Firebase สำเร็จ 🔥');
+  } catch(e) {
+    err.textContent = 'เชื่อมต่อไม่ได้: ' + (e.message || String(e));
+  } finally {
+    if (btn) { btn.textContent = '🔥 เชื่อมต่อ'; btn.disabled = false; }
+  }
+}
+
+function disconnectCloud() {
+  if (!confirm('ยกเลิกการเชื่อมต่อ Firebase ใช่ไหม?\nข้อมูลในเครื่องนี้จะยังอยู่ แต่จะไม่ซิงค์แล้ว')) return;
+  cloudUrl = ''; cloudKey = '';
+  localStorage.removeItem(LS_FBURL); localStorage.removeItem(LS_FBKEY);
+  closeCloudModal();
+  setSyncBadge('', '');
+  updateCloudAuthBadge();
+  toast('ยกเลิกการเชื่อมต่อ Firebase แล้ว');
+}
+
+function updateCloudAuthBadge() {
+  const el = document.getElementById('cloud-status-auth');
+  if (!el) return;
+  el.innerHTML = hasCloud()
+    ? '<span class="sync-badge sync-ok"><span class="sync-dot"></span>Firebase เชื่อมต่อแล้ว</span>'
+    : '<span class="sync-badge" style="background:#fafafa;border:1px solid #eee;color:#aaa"><span class="sync-dot" style="background:#ccc"></span>ยังไม่ได้เชื่อมต่อ Cloud</span>';
+}
+
+// ══════════════════════════════════════════════
+//  STORAGE (localStorage + cloud)
+// ══════════════════════════════════════════════
+const STORE_USERS   = 'parcel_users_v1';
+const STORE_DOCS    = 'parcel_docs_v1';
+const STORE_SESSION = 'parcel_session_v1';
+
+function safeJSON(str, fb) { try { const v=JSON.parse(str); return v??fb; } catch { return fb; } }
+
+function loadUsers()   { return safeJSON(localStorage.getItem(STORE_USERS), []); }
+function saveUsers(u)  { localStorage.setItem(STORE_USERS, JSON.stringify(u)); scheduleSave(); }
+function loadDocs()    { return safeJSON(localStorage.getItem(STORE_DOCS),  []); }
+function saveDocs(d)   { localStorage.setItem(STORE_DOCS,  JSON.stringify(d)); scheduleSave(); }
+function loadSession() { return safeJSON(sessionStorage.getItem(STORE_SESSION), null); }
+function saveSession(u){ try { sessionStorage.setItem(STORE_SESSION, JSON.stringify(u)); } catch {} }
+function clearSession(){ try { sessionStorage.removeItem(STORE_SESSION); } catch {} }
+
+function applyCloudData(data) {
+  if (!data) return;
+  if (Array.isArray(data.users) && data.users.length > 0) {
+    localStorage.setItem(STORE_USERS, JSON.stringify(data.users));
+  }
+  if (Array.isArray(data.documents)) {
+    // ลบเอกสารที่เก่ากว่า 7 วันออกอัตโนมัติ
+    const cutoff = Date.now() - TTL_MS;
+    const fresh = data.documents.filter(d => !d.createdAt || d.createdAt > cutoff);
+    if (fresh.length < data.documents.length) {
+      const removed = data.documents.length - fresh.length;
+      console.log('Auto-purged ' + removed + ' document(s) older than 7 days');
+      scheduleSave(); // will save back the filtered list
+    }
+    localStorage.setItem(STORE_DOCS, JSON.stringify(fresh));
+  }
+  // sync background image URL from cloud
+  if (typeof data.bgUrl === 'string') {
+    if (data.bgUrl) {
+      localStorage.setItem(LS_BG, data.bgUrl);
+    } else {
+      localStorage.removeItem(LS_BG);
+    }
+    applyBg(data.bgUrl);
+  }
+}
+
+function initStorage() {
+  const users = loadUsers();
+  if (users.length === 0) {
+    localStorage.setItem(STORE_USERS, JSON.stringify([{id:1, username:'admin', password:'1234', isAdmin:true}]));
+  }
+}
+
+// ══════════════════════════════════════════════
+//  RESET ADMIN
+// ══════════════════════════════════════════════
+function openResetConfirm()  { document.getElementById('reset-confirm').classList.add('open'); }
+function closeResetConfirm() { document.getElementById('reset-confirm').classList.remove('open'); }
+function confirmResetAdmin() {
+  const users = [{id:1, username:'admin', password:'1234', isAdmin:true}];
+  localStorage.setItem(STORE_USERS, JSON.stringify(users));
+  clearSession();
+  closeResetConfirm();
+  document.getElementById('auth-user').value = 'admin';
+  document.getElementById('auth-inp').value  = '1234';
+  document.getElementById('auth-err').textContent = '';
+  scheduleSave();
+  toast('รีเซ็ต Admin สำเร็จ — เข้าสู่ระบบด้วย admin / 1234');
+}
+
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+let documents    = [];
+let currentUser  = null;
+let currentDocId = null;
+let editingDocId = null;
+let entryBagNo   = '';
+let deleteTargetId = null;
+let uploadData   = [], uploadColumns = [];
+let ucBagIdx=-1, ucShipIdx=-1, ucWtIdx=-1, ucFileReady=false;
+
+function getDocById(id) { return documents.find(d => d.id === id); }
+function docTotals(doc) {
+  let s=0, w=0;
+  (doc.entries||[]).forEach(e => { s += Number(e.shipment)||0; w += Number(e.weight)||0; });
+  return { shipment: s, weight: w };
+}
+function nextId(arr) { return (!arr||arr.length===0) ? 1 : Math.max(...arr.map(x=>x.id||0))+1; }
+
+// ══════════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════════
+async function doAuth() {
+  const username = (document.getElementById('auth-user').value||'').trim();
+  const password = document.getElementById('auth-inp').value||'';
+  if (!username) { showAuthErr('กรุณาใส่ Username'); return; }
+  if (!password) { showAuthErr('กรุณาใส่ Password'); return; }
+
+  const btn = document.querySelector('.auth-btn-main');
+  btn.textContent = '⏳ กำลังโหลด…'; btn.disabled = true;
+
+  // Pull latest data from cloud first
+  if (hasCloud()) {
+    const data = await cloudGet();
+    if (data) applyCloudData(data);
+  }
+
+  btn.textContent = 'เข้าสู่ระบบ'; btn.disabled = false;
+
+  const users = loadUsers();
+  const user  = users.find(u => u.username === username && u.password === password);
+  if (!user) { showAuthErr('username หรือ password ไม่ถูกต้อง'); document.getElementById('auth-inp').value=''; return; }
+
+  currentUser = { id:user.id, username:user.username, isAdmin:!!user.isAdmin };
+  saveSession(currentUser);
+  documents = loadDocs();
+  enterMain();
+}
+
+function showAuthErr(m) { document.getElementById('auth-err').textContent = m; }
+
+function enterMain() {
+  document.getElementById('auth').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+  document.getElementById('h-username').textContent = '\uD83D\uDC64 ' + currentUser.username;
+  document.getElementById('btn-users').style.display = currentUser.isAdmin ? '' : 'none';
+  document.getElementById('btn-site-settings').style.display = currentUser.isAdmin ? '' : 'none';
+  if (hasCloud()) setSyncBadge('ok', 'Cloud เชื่อมต่อ');
+  renderList();
+}
+
+function logout() {
+  clearSession(); currentUser=null; documents=[]; currentDocId=null;
+  document.getElementById('main').style.display = 'none';
+  document.getElementById('auth').style.display = 'flex';
+  document.getElementById('auth-user').value = '';
+  document.getElementById('auth-inp').value  = '';
+  document.getElementById('auth-err').textContent = '';
+  ['create-popup','detail-popup','entry-popup','dup-popup','delete-popup',
+   'edit-modal','pw-modal','users-modal','upload-create-popup','reset-confirm','cloud-modal']
+    .forEach(id => document.getElementById(id).classList.remove('open'));
+}
+
+async function tryAutoLogin() {
+  updateCloudAuthBadge();
+  const session = loadSession();
+  if (!session) { setTimeout(() => document.getElementById('auth-user').focus(), 50); return; }
+
+  // Pull cloud data silently
+  if (hasCloud()) {
+    const data = await cloudGet();
+    if (data) applyCloudData(data);
+  }
+
+  const users = loadUsers();
+  const user  = users.find(u => u.id === session.id);
+  if (!user) { clearSession(); setTimeout(() => document.getElementById('auth-user').focus(), 50); return; }
+  currentUser = { id:user.id, username:user.username, isAdmin:!!user.isAdmin };
+  documents   = loadDocs();
+  enterMain();
+}
+
+// ── Change Password ──
+function openPwModal() {
+  ['pw-old','pw-new','pw-confirm'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('pw-err').textContent='';
+  document.getElementById('pw-modal').classList.add('open');
+  setTimeout(() => document.getElementById('pw-old').focus(), 100);
+}
+function closePwModal() { document.getElementById('pw-modal').classList.remove('open'); }
+function savePw() {
+  const oldPw=document.getElementById('pw-old').value, newPw=document.getElementById('pw-new').value, confPw=document.getElementById('pw-confirm').value;
+  const err=document.getElementById('pw-err');
+  if (!oldPw)  { err.textContent='กรุณากรอกรหัสปัจจุบัน'; return; }
+  if (!newPw)  { err.textContent='กรุณากรอกรหัสใหม่'; return; }
+  if (newPw!==confPw) { err.textContent='รหัสใหม่ไม่ตรงกัน'; return; }
+  const users=loadUsers(), idx=users.findIndex(u=>u.id===currentUser.id);
+  if (idx===-1||users[idx].password!==oldPw) { err.textContent='รหัสปัจจุบันไม่ถูกต้อง'; return; }
+  users[idx].password=newPw; saveUsers(users); closePwModal(); toast('เปลี่ยนรหัสผ่านแล้ว');
+}
+
+// ══════════════════════════════════════════════
+//  USERS
+// ══════════════════════════════════════════════
+function openUsersModal() {
+  document.getElementById('add-user-err').textContent=''; document.getElementById('new-username').value='';
+  document.getElementById('new-password').value=''; document.getElementById('new-isadmin').checked=false;
+  document.getElementById('users-modal').classList.add('open'); refreshUserList();
+}
+function closeUsersModal() { document.getElementById('users-modal').classList.remove('open'); }
+function refreshUserList() {
+  const users=loadUsers();
+  document.getElementById('user-list').innerHTML = users.map(u => `
+    <div class="user-item">
+      <div><div class="ui-name">${esc(u.username)}</div><div class="ui-role">${u.isAdmin?'Admin':'User'}</div></div>
+      ${u.isAdmin?'<span class="ui-badge">ADMIN</span>':''}
+      <div style="margin-left:auto">
+        ${u.id!==currentUser.id
+          ? `<button class="btn btn-danger btn-xs" onclick="deleteUser(${u.id})">ลบ</button>`
+          : '<span style="font-size:11px;color:#bbb">(ตัวเอง)</span>'}
+      </div>
+    </div>`).join('');
+}
+function addUser() {
+  const username=(document.getElementById('new-username').value||'').trim();
+  const password=document.getElementById('new-password').value||'';
+  const isAdmin=document.getElementById('new-isadmin').checked;
+  const errEl=document.getElementById('add-user-err');
+  if (!username) { errEl.textContent='กรุณาใส่ Username'; return; }
+  if (!password) { errEl.textContent='กรุณาใส่ Password'; return; }
+  const users=loadUsers();
+  if (users.find(u=>u.username===username)) { errEl.textContent='Username นี้มีอยู่แล้ว'; return; }
+  users.push({id:nextId(users),username,password,isAdmin});
+  saveUsers(users); errEl.textContent='';
+  document.getElementById('new-username').value=''; document.getElementById('new-password').value='';
+  document.getElementById('new-isadmin').checked=false; refreshUserList(); toast('เพิ่มผู้ใช้ '+username+' แล้ว');
+}
+function deleteUser(id) {
+  if (!confirm('ยืนยันลบผู้ใช้นี้?')) return;
+  saveUsers(loadUsers().filter(u=>u.id!==id)); refreshUserList(); toast('ลบผู้ใช้แล้ว');
+}
+
+// ══════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════
+function today() { return new Date().toISOString().slice(0,10); }
+function toast(msg) {
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),2400);
+}
+function esc(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escXml(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&apos;').replace(/"/g,'&quot;'); }
+function genDocCode() {
+  const t=today().replace(/-/g,'');
+  const n=documents.filter(d=>d.docCode&&d.docCode.startsWith('P'+t)).length+1;
+  return 'P'+t+'-'+String(n).padStart(3,'0');
+}
+function getLastFlight() {
+  if (!documents.length) return null;
+  const l=documents[0];
+  return {gateway:l.gateway,destination:l.destination,shift:l.shift,flightNo:l.flightNo,flightTime:l.flightTime,carTag:l.carTag,mawb:l.mawb};
+}
+
+// ══════════════════════════════════════════════
+//  CREATE
+// ══════════════════════════════════════════════
+function createDocument() {
+  const last=getLastFlight(), badge=document.getElementById('create-autofill-badge');
+  const fields=['gateway','destination','shift','flightNo','flightTime','carTag','mawb'];
+  if (last) { fields.forEach(f=>{const el=document.getElementById('cf-'+f);if(el)el.value=last[f]||'';}); badge.style.display='inline-flex'; }
+  else      { fields.forEach(f=>{const el=document.getElementById('cf-'+f);if(el)el.value='';}); badge.style.display='none'; }
+  const t=today();
+  document.getElementById('cf-exportDate').value=t; document.getElementById('cf-documentDate').value=t;
+  document.getElementById('create-popup').classList.add('open');
+  setTimeout(()=>document.getElementById('cf-gateway').focus(),100);
+}
+function closeCreatePopup() { document.getElementById('create-popup').classList.remove('open'); }
+function confirmCreateDocument() {
+  const g=id=>document.getElementById(id).value.trim(), gd=id=>document.getElementById(id).value;
+  const doc={id:nextId(documents),docCode:genDocCode(),gateway:g('cf-gateway'),exportDate:gd('cf-exportDate'),
+    shift:g('cf-shift'),flightNo:g('cf-flightNo'),flightTime:g('cf-flightTime'),destination:g('cf-destination'),
+    documentDate:gd('cf-documentDate'),carTag:g('cf-carTag'),mawb:g('cf-mawb'),remark:g('cf-remark'),createdAt:Date.now(),entries:[]};
+  documents.unshift(doc); saveDocs(documents); closeCreatePopup(); renderList(); openDetailPopup(doc.id); toast('สร้างชีท '+doc.docCode);
+}
+
+// ══════════════════════════════════════════════
+//  DETAIL
+// ══════════════════════════════════════════════
+function openDetailPopup(docId) {
+  const doc=getDocById(docId); if (!doc) return;
+  currentDocId=docId; refreshDetailPopup(doc);
+  document.getElementById('detail-popup').classList.add('open');
+  setTimeout(()=>document.getElementById('inp-bag').focus(),120);
+}
+function closeDetailPopup() { document.getElementById('detail-popup').classList.remove('open'); currentDocId=null; }
+function refreshDetailPopup(doc) {
+  if (!doc) return;
+  const t=docTotals(doc);
+  document.getElementById('detail-title').textContent=doc.gateway||doc.docCode;
+  const fl=[doc.flightNo?'\u2708 '+doc.flightNo:'',doc.destination].filter(Boolean).join(' \u2192 ');
+  const ex=[doc.shift?'Shift '+doc.shift:'',doc.flightTime||'',doc.docCode].filter(Boolean).join(' \u00B7 ');
+  document.getElementById('detail-subtitle').textContent=[fl,ex].filter(Boolean).join('  |  ');
+  const mf=[['Doc Code',doc.docCode],['Gateway',doc.gateway],['Export Date',doc.exportDate],
+    ['Shift',doc.shift],['Flight No',doc.flightNo],['Flight Time',doc.flightTime],
+    ['Destination',doc.destination],['Document Date',doc.documentDate],['Car Tag',doc.carTag],['MAWB',doc.mawb]
+  ].filter(([,v])=>v);
+  document.getElementById('detail-meta').innerHTML=mf.map(([l,v])=>`<div class="dm-item"><div class="dm-label">${l}</div><div class="dm-value">${esc(v)}</div></div>`).join('');
+  document.getElementById('entries-sum-bar').innerHTML=
+    `<span>Bag: <strong>${(doc.entries||[]).length}</strong></span><span>Shipment: <strong>${t.shipment}</strong></span><span>Weight: <strong>${t.weight.toFixed(2)} Kg</strong></span>`;
+  const entries=doc.entries||[];
+  document.getElementById('entries-body').innerHTML=entries.length===0
+    ? '<div style="text-align:center;padding:28px;color:#bbb;font-size:13.5px">ยังไม่มีรายการ — ยิงเลข Bag No เพื่อเริ่มบันทึก</div>'
+    : `<div class="tbl-wrap"><table>
+        <thead><tr><th style="width:36px">#</th><th>Bag No</th><th style="width:110px">Shipment</th><th style="width:120px">Weight (Kg)</th><th style="width:50px"></th></tr></thead>
+        <tbody>${entries.map((e,i)=>`<tr><td style="color:#ccc;font-size:11px">${i+1}</td><td class="mono">${esc(e.bagNo)}</td><td class="td-num">${e.shipment}</td><td class="td-num">${Number(e.weight).toFixed(2)}</td><td><button class="btn-del-row" onclick="deleteEntry(${doc.id},${e.id})">ลบ</button></td></tr>`).join('')}</tbody>
+        <tfoot><tr><td colspan="2" style="text-align:right;color:#888;font-size:11.5px">รวม</td><td class="td-num">${t.shipment}</td><td class="td-num">${t.weight.toFixed(2)}</td><td></td></tr></tfoot>
+      </table></div>`;
+  document.getElementById('inp-bag').value='';
+}
+function openEditModalCurrent()  { if(currentDocId) openEditModal(currentDocId); }
+function printCurrent()          { if(currentDocId) printDocument(currentDocId); }
+function exportExcelCurrent()    { if(currentDocId) exportExcel(currentDocId); }
+function deleteDocumentCurrent() { if(currentDocId) deleteDocument(currentDocId); }
+
+// ══════════════════════════════════════════════
+//  DELETE
+// ══════════════════════════════════════════════
+function deleteDocument(id) {
+  const doc=getDocById(id); if (!doc) return;
+  deleteTargetId=id; document.getElementById('delete-doc-code').textContent=doc.docCode;
+  document.getElementById('delete-popup').classList.add('open');
+}
+function closeDeletePopup() { document.getElementById('delete-popup').classList.remove('open'); deleteTargetId=null; }
+function confirmDeleteDocument() {
+  if (!deleteTargetId) return;
+  documents=documents.filter(d=>d.id!==deleteTargetId); saveDocs(documents);
+  closeDeletePopup(); closeDetailPopup(); renderList(); toast('ลบแล้ว');
+}
+
+// ══════════════════════════════════════════════
+//  EDIT
+// ══════════════════════════════════════════════
+const FIELDS=[['Gateway','gateway','text'],['Export Date','exportDate','date'],['Destination','destination','text'],
+  ['Shift','shift','text'],['Flight No','flightNo','text'],['Flight Time','flightTime','text'],
+  ['Document Date','documentDate','date'],['Car Tag','carTag','text'],['MAWB','mawb','text'],['Remark','remark','text']];
+function openEditModal(docId) {
+  const doc=getDocById(docId); if (!doc) return;
+  editingDocId=docId; document.getElementById('edit-modal-title').textContent='แก้ไข '+doc.docCode;
+  document.getElementById('edit-fields').innerHTML=FIELDS.map(([label,field,type])=>`
+    <div><label class="field-label">${label}</label>
+    <input class="field-input" type="${type}" id="ef-${field}" value="${esc(doc[field]??'')}" placeholder="${label}"></div>`).join('');
+  document.getElementById('edit-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('ef-gateway')?.focus(),100);
+}
+function closeEditModal() { document.getElementById('edit-modal').classList.remove('open'); editingDocId=null; }
+function saveEditModal() {
+  if (!editingDocId) return;
+  const idx=documents.findIndex(d=>d.id===editingDocId); if (idx===-1) return;
+  FIELDS.forEach(([,field])=>{ const el=document.getElementById('ef-'+field); if(el) documents[idx][field]=el.value; });
+  saveDocs(documents); closeEditModal(); renderList();
+  if (currentDocId===editingDocId) refreshDetailPopup(getDocById(editingDocId));
+  toast('บันทึกแล้ว');
+}
+
+// ══════════════════════════════════════════════
+//  ENTRY
+// ══════════════════════════════════════════════
+function validateBagNo(b) {
+  if (!b) return null;
+  if (/^SF\d{13}$/.test(b)) return null;
+  if (/^\d+$/.test(b)) return null;
+  if (b.toUpperCase().startsWith('SF')) {
+    const rest=b.slice(2);
+    if (/^\d+$/.test(rest)) return 'SF \u0e15\u0e49\u0e2d\u0e07\u0e15\u0e32\u0e21\u0e14\u0e49\u0e27\u0e22\u0e15\u0e31\u0e27\u0e40\u0e25\u0e02 <b>13 \u0e2b\u0e25\u0e31\u0e01\u0e1e\u0e2d\u0e14\u0e35</b> (\u0e22\u0e34\u0e07\u0e21\u0e32 '+rest.length+' \u0e2b\u0e25\u0e31\u0e01)';
+    return '\u0e2b\u0e25\u0e31\u0e07 SF \u0e15\u0e49\u0e2d\u0e07\u0e40\u0e1b\u0e47\u0e19\u0e15\u0e31\u0e27\u0e40\u0e25\u0e02\u0e40\u0e17\u0e48\u0e32\u0e19\u0e31\u0e49\u0e19';
+  }
+  return '\u0e44\u0e21\u0e48\u0e23\u0e2d\u0e07\u0e23\u0e31\u0e1a\u0e23\u0e39\u0e1b\u0e41\u0e1a\u0e1a\u0e19\u0e35\u0e49 \u0e01\u0e23\u0e38\u0e13\u0e32\u0e22\u0e34\u0e07 <b>SF+13\u0e2b\u0e25\u0e31\u0e01</b> \u0e2b\u0e23\u0e37\u0e2d\u0e15\u0e31\u0e27\u0e40\u0e25\u0e02\u0e25\u0e49\u0e27\u0e19';
+}
+function closeInvalidBagPopup() {
+  document.getElementById('invalid-bag-popup').classList.remove('open');
+  const inp=document.getElementById('inp-bag'); if(inp){inp.value='';inp.focus();}
+}
+function openEntryPopup() {
+  const bagNo=(document.getElementById('inp-bag').value||'').trim();
+  if (!bagNo) { document.getElementById('inp-bag').focus(); return; }
+  const errMsg=validateBagNo(bagNo);
+  if (errMsg) {
+    document.getElementById('invalid-bag-scanned').textContent=bagNo;
+    document.getElementById('invalid-bag-msg').innerHTML=errMsg;
+    document.getElementById('invalid-bag-popup').classList.add('open'); return;
+  }
+  const doc=getDocById(currentDocId);
+  if (doc) {
+    const dup=(doc.entries||[]).find(e=>e.bagNo===bagNo);
+    if (dup) {
+      document.getElementById('dup-bagno').textContent=bagNo;
+      document.getElementById('dup-existing-info').innerHTML=
+        `<div class="dup-row"><span class="dup-lbl">Shipment</span><span class="dup-val">${dup.shipment}</span></div>
+         <div class="dup-row"><span class="dup-lbl">Weight (Kg)</span><span class="dup-val">${Number(dup.weight).toFixed(2)}</span></div>`;
+      document.getElementById('dup-popup').classList.add('open'); return;
+    }
+  }
+  entryBagNo=bagNo; document.getElementById('ep-bagno-display').textContent=bagNo;
+  document.getElementById('ep-ship').value='1'; document.getElementById('ep-wt').value='';
+  document.getElementById('entry-popup').classList.add('open');
+  setTimeout(()=>document.getElementById('ep-ship').select(),80);
+}
+function closeDupPopup() {
+  document.getElementById('dup-popup').classList.remove('open');
+  const inp=document.getElementById('inp-bag'); if(inp){inp.value='';inp.focus();}
+}
+function closeEntryPopup(cancelled) {
+  document.getElementById('entry-popup').classList.remove('open'); entryBagNo='';
+  if (cancelled) { const inp=document.getElementById('inp-bag'); if(inp){inp.value='';inp.focus();} }
+}
+function saveEntryPopup() {
+  const doc=getDocById(currentDocId); if (!doc) return;
+  const shipment=parseFloat(document.getElementById('ep-ship').value)||1;
+  const weight=parseFloat(document.getElementById('ep-wt').value)||0;
+  const entry={id:nextId(doc.entries||[]),bagNo:entryBagNo,shipment,weight};
+  if (!doc.entries) doc.entries=[];
+  doc.entries.push(entry); saveDocs(documents); refreshDetailPopup(doc); renderList();
+  toast('บันทึก '+entryBagNo+' แล้ว'); closeEntryPopup(false);
+  const inp=document.getElementById('inp-bag'); if(inp){inp.value='';inp.focus();}
+}
+function deleteEntry(docId,entryId) {
+  const doc=getDocById(docId); if (!doc) return;
+  doc.entries=(doc.entries||[]).filter(e=>e.id!==entryId);
+  saveDocs(documents); refreshDetailPopup(doc); renderList();
+}
+
+// ══════════════════════════════════════════════
+//  EXPORT EXCEL
+// ══════════════════════════════════════════════
+function exportExcel(docId) {
+  const doc=getDocById(docId); if (!doc) return;
+  const t=docTotals(doc);
+  const H=['Doc Code','Gateway','Export Date','Shift','Flight No','Flight Time','Destination','Document Date','Car Tag','MAWB','Remark','Bag No','Shipment','Weight (Kg)'];
+  const cell=(v,type,sid)=>`<Cell${sid?` ss:StyleID="${sid}"`:''}><Data ss:Type="${type||'String'}">${escXml(v)}</Data></Cell>`;
+  const row=cells=>'<Row>'+cells.join('')+'</Row>';
+  const meta=[doc.docCode,doc.gateway,doc.exportDate,doc.shift,doc.flightNo,doc.flightTime,doc.destination,doc.documentDate,doc.carTag,doc.mawb,doc.remark||''];
+  const entries=doc.entries||[];
+  const dataRows=entries.length>0
+    ? entries.map(e=>row(meta.map(v=>cell(v)).concat([cell(e.bagNo),cell(String(e.shipment),'Number'),cell(String(Number(e.weight).toFixed(2)),'Number')]))).join('\n')
+    : row(meta.map(v=>cell(v)).concat([cell(''),cell('0','Number'),cell('0','Number')]));
+  const xml=`<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+<Styles><Style ss:ID="H"><Font ss:Bold="1"/><Interior ss:Color="#D0D8E8" ss:Pattern="Solid"/></Style>
+<Style ss:ID="S"><Font ss:Bold="1"/><Interior ss:Color="#EFF2F7" ss:Pattern="Solid"/></Style></Styles>
+<Worksheet ss:Name="${escXml(doc.docCode)}"><Table>
+${row(H.map(h=>cell(h,'String','H')))}
+${dataRows}
+${row([cell('รวม','String','S'),...Array(10).fill(cell('')),cell(''),cell(''),cell(String(t.shipment),'Number','S'),cell(String(t.weight.toFixed(2)),'Number','S')])}
+</Table></Worksheet></Workbook>`;
+  downloadBlob(xml,'application/vnd.ms-excel',doc.docCode+'.xls');
+  toast('Export Excel แล้ว');
+}
+
+// ══════════════════════════════════════════════
+//  PRINT
+// ══════════════════════════════════════════════
+function printDocument(docId) {
+  const doc=getDocById(docId); if (!doc) return;
+  const t=docTotals(doc);
+  const meta=[['Doc Code',doc.docCode],['Gateway',doc.gateway],['Export Date',doc.exportDate],['Shift',doc.shift],
+    ['Flight No',doc.flightNo],['Flight Time',doc.flightTime],['Destination',doc.destination],
+    ['Document Date',doc.documentDate],['Car Tag',doc.carTag],['MAWB',doc.mawb],['Remark',doc.remark]];
+  const entries=doc.entries||[];
+  const rows=entries.length>0
+    ? entries.map((e,i)=>`<tr><td>${i+1}</td><td class="mono">${esc(e.bagNo)}</td><td>${e.shipment}</td><td>${Number(e.weight).toFixed(2)}</td></tr>`).join('')
+    : '<tr><td colspan="4" style="text-align:center;color:#aaa">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23</td></tr>';
+  const w=window.open('','_blank','width=900,height=700');
+  if (!w) { alert('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e2d\u0e19\u0e38\u0e0d\u0e32\u0e15 Popup \u0e43\u0e19\u0e40\u0e1a\u0e23\u0e32\u0e27\u0e4c\u0e40\u0e0b\u0e2d\u0e23\u0e4c'); return; }
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${esc(doc.docCode)}</title>
+<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Segoe UI',Arial,sans-serif;padding:28px;font-size:12px;}
+h1{font-size:18px;font-weight:700;margin-bottom:4px;color:#1b2a4a;}.sub{font-size:11px;color:#888;margin-bottom:18px;}
+.meta{display:grid;grid-template-columns:repeat(3,1fr);gap:6px 16px;margin-bottom:20px;padding-bottom:16px;border-bottom:1.5px solid #ddd;}
+.mi{display:flex;flex-direction:column;}.ml{font-size:9px;font-weight:700;color:#aaa;text-transform:uppercase;}.mv{font-size:12px;font-weight:600;margin-top:1px;}
+table{width:100%;border-collapse:collapse;}th,td{padding:7px 10px;border:1px solid #ccc;font-size:11.5px;}th{background:#e8edf3;font-weight:700;}
+tr:nth-child(even) td{background:#f9fafb;}tfoot td{background:#e8edf3;font-weight:700;}.mono{font-family:monospace;}
+.totals{margin-top:14px;font-size:12px;color:#555;text-align:right;}.totals strong{color:#1b2a4a;}
+@media print{body{padding:14px;}@page{size:A4;margin:14mm;}}</style></head><body>
+<h1>${esc(doc.docCode)}</h1><div class="sub">\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48 ${new Date().toLocaleString('th-TH')}</div>
+<div class="meta">${meta.map(([l,v])=>`<div class="mi"><span class="ml">${l}</span><span class="mv">${esc(v)||'—'}</span></div>`).join('')}</div>
+<table><thead><tr><th>#</th><th>Bag No</th><th>Shipment</th><th>Weight (Kg)</th></tr></thead><tbody>${rows}</tbody>
+<tfoot><tr><td colspan="2" style="text-align:right">\u0e23\u0e27\u0e21</td><td>${t.shipment}</td><td>${t.weight.toFixed(2)}</td></tr></tfoot></table>
+<div class="totals">\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23 <strong>${entries.length}</strong> &nbsp;|&nbsp; Shipment \u0e23\u0e27\u0e21 <strong>${t.shipment}</strong> &nbsp;|&nbsp; Weight \u0e23\u0e27\u0e21 <strong>${t.weight.toFixed(2)} Kg</strong></div>
+<script>window.onload=function(){window.print();setTimeout(function(){window.close();},800);};<\/script></body></html>`);
+  w.document.close();
+}
+
+// ══════════════════════════════════════════════
+//  RENDER LIST
+// ══════════════════════════════════════════════
+function renderList() {
+  const docs=documents, el=document.getElementById('app');
+  if (docs.length===0) {
+    el.innerHTML=`<div class="page"><div style="text-align:center;padding:60px 20px;color:#bbb">
+      <div style="font-size:64px;margin-bottom:16px">📋</div>
+      <h3 style="font-size:18px;font-weight:700;color:#ccc;margin-bottom:8px">\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e40\u0e2d\u0e01\u0e2a\u0e32\u0e23</h3>
+      <p style="font-size:14px">\u0e01\u0e14\u0e1b\u0e38\u0e48\u0e21 "\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e0a\u0e35\u0e17\u0e43\u0e2b\u0e21\u0e48" \u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e23\u0e34\u0e48\u0e21\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01</p>
+    </div></div>`; return;
+  }
+  el.innerHTML=`<div class="page">
+    <div class="page-head"><div><h2>\u0e40\u0e2d\u0e01\u0e2a\u0e32\u0e23\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14</h2><p>${docs.length} \u0e0a\u0e35\u0e17</p></div></div>
+    <table class="doc-table">
+      <thead><tr><th>#</th><th>Gateway / \u0e44\u0e1f\u0e25\u0e17\u0e4c</th><th>\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48</th>
+        <th style="text-align:center">Bag</th><th style="text-align:center">Shipment</th>
+        <th style="text-align:center">Weight (Kg)</th><th>Remark</th><th></th></tr></thead>
+      <tbody>${docs.map((doc,idx)=>{
+        const t=docTotals(doc);
+        const fl=[doc.flightNo?'\u2708 '+doc.flightNo:'',doc.destination].filter(Boolean).join(' \u00B7 ');
+        const dl=[doc.exportDate||'',doc.shift?'Shift '+doc.shift:''].filter(Boolean).join(' \u00B7 ');
+        return `<tr class="doc-row">
+          <td class="dtr-num">${idx+1}</td>
+          <td onclick="openDetailPopup(${doc.id})" style="cursor:pointer;min-width:140px">
+            <div class="dtr-gw">${esc(doc.gateway||'\u2014')}</div>
+            ${fl?`<div class="dtr-flight">${esc(fl)}</div>`:''}
+            <div class="dtr-code">${esc(doc.docCode)}</div>
+          </td>
+          <td class="dtr-date" onclick="openDetailPopup(${doc.id})" style="cursor:pointer">${esc(dl||'\u2014')}</td>
+          <td class="dtr-stat"><div class="dtr-sval" style="color:#e67e22">${(doc.entries||[]).length}</div></td>
+          <td class="dtr-stat"><div class="dtr-sval" style="color:#27ae60">${t.shipment}</div></td>
+          <td class="dtr-stat"><div class="dtr-sval" style="color:#2980b9">${t.weight.toFixed(2)}</div></td>
+          <td class="dtr-remark">${doc.remark?'\uD83D\uDCDD '+esc(doc.remark):''}</td>
+          <td class="dtr-actions">
+            <button class="btn btn-outline btn-sm" style="font-size:15px;padding:6px 11px" title="แก้ไขเอกสาร" onclick="openEditModal(${doc.id})">✏️</button>
+            <button class="btn btn-teal btn-sm" style="font-size:15px;padding:6px 11px" title="พิมพ์ / บันทึก PDF" onclick="printDocument(${doc.id})">🖨</button>
+            <button class="btn btn-blue btn-sm" style="font-size:15px;padding:6px 11px" title="ส่งออกเป็น Excel" onclick="exportExcel(${doc.id})">📊</button>
+            <button class="btn btn-danger btn-sm" style="font-size:15px;padding:6px 11px" title="ลบเอกสารนี้" onclick="deleteDocument(${doc.id})">🗑️</button>
+          </td>
+        </tr>`;}).join('')}</tbody>
+    </table>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════
+//  UPLOAD + CREATE
+// ══════════════════════════════════════════════
+const BAG_ALIASES=['bag no','bagno','bag_no','bag number','เลขถุง','หมายเลขถุง','bag'];
+const SHIP_ALIASES=['shipment','ship','จำนวนชิ้น','จำนวน','pieces','pcs','qty'];
+const WT_ALIASES=['weight','weight (kg)','น้ำหนัก','น้ำหนัก (kg)','kg','wt','weight_kg'];
+const GW_ALIASES=['gateway','gw','gate','origin','เกตเวย์','ต้นทาง'];
+const DEST_ALIASES=['destination','dest','to','ปลายทาง'];
+const FNO_ALIASES=['flight no','flightno','flight','เที่ยวบิน','flt'];
+const FTM_ALIASES=['flight time','flighttime','เวลาบิน','dep time','departure'];
+const SHF_ALIASES=['shift','กะ'];
+const MAWB_ALIASES=['mawb','master air waybill','awb'];
+const CAR_ALIASES=['car tag','cartag','ทะเบียนรถ','vehicle','plate'];
+
+function matchColumn(headers,aliases) { for (const h of headers) if (aliases.some(a=>(h||'').toLowerCase().trim()===a)) return h; return ''; }
+
+function openUploadCreateModal() {
+  ucFileReady=false; uploadData=[]; uploadColumns=[]; ucBagIdx=-1; ucShipIdx=-1; ucWtIdx=-1;
+  document.getElementById('uc-file-section').style.display='none';
+  document.getElementById('uc-filename').textContent='\u0e23\u0e2d\u0e07\u0e23\u0e31\u0e1a .xlsx, .xls, .csv';
+  document.getElementById('btn-uc-create').textContent='\uD83D\uDCC4 \u0e2a\u0e23\u0e49\u0e32\u0e07\u0e0a\u0e35\u0e17';
+  document.getElementById('uc-flight-section').style.display='none';
+  document.getElementById('uc-flight-toggle').textContent='\u25BC \u0e02\u0e22\u0e32\u0e22';
+  const last=getLastFlight(), t=today();
+  const fields=['gateway','destination','shift','flightNo','flightTime','carTag','mawb'];
+  if (last) fields.forEach(f=>{const el=document.getElementById('uc-'+f);if(el)el.value=last[f]||'';});
+  else fields.forEach(f=>{const el=document.getElementById('uc-'+f);if(el)el.value='';});
+  ['uc-exportDate','uc-documentDate'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=t;});
+  const r=document.getElementById('uc-remark'); if(r) r.value='';
+  document.getElementById('upload-create-popup').classList.add('open');
+}
+function closeUploadCreateModal() {
+  document.getElementById('upload-create-popup').classList.remove('open');
+  ucFileReady=false; uploadData=[]; uploadColumns=[];
+  const fi=document.getElementById('uc-file-input'); if(fi) fi.value='';
+}
+function toggleUCFlight() {
+  const sec=document.getElementById('uc-flight-section'), tog=document.getElementById('uc-flight-toggle');
+  const open=sec.style.display==='none'; sec.style.display=open?'':'none'; tog.textContent=open?'\u25B2 \u0e22\u0e48\u0e2d':'\u25BC \u0e02\u0e22\u0e32\u0e22';
+}
+function handleUCFileUpload(event) {
+  const file=event.target.files[0]; if (!file) return;
+  event.target.value='';
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+    try {
+      const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
+      if (rows.length<2) { toast('\u0e44\u0e1f\u0e25\u0e4c\u0e27\u0e48\u0e32\u0e07\u0e40\u0e1b\u0e25\u0e48\u0e32'); return; }
+      uploadColumns=rows[0].map(c=>String(c)); uploadData=rows.slice(1).filter(r=>r.some(c=>c!==''));
+      ucFileReady=true;
+      const autoBag=matchColumn(uploadColumns,BAG_ALIASES), autoShip=matchColumn(uploadColumns,SHIP_ALIASES), autoWt=matchColumn(uploadColumns,WT_ALIASES);
+      ucBagIdx=autoBag?uploadColumns.indexOf(autoBag):0;
+      ucShipIdx=autoShip?uploadColumns.indexOf(autoShip):(uploadColumns.length>1?1:-1);
+      ucWtIdx=autoWt?uploadColumns.indexOf(autoWt):(uploadColumns.length>2?2:-1);
+      [[GW_ALIASES,'uc-gateway'],[DEST_ALIASES,'uc-destination'],[FNO_ALIASES,'uc-flightNo'],[FTM_ALIASES,'uc-flightTime'],
+       [SHF_ALIASES,'uc-shift'],[MAWB_ALIASES,'uc-mawb'],[CAR_ALIASES,'uc-carTag']].forEach(([al,fid])=>{
+        const col=matchColumn(uploadColumns,al); if (!col) return;
+        const ci=uploadColumns.indexOf(col);
+        for (const row of uploadData) { const v=String(row[ci]||'').trim(); if(v){const el=document.getElementById(fid);if(el)el.value=v;break;} }
+      });
+      document.getElementById('uc-col-info').innerHTML='\u2728 \u0e15\u0e23\u0e27\u0e08\u0e1e\u0e1a\u0e04\u0e2d\u0e25\u0e31\u0e21\u0e19\u0e4c\u0e2d\u0e31\u0e15\u0e42\u0e19\u0e21\u0e31\u0e15\u0e34 — \uD83D\uDCE6 Bag No: <b>'+esc(uploadColumns[ucBagIdx]??'—')+'</b>';
+      document.getElementById('uc-filename').textContent='\uD83D\uDCC4 '+file.name;
+      document.getElementById('uc-flight-section').style.display=''; document.getElementById('uc-flight-toggle').textContent='\u25B2 \u0e22\u0e48\u0e2d';
+      document.getElementById('uc-file-section').style.display='block'; refreshUCPreview();
+    } catch { toast('\u0e2d\u0e48\u0e32\u0e19\u0e44\u0e1f\u0e25\u0e4c\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49'); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+function refreshUCPreview() {
+  let valid=0, skipped=0; const rows=[], seen=new Set();
+  uploadData.forEach((row,i)=>{
+    const bag=ucBagIdx>=0?String(row[ucBagIdx]||'').trim():'';
+    const ship=parseFloat(ucShipIdx>=0?row[ucShipIdx]:1)||1, wt=parseFloat(ucWtIdx>=0?row[ucWtIdx]:0)||0;
+    let st,col;
+    if (!bag){st='\u0e44\u0e21\u0e48\u0e21\u0e35 Bag No';col='#e67e22';skipped++;}
+    else if (seen.has(bag)){st='\u0e0b\u0e49\u0e33';col='#e74c3c';skipped++;}
+    else{st='\u2713 OK';col='#27ae60';valid++;seen.add(bag);}
+    if (i<50) rows.push(`<tr><td style="color:#ccc;font-size:11px">${i+1}</td><td class="mono">${esc(bag)||'—'}</td><td>${ship}</td><td>${wt}</td><td style="color:${col};font-size:12px;font-weight:600">${st}</td></tr>`);
+  });
+  document.getElementById('uc-preview-body').innerHTML=rows.join('');
+  document.getElementById('uc-upload-stats').innerHTML=
+    `<div class="upload-stat"><span class="stat-dot stat-dot-green"></span><span>${valid} \u0e41\u0e16\u0e27\u0e1e\u0e23\u0e49\u0e2d\u0e21\u0e19\u0e33\u0e40\u0e02\u0e49\u0e32</span></div>
+     <div class="upload-stat"><span class="stat-dot stat-dot-orange"></span><span>${skipped} \u0e41\u0e16\u0e27\u0e02\u0e49\u0e32\u0e21</span></div>`;
+  document.getElementById('btn-uc-create').textContent=`\uD83D\uDCC2 \u0e2a\u0e23\u0e49\u0e32\u0e07\u0e0a\u0e35\u0e17\u0e41\u0e25\u0e30\u0e19\u0e33\u0e40\u0e02\u0e49\u0e32 ${valid} \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23`;
+}
+function confirmUploadCreate() {
+  const g=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
+  const gd=id=>{const el=document.getElementById(id);return el?el.value:'';};
+  const entries=[]; if (ucFileReady) {
+    const seen=new Set();
+    uploadData.forEach(row=>{
+      const bag=ucBagIdx>=0?String(row[ucBagIdx]||'').trim():''; if (!bag||seen.has(bag)) return;
+      const ship=parseFloat(ucShipIdx>=0?row[ucShipIdx]:1)||1, wt=parseFloat(ucWtIdx>=0?row[ucWtIdx]:0)||0;
+      entries.push({id:entries.length+1,bagNo:bag,shipment:ship,weight:wt}); seen.add(bag);
+    });
+  }
+  const doc={id:nextId(documents),docCode:genDocCode(),gateway:g('uc-gateway'),exportDate:gd('uc-exportDate'),
+    shift:g('uc-shift'),flightNo:g('uc-flightNo'),flightTime:g('uc-flightTime'),destination:g('uc-destination'),
+    documentDate:gd('uc-documentDate'),carTag:g('uc-carTag'),mawb:g('uc-mawb'),remark:g('uc-remark'),createdAt:Date.now(),entries};
+  documents.unshift(doc); saveDocs(documents); renderList(); closeUploadCreateModal(); openDetailPopup(doc.id);
+  toast(entries.length>0?`\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e0a\u0e35\u0e17 ${doc.docCode} \u0e19\u0e33\u0e40\u0e02\u0e49\u0e32 ${entries.length} \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23`:'\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e0a\u0e35\u0e17 '+doc.docCode);
+}
+
+function downloadBlob(content,type,filename) {
+  const blob=new Blob([content],{type}), url=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=url; a.download=filename; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+
+// ══════════════════════════════════════════════
+//  SITE SETTINGS (admin)
+// ══════════════════════════════════════════════
+const LS_BG = 'site_bg_url_v1';
+
+function applyBg(url) {
+  // Apply to body (covers full viewport after login) and #auth (login page overlay)
+  const auth = document.getElementById('auth');
+  if (url) {
+    document.body.style.backgroundImage    = 'url(' + JSON.stringify(url) + ')';
+    document.body.style.backgroundSize     = 'cover';
+    document.body.style.backgroundPosition = 'center';
+    document.body.style.backgroundAttachment = 'fixed';
+    document.body.style.backgroundRepeat   = 'no-repeat';
+    if (auth) {
+      auth.style.backgroundImage    = 'url(' + JSON.stringify(url) + ')';
+      auth.style.backgroundSize     = 'cover';
+      auth.style.backgroundPosition = 'center';
+      auth.style.backgroundAttachment = 'fixed';
+      auth.style.backgroundRepeat   = 'no-repeat';
+    }
+  } else {
+    document.body.style.backgroundImage = '';
+    document.body.style.backgroundSize  = '';
+    document.body.style.backgroundPosition = '';
+    document.body.style.backgroundAttachment = '';
+    document.body.style.backgroundRepeat = '';
+    if (auth) {
+      auth.style.backgroundImage = '';
+      auth.style.backgroundSize  = '';
+      auth.style.backgroundPosition = '';
+      auth.style.backgroundAttachment = '';
+      auth.style.backgroundRepeat = '';
+    }
+  }
+}
+
+function loadBgSetting() {
+  const url = localStorage.getItem(LS_BG) || '';
+  applyBg(url);
+}
+
+
+function openSettingsModalRefreshFb() {
+  // populate Firebase fields
+  const urlEl = document.getElementById('set-fb-url');
+  const keyEl = document.getElementById('set-fb-key');
+  const discBtn = document.getElementById('set-fb-disconnect');
+  const status  = document.getElementById('set-fb-status');
+  if (urlEl) urlEl.value = cloudUrl;
+  if (keyEl) keyEl.value = cloudKey ? '••••••••' : '';
+  if (discBtn) discBtn.style.display = (cloudUrl && cloudKey) ? '' : 'none';
+  if (status) status.innerHTML = (cloudUrl && cloudKey)
+    ? '<div style="background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:8px 12px;font-size:12px;color:#2e7d32;font-weight:600">✅ Firebase เชื่อมต่อแล้ว</div>'
+    : '';
+}
+
+async function adminConnectCloud() {
+  const urlEl  = document.getElementById('set-fb-url');
+  const keyEl  = document.getElementById('set-fb-key');
+  const errEl  = document.getElementById('set-fb-err');
+  const url    = (urlEl.value || '').trim();
+  let key      = (keyEl.value || '').trim();
+  if (key === '••••••••') key = cloudKey;
+  errEl.textContent = '';
+  if (!url) { errEl.textContent = 'กรุณาใส่ Database URL'; return; }
+  if (!key) { errEl.textContent = 'กรุณาใส่ Database Secret'; return; }
+
+  const btn = document.querySelector('#settings-modal .btn-blue');
+  btn.textContent = '⏳ กำลังเชื่อมต่อ…'; btn.disabled = true;
+  try {
+    const endpoint = url.replace(/\/+$/, '') + '/sfintl.json?auth=' + key;
+    const initData = { users: loadUsers(), documents: loadDocs(), bgUrl: localStorage.getItem(LS_BG) || '' };
+    const r = await fetch(endpoint, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(initData)
+    });
+    if (!r.ok) throw new Error(await r.text());
+    cloudUrl = url; cloudKey = key;
+    localStorage.setItem(LS_FBURL, cloudUrl);
+    localStorage.setItem(LS_FBKEY, cloudKey);
+    openSettingsModalRefreshFb();
+    setSyncBadge('ok', 'ซิงค์แล้ว');
+    updateCloudAuthBadge();
+    toast('เชื่อมต่อ Firebase สำเร็จ 🔥');
+  } catch(e) {
+    errEl.textContent = 'เชื่อมต่อไม่ได้: ' + (e.message || String(e));
+  } finally {
+    if (btn) { btn.textContent = '🔥 เชื่อมต่อ Firebase'; btn.disabled = false; }
+  }
+}
+
+function adminDisconnectCloud() {
+  if (!confirm('ยกเลิกการเชื่อมต่อ Firebase ใช่ไหม?')) return;
+  cloudUrl = ''; cloudKey = '';
+  localStorage.removeItem(LS_FBURL); localStorage.removeItem(LS_FBKEY);
+  openSettingsModalRefreshFb();
+  setSyncBadge('', '');
+  updateCloudAuthBadge();
+  toast('ยกเลิกการเชื่อมต่อ Firebase แล้ว');
+}
+
+function openSettingsModal() {
+  const url = localStorage.getItem(LS_BG) || '';
+  document.getElementById('set-bg-url').value = url;
+  previewBg(url);
+  openSettingsModalRefreshFb();
+  document.getElementById('settings-modal').classList.add('open');
+}
+function closeSettingsModal() {
+  document.getElementById('settings-modal').classList.remove('open');
+}
+
+function previewBg(url) {
+  const box = document.getElementById('settings-preview-box');
+  const inner = document.getElementById('settings-preview-inner');
+  if (url && url.trim()) {
+    box.style.backgroundImage = 'url(' + JSON.stringify(url.trim()) + ')';
+    box.style.backgroundSize = 'cover';
+    box.style.backgroundPosition = 'center';
+    inner.textContent = '';
+  } else {
+    box.style.backgroundImage = '';
+    inner.textContent = 'ตัวอย่างพื้นหลัง';
+  }
+}
+
+function saveBg() {
+  const url = (document.getElementById('set-bg-url').value || '').trim();
+  if (url) {
+    localStorage.setItem(LS_BG, url);
+  } else {
+    localStorage.removeItem(LS_BG);
+  }
+  applyBg(url);
+  scheduleSave(); // sync to Firebase
+  closeSettingsModal();
+  toast(url ? '✅ บันทึกและซิงค์รูปพื้นหลังแล้ว ☁️' : '🗑 ลบรูปพื้นหลังแล้ว');
+}
+
+function clearBg() {
+  document.getElementById('set-bg-url').value = '';
+  previewBg('');
+}
+
+// ══════════════════════════════════════════════
+//  BOOT
+// ══════════════════════════════════════════════
+initStorage();
+loadBgSetting();
+tryAutoLogin();
+</script>
+</body>
+</html>
