@@ -765,7 +765,8 @@
           <div id="set-fb-bake-box" style="display:none;margin-top:8px;background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:10px 14px;font-size:12px;color:#2e7d32;line-height:1.6">
             ✅ JSONBin เชื่อมต่อแล้ว — กดปุ่มด้านล่างเพื่อสร้างไฟล์ใหม่ที่<b>ฝัง JSONBin ไว้ในตัว</b><br>
             ทุกเบราว์เซอร์ที่เปิดไฟล์นี้จะ<b>เชื่อมต่อ JSONBin อัตโนมัติ</b> โดยไม่ต้องตั้งค่าอีก
-            <div style="margin-top:8px">
+            <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
+              <button class="btn btn-primary btn-sm" onclick="forcePushToCloud()" style="width:100%">🔄 Push ข้อมูลในเครื่องนี้ขึ้น Cloud ทันที</button>
               <button class="btn btn-success btn-sm" onclick="downloadBakedFile()" style="width:100%">📥 ดาวน์โหลดไฟล์ฝัง JSONBin (แจกจ่ายได้เลย)</button>
             </div>
           </div>
@@ -1117,6 +1118,11 @@ async function tryAutoLogin() {
   documents   = loadDocs();
   setSyncBadge('ok', 'ซิงค์แล้ว');
   enterMain();
+  // ถ้า cloudData ว่างแต่ local มีข้อมูล → push ขึ้น cloud ทันที
+  if (hasCloud() && (!cloudData || (cloudData.documents||[]).length === 0) && documents.length > 0) {
+    const data = { users: loadUsers(), documents: loadDocs(), bgUrl: localStorage.getItem(LS_BG) || '' };
+    cloudPut(data).then(() => setSyncBadge('ok', 'ซิงค์แล้ว'));
+  }
 }
 
 // ── Change Password ──
@@ -1722,6 +1728,21 @@ async function adminConnectCloud() {
     errEl.textContent = 'เชื่อมต่อไม่ได้: ' + (e.message || String(e));
   } finally {
     if (btn) { btn.textContent = '☁️ เชื่อมต่อ JSONBin'; btn.disabled = false; }
+  }
+}
+
+async function forcePushToCloud() {
+  if (!hasCloud()) { toast('ยังไม่ได้เชื่อมต่อ JSONBin'); return; }
+  const btn = document.querySelector('#settings-modal .btn-primary');
+  const origText = btn ? btn.textContent : '';
+  if (btn) { btn.textContent = '⏳ กำลัง Push…'; btn.disabled = true; }
+  const data = { users: loadUsers(), documents: loadDocs(), bgUrl: localStorage.getItem(LS_BG) || '' };
+  const ok = await cloudPut(data);
+  if (btn) { btn.textContent = origText; btn.disabled = false; }
+  if (ok) {
+    toast('✅ Push สำเร็จ — ข้อมูล ' + data.documents.length + ' รายการขึ้น Cloud แล้ว');
+  } else {
+    toast('❌ Push ไม่สำเร็จ — ตรวจสอบการเชื่อมต่อ');
   }
 }
 
