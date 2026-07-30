@@ -1507,34 +1507,21 @@ function downloadBlob(content,type,filename) {
 const LS_BG = 'site_bg_url_v1';
 
 function applyBg(url) {
-  // Apply to body (covers full viewport after login) and #auth (login page overlay)
+  // Apply background only to #auth (login page) — main app stays clean
   const auth = document.getElementById('auth');
+  if (!auth) return;
   if (url) {
-    document.body.style.backgroundImage    = 'url(' + JSON.stringify(url) + ')';
-    document.body.style.backgroundSize     = 'cover';
-    document.body.style.backgroundPosition = 'center';
-    document.body.style.backgroundAttachment = 'fixed';
-    document.body.style.backgroundRepeat   = 'no-repeat';
-    if (auth) {
-      auth.style.backgroundImage    = 'url(' + JSON.stringify(url) + ')';
-      auth.style.backgroundSize     = 'cover';
-      auth.style.backgroundPosition = 'center';
-      auth.style.backgroundAttachment = 'fixed';
-      auth.style.backgroundRepeat   = 'no-repeat';
-    }
+    auth.style.backgroundImage      = 'url(' + JSON.stringify(url) + ')';
+    auth.style.backgroundSize       = 'cover';
+    auth.style.backgroundPosition   = 'center';
+    auth.style.backgroundAttachment = 'fixed';
+    auth.style.backgroundRepeat     = 'no-repeat';
   } else {
-    document.body.style.backgroundImage = '';
-    document.body.style.backgroundSize  = '';
-    document.body.style.backgroundPosition = '';
-    document.body.style.backgroundAttachment = '';
-    document.body.style.backgroundRepeat = '';
-    if (auth) {
-      auth.style.backgroundImage = '';
-      auth.style.backgroundSize  = '';
-      auth.style.backgroundPosition = '';
-      auth.style.backgroundAttachment = '';
-      auth.style.backgroundRepeat = '';
-    }
+    auth.style.backgroundImage      = '';
+    auth.style.backgroundSize       = '';
+    auth.style.backgroundPosition   = '';
+    auth.style.backgroundAttachment = '';
+    auth.style.backgroundRepeat     = '';
   }
 }
 
