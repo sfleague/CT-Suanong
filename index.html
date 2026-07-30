@@ -174,6 +174,11 @@
     .btn-del-row { background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 13px; padding: 3px 8px; border-radius: 4px; }
     .btn-del-row:hover { background: #fde8e8; }
     .mono { font-family: monospace; letter-spacing: .3px; }
+    .td-edit { cursor: pointer; position: relative; }
+    .td-edit:hover { background: #eef4ff !important; }
+    .td-edit:hover::after { content: '\2712'; position: absolute; right: 4px; top: 50%; transform: translateY(-50%); font-size: 10px; opacity: .4; color: #3b82f6; }
+    .td-editing { padding: 2px 4px !important; }
+    .td-editing input { width: 100%; border: 2px solid #3b82f6; border-radius: 5px; padding: 4px 6px; font-size: 13px; font-family: inherit; background: #fff; outline: none; box-sizing: border-box; }
     .sum-bar { display: flex; gap: 20px; font-size: 13px; color: #555; }
     .sum-bar strong { color: #1b2a4a; }
 
@@ -1156,7 +1161,13 @@ function refreshDetailPopup(doc) {
     ? '<div style="text-align:center;padding:28px;color:#bbb;font-size:13.5px">ยังไม่มีรายการ — ยิงเลข Bag No เพื่อเริ่มบันทึก</div>'
     : `<div class="tbl-wrap"><table>
         <thead><tr><th style="width:36px">#</th><th>Bag No</th><th style="width:110px">Shipment</th><th style="width:120px">Weight (Kg)</th><th style="width:50px"></th></tr></thead>
-        <tbody>${entries.map((e,i)=>`<tr><td style="color:#ccc;font-size:11px">${i+1}</td><td class="mono">${esc(e.bagNo)}</td><td class="td-num">${e.shipment}</td><td class="td-num">${Number(e.weight).toFixed(2)}</td><td><button class="btn-del-row" onclick="deleteEntry(${doc.id},${e.id})">ลบ</button></td></tr>`).join('')}</tbody>
+        <tbody>${entries.map((e,i)=>`<tr>
+          <td style="color:#ccc;font-size:11px">${i+1}</td>
+          <td class="mono td-edit" title="แก้ไข Bag No" onclick="inlineEditEntry(${doc.id},${e.id},'bagNo',this)">${esc(e.bagNo)}</td>
+          <td class="td-num td-edit" title="แก้ไข Shipment" onclick="inlineEditEntry(${doc.id},${e.id},'shipment',this)">${e.shipment}</td>
+          <td class="td-num td-edit" title="แก้ไข Weight" onclick="inlineEditEntry(${doc.id},${e.id},'weight',this)">${Number(e.weight).toFixed(2)}</td>
+          <td><button class="btn-del-row" onclick="event.stopPropagation();deleteEntry(${doc.id},${e.id})">ลบ</button></td>
+        </tr>`).join('')}</tbody>
         <tfoot><tr><td colspan="2" style="text-align:right;color:#888;font-size:11.5px">รวม</td><td class="td-num">${t.shipment}</td><td class="td-num">${t.weight.toFixed(2)}</td><td></td></tr></tfoot>
       </table></div>`;
   document.getElementById('inp-bag').value='';
@@ -1272,6 +1283,40 @@ function deleteEntry(docId,entryId) {
   doc.entries=(doc.entries||[]).filter(e=>e.id!==entryId);
   saveDocs(documents); refreshDetailPopup(doc); renderList();
 }
+function inlineEditEntry(docId, entryId, field, td) {
+  if (td.classList.contains('td-editing')) return;
+  const doc=getDocById(docId); if (!doc) return;
+  const entry=(doc.entries||[]).find(e=>e.id===entryId); if (!entry) return;
+  const origVal=field==='weight'?Number(entry[field]).toFixed(2):String(entry[field]);
+  const isNum=(field==='shipment'||field==='weight');
+  td.classList.add('td-editing');
+  td.innerHTML='<input id="ie-inp" type="'+(isNum?'number':'text')+'" value="'+origVal.replace(/"/g,'&quot;')+'" '+(isNum?'min="0" step="0.01"':'')+' autocomplete="off">';
+  const inp=td.querySelector('input');
+  inp.focus(); inp.select();
+  let done=false;
+  function commit() {
+    if (done) return; done=true;
+    let val=inp.value.trim();
+    if (field==='shipment') val=parseFloat(val)||entry.shipment;
+    else if (field==='weight') val=parseFloat(val)||entry.weight;
+    else val=val||entry.bagNo;
+    entry[field]=val;
+    saveDocs(documents); refreshDetailPopup(doc); renderList();
+  }
+  function cancel() {
+    if (done) return; done=true;
+    td.classList.remove('td-editing'); td.textContent=origVal;
+  }
+  inp.addEventListener('keydown', ev=>{
+    if (ev.key==='Enter'){ ev.preventDefault(); commit(); }
+    if (ev.key==='Escape'){ ev.preventDefault(); cancel(); }
+  });
+  inp.addEventListener('blur', commit, {once:true});
+}
+function fmtDateTag(d) {
+  const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return String(d.getDate()).padStart(2,'0')+M[d.getMonth()]+String(d.getFullYear()).slice(-2);
+}
 
 // ══════════════════════════════════════════════
 //  EXPORT EXCEL
@@ -1296,7 +1341,8 @@ ${row(H.map(h=>cell(h,'String','H')))}
 ${dataRows}
 ${row([cell('รวม','String','S'),...Array(10).fill(cell('')),cell(''),cell(''),cell(String(t.shipment),'Number','S'),cell(String(t.weight.toFixed(2)),'Number','S')])}
 </Table></Worksheet></Workbook>`;
-  downloadBlob(xml,'application/vnd.ms-excel',doc.docCode+'.xls');
+  const _gw=(doc.gateway||doc.docCode).replace(/[/:*?"<>|\\]/g,'_').trim();
+  downloadBlob(xml,'application/vnd.ms-excel',_gw+'_'+fmtDateTag(new Date())+'.xls');
   toast('Export Excel แล้ว');
 }
 
