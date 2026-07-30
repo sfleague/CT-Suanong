@@ -325,13 +325,18 @@
     <div class="auth-icon" style="font-size:36px;margin:8px 0 10px">📦</div>
     <h1>CT ซั่วหน่อง</h1>
     <p>เข้าสู่ระบบเพื่อใช้งาน</p>
-    <div id="cloud-status-auth" style="margin-bottom:12px"></div>
+    <div id="cloud-status-auth" style="margin-bottom:12px;cursor:pointer" onclick="openCloudModal()" title="คลิกเพื่อตั้งค่า Firebase"></div>
     <form onsubmit="event.preventDefault();doAuth()" autocomplete="on">
       <input id="auth-user" class="auth-input" type="text" placeholder="Username" maxlength="50" name="username" autocomplete="username">
       <input id="auth-inp"  class="auth-input" type="password" placeholder="Password" maxlength="50" name="password" autocomplete="current-password">
       <div class="auth-err" id="auth-err"></div>
       <button type="submit" class="auth-btn auth-btn-main">เข้าสู่ระบบ</button>
     </form>
+    <div style="margin-top:14px;text-align:center">
+      <span onclick="openCloudModal()" style="font-size:12px;color:#2980b9;cursor:pointer;text-decoration:underline">
+        🔥 ตั้งค่า Firebase (ใช้ข้อมูลร่วมกันหลายเครื่อง)
+      </span>
+    </div>
   </div>
 </div>
 
@@ -843,12 +848,16 @@ async function connectCloud() {
     localStorage.setItem(LS_FBURL, cloudUrl);
     localStorage.setItem(LS_FBKEY, cloudKey);
 
+    // ดึงข้อมูลจาก Firebase มาใส่เครื่องนี้ทันที
+    const pulled = await cloudGet();
+    if (pulled) applyCloudData(pulled);
+
     document.getElementById('btn-cloud-disconnect').style.display = '';
     document.getElementById('cloud-status-box').innerHTML =
-      '<div style="background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:10px 14px;font-size:13px;color:#2e7d32;font-weight:600">✅ เชื่อมต่อ Firebase สำเร็จ! ข้อมูลซิงค์อัตโนมัติทุกเครื่อง · ข้อมูลเก่า 7 วันลบอัตโนมัติ</div>';
+      '<div style="background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:10px 14px;font-size:13px;color:#2e7d32;font-weight:600">✅ เชื่อมต่อ Firebase สำเร็จ! ดึงข้อมูลล่าสุดมาแล้ว · ซิงค์อัตโนมัติทุกเครื่อง</div>';
     setSyncBadge('ok', 'ซิงค์แล้ว');
     updateCloudAuthBadge();
-    toast('เชื่อมต่อ Firebase สำเร็จ 🔥');
+    toast('เชื่อมต่อ Firebase สำเร็จ 🔥 ดึงข้อมูลมาแล้ว');
   } catch(e) {
     err.textContent = 'เชื่อมต่อไม่ได้: ' + (e.message || String(e));
   } finally {
@@ -870,8 +879,8 @@ function updateCloudAuthBadge() {
   const el = document.getElementById('cloud-status-auth');
   if (!el) return;
   el.innerHTML = hasCloud()
-    ? '<span class="sync-badge sync-ok"><span class="sync-dot"></span>Firebase เชื่อมต่อแล้ว</span>'
-    : '<span class="sync-badge" style="background:#fafafa;border:1px solid #eee;color:#aaa"><span class="sync-dot" style="background:#ccc"></span>ยังไม่ได้เชื่อมต่อ Cloud</span>';
+    ? '<span class="sync-badge sync-ok"><span class="sync-dot"></span>Firebase เชื่อมต่อแล้ว ✓</span>'
+    : '<span class="sync-badge" style="background:#fff3e0;border:1px solid #ffcc80;color:#e65100"><span class="sync-dot" style="background:#e65100"></span>ยังไม่ได้เชื่อมต่อ Firebase — คลิกตั้งค่า 🔥</span>';
 }
 
 // ══════════════════════════════════════════════
