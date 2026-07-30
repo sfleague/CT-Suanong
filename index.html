@@ -174,11 +174,6 @@
     .btn-del-row { background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 13px; padding: 3px 8px; border-radius: 4px; }
     .btn-del-row:hover { background: #fde8e8; }
     .mono { font-family: monospace; letter-spacing: .3px; }
-    .td-edit { cursor: pointer; position: relative; }
-    .td-edit:hover { background: #eef4ff !important; }
-    .td-edit:hover::after { content: '\2712'; position: absolute; right: 4px; top: 50%; transform: translateY(-50%); font-size: 10px; opacity: .4; color: #3b82f6; }
-    .td-editing { padding: 2px 4px !important; }
-    .td-editing input { width: 100%; border: 2px solid #3b82f6; border-radius: 5px; padding: 4px 6px; font-size: 13px; font-family: inherit; background: #fff; outline: none; box-sizing: border-box; }
     .sum-bar { display: flex; gap: 20px; font-size: 13px; color: #555; }
     .sum-bar strong { color: #1b2a4a; }
 
@@ -347,26 +342,26 @@
 </head>
 <body>
 
-<!-- FIRST-TIME SETUP (auto-shows when no Firebase credentials saved) -->
+<!-- FIRST-TIME SETUP (auto-shows when no JSONBin credentials saved) -->
 <div id="first-setup">
   <div class="fs-box">
-    <div class="fs-icon">🔥</div>
-    <h2>ตั้งค่า Firebase</h2>
-    <p class="fs-sub">ครั้งแรกที่ใช้งานบราวเซอร์นี้ — กรอกข้อมูลครั้งเดียว บราวเซอร์จะจำไว้ ครั้งต่อไปเชื่อมต่ออัตโนมัติเลย</p>
+    <div class="fs-icon">☁️</div>
+    <h2>ตั้งค่า JSONBin</h2>
+    <p class="fs-sub">กรอก Master Key จาก <a href="https://jsonbin.io" target="_blank" style="color:#2980b9">jsonbin.io</a> ครั้งเดียว บราวเซอร์จะจำไว้อัตโนมัติ<br>หากยังไม่มี Bin ID ให้เว้นว่างไว้ — ระบบจะสร้างให้อัตโนมัติ</p>
     <div class="fs-field">
-      <label>Firebase Database URL</label>
+      <label>Bin ID <span style="font-weight:400;color:#aaa">(ไม่บังคับ — เว้นว่างเพื่อสร้างใหม่)</span></label>
       <input id="fs-url" class="auth-input" type="text"
-        placeholder="https://your-project-default-rtdb.firebaseio.com"
+        placeholder="66xxxxxxxxxxxxxxxxxxxxxx"
         autocomplete="off" style="margin-bottom:0">
     </div>
     <div class="fs-field">
-      <label>Database Secret</label>
+      <label>Master Key <span style="font-weight:700;color:#e74c3c">*</span></label>
       <input id="fs-key" class="auth-input" type="password"
-        placeholder="Firebase Database Secret"
+        placeholder="$2a$10$…"
         autocomplete="off" style="margin-bottom:0">
     </div>
     <div class="auth-err" id="fs-err" style="text-align:left;margin:4px 0 10px"></div>
-    <button class="auth-btn auth-btn-main" onclick="fsConnect()">🔥 บันทึกและเชื่อมต่อ</button>
+    <button class="auth-btn auth-btn-main" onclick="fsConnect()">☁️ บันทึกและเชื่อมต่อ</button>
   </div>
 </div>
 
@@ -702,33 +697,33 @@
         <button class="btn btn-primary btn-sm" onclick="saveBg()">💾 บันทึกพื้นหลัง</button>
       </div>
 
-      <!-- ── Firebase ── -->
+      <!-- ── JSONBin ── -->
       <hr style="border:none;border-top:1.5px dashed #e8e8e8;margin:0">
       <div>
-        <div style="font-size:13px;font-weight:700;color:#1b2a4a;margin-bottom:10px">🔥 Cloud Storage — Firebase</div>
+        <div style="font-size:13px;font-weight:700;color:#1b2a4a;margin-bottom:10px">☁️ Cloud Storage — JSONBin</div>
         <div id="set-fb-status" style="margin-bottom:10px"></div>
         <div style="display:flex;flex-direction:column;gap:10px">
           <div>
-            <label class="field-label">Database URL</label>
+            <label class="field-label">Bin ID <span style="font-weight:400;color:#aaa">(เว้นว่างเพื่อสร้างใหม่)</span></label>
             <input id="set-fb-url" class="field-input" type="text"
-              placeholder="https://your-project-default-rtdb.firebaseio.com" autocomplete="off">
+              placeholder="66xxxxxxxxxxxxxxxxxxxxxx" autocomplete="off">
           </div>
           <div>
-            <label class="field-label">Database Secret</label>
+            <label class="field-label">Master Key</label>
             <input id="set-fb-key" class="field-input key-input" type="password"
-              placeholder="Firebase Database Secret" autocomplete="off">
-            <div style="font-size:11px;color:#aaa;margin-top:4px">เก็บใน localStorage ของเครื่องนี้เท่านั้น · ข้อมูลเก่ากว่า 7 วันจะถูกลบอัตโนมัติ</div>
+              placeholder="$2a$10$…" autocomplete="off">
+            <div style="font-size:11px;color:#aaa;margin-top:4px">สมัครฟรีที่ <a href="https://jsonbin.io" target="_blank">jsonbin.io</a> แล้วคัดลอก Master Key จาก Account Settings</div>
           </div>
           <div class="auth-err" id="set-fb-err" style="text-align:left"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button id="set-fb-disconnect" class="btn btn-danger btn-sm" onclick="adminDisconnectCloud()" style="display:none">ยกเลิกการเชื่อมต่อ</button>
-            <button class="btn btn-blue btn-sm" onclick="adminConnectCloud()" style="min-width:140px">🔥 เชื่อมต่อ Firebase</button>
+            <button class="btn btn-blue btn-sm" onclick="adminConnectCloud()" style="min-width:140px">☁️ เชื่อมต่อ JSONBin</button>
           </div>
-          <div id="set-fb-bake-box" style="display:none;margin-top:8px;background:#fff8e1;border:1.5px solid #ffe082;border-radius:8px;padding:10px 14px;font-size:12px;color:#795548;line-height:1.6">
-            ✅ Firebase เชื่อมต่อแล้ว — กดปุ่มด้านล่างเพื่อสร้างไฟล์ใหม่ที่<b>ฝัง Firebase ไว้ในตัว</b><br>
-            ทุกเบราว์เซอร์ที่เปิดไฟล์นี้จะ<b>เชื่อมต่อ Firebase อัตโนมัติ</b> โดยไม่ต้องตั้งค่าอีก
+          <div id="set-fb-bake-box" style="display:none;margin-top:8px;background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:10px 14px;font-size:12px;color:#2e7d32;line-height:1.6">
+            ✅ JSONBin เชื่อมต่อแล้ว — กดปุ่มด้านล่างเพื่อสร้างไฟล์ใหม่ที่<b>ฝัง JSONBin ไว้ในตัว</b><br>
+            ทุกเบราว์เซอร์ที่เปิดไฟล์นี้จะ<b>เชื่อมต่อ JSONBin อัตโนมัติ</b> โดยไม่ต้องตั้งค่าอีก
             <div style="margin-top:8px">
-              <button class="btn btn-success btn-sm" onclick="downloadBakedFile()" style="width:100%">📥 ดาวน์โหลดไฟล์ฝัง Firebase (แจกจ่ายได้เลย)</button>
+              <button class="btn btn-success btn-sm" onclick="downloadBakedFile()" style="width:100%">📥 ดาวน์โหลดไฟล์ฝัง JSONBin (แจกจ่ายได้เลย)</button>
             </div>
           </div>
         </div>
@@ -746,32 +741,34 @@
 <script>
 'use strict';
 // ══════════════════════════════════════════════
-//  CLOUD — Firebase Realtime Database
+//  CLOUD — JSONBin REST API
 // ══════════════════════════════════════════════
-const LS_FBURL  = 'firebase_url_v1';
-const LS_FBKEY  = 'firebase_key_v1';
+const LS_JBBIN  = 'jb_bin_v1';
+const LS_JBKEY  = 'jb_key_v1';
 const LS_CACHE  = 'parcel_cache_v2';
 const TTL_MS    = 7 * 24 * 60 * 60 * 1000; // 7 วัน
 
 // ╔══════════════════════════════════════════════════════════════════╗
-// ║  ⚡ ใส่ค่า Firebase ด้านล่าง แล้ว push ขึ้น GitHub ได้เลย       ║
-// ║  ทุกคนที่เปิด URL จะเชื่อมต่อ Firebase อัตโนมัติทันที           ║
+// ║  ⚡ ใส่ค่า JSONBin ด้านล่าง แล้ว push ขึ้น GitHub ได้เลย        ║
+// ║  ทุกคนที่เปิด URL จะเชื่อมต่อ JSONBin อัตโนมัติทันที            ║
 // ╠══════════════════════════════════════════════════════════════════╣
-const EMBED_FB_URL = '';  // ← วาง Firebase Database URL ตรงนี้
-const EMBED_FB_KEY = '';  // ← วาง Firebase Database Secret ตรงนี้
+const EMBED_JB_BIN = '';  // ← วาง JSONBin Bin ID ตรงนี้
+const EMBED_JB_KEY = '$2a$10$9CiVVjDORSuDvaiIwvp3NOYGtNLcS/kwI5BIHDYm8SSQyAqY7lb/i';  // JSONBin Master Key
 // ╚══════════════════════════════════════════════════════════════════╝
 
-let cloudUrl = localStorage.getItem(LS_FBURL) || EMBED_FB_URL;
-let cloudKey = localStorage.getItem(LS_FBKEY) || EMBED_FB_KEY;
+let cloudBin = localStorage.getItem(LS_JBBIN) || EMBED_JB_BIN;
+let cloudKey = localStorage.getItem(LS_JBKEY) || EMBED_JB_KEY;
 
 // ถ้ามี embedded credentials ให้บันทึกลง localStorage ด้วยเพื่อให้ใช้ได้ต่อเนื่อง
-if (EMBED_FB_URL && cloudUrl) localStorage.setItem(LS_FBURL, cloudUrl);
-if (EMBED_FB_KEY && cloudKey) localStorage.setItem(LS_FBKEY, cloudKey);
+if (EMBED_JB_BIN && cloudBin) localStorage.setItem(LS_JBBIN, cloudBin);
+if (EMBED_JB_KEY && cloudKey) localStorage.setItem(LS_JBKEY, cloudKey);
 let syncTimer = null;
 let syncPending = false;
 
-function hasCloud() { return !!(cloudUrl && cloudKey); }
-function fbEndpoint() { return cloudUrl.replace(/\/+$/, '') + '/sfintl.json?auth=' + cloudKey; }
+function hasCloud() { return !!(cloudBin && cloudKey); }
+function jbGetUrl()  { return 'https://api.jsonbin.io/v3/b/' + cloudBin + '/latest'; }
+function jbPutUrl()  { return 'https://api.jsonbin.io/v3/b/' + cloudBin; }
+function jbHeaders() { return { 'Content-Type': 'application/json', 'X-Master-Key': cloudKey }; }
 
 function setSyncBadge(state, text) {
   const el = document.getElementById('h-sync-badge');
@@ -784,11 +781,12 @@ function setSyncBadge(state, text) {
 async function cloudGet() {
   if (!hasCloud()) return null;
   try {
-    const r = await fetch(fbEndpoint());
+    const r = await fetch(jbGetUrl(), { headers: { 'X-Master-Key': cloudKey } });
     if (!r.ok) throw new Error('status ' + r.status);
-    return await r.json();
+    const json = await r.json();
+    return json.record || null;
   } catch(e) {
-    console.warn('firebase get error', e);
+    console.warn('jsonbin get error', e);
     return null;
   }
 }
@@ -797,9 +795,9 @@ async function cloudPut(data) {
   if (!hasCloud()) return false;
   try {
     setSyncBadge('saving', 'กำลังบันทึก…');
-    const r = await fetch(fbEndpoint(), {
+    const r = await fetch(jbPutUrl(), {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: jbHeaders(),
       body: JSON.stringify(data)
     });
     if (!r.ok) throw new Error('status ' + r.status);
@@ -1000,14 +998,32 @@ function logout() {
 async function tryAutoLogin() {
   updateCloudAuthBadge();
 
-  // ถ้าไม่มี credentials เลย (ทั้งใน localStorage และ EMBED) → แสดงหน้าตั้งค่าครั้งแรก
+  // ถ้ามี key แต่ไม่มี bin → สร้าง bin อัตโนมัติเงียบๆ
+  if (!cloudBin && cloudKey) {
+    try {
+      const initData = { users: [{id:1,username:'admin',password:'1234',isAdmin:true}], documents: [], bgUrl: '' };
+      const cr = await fetch('https://api.jsonbin.io/v3/b', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': cloudKey, 'X-Bin-Name': 'ct-sournong' },
+        body: JSON.stringify(initData)
+      });
+      if (cr.ok) {
+        const cj = await cr.json();
+        cloudBin = cj.metadata.id;
+        localStorage.setItem(LS_JBBIN, cloudBin);
+        localStorage.setItem(LS_JBKEY, cloudKey);
+      }
+    } catch(e) { /* ล้มเหลว → ไปหน้าตั้งค่า */ }
+  }
+
+  // ถ้าไม่มี credentials เลย → แสดงหน้าตั้งค่าครั้งแรก
   if (!hasCloud()) {
     document.getElementById('first-setup').style.display = 'flex';
     document.getElementById('auth').style.display = 'none';
-    // pre-fill ถ้ามีค่า EMBED บางส่วน
-    if (EMBED_FB_URL) document.getElementById('fs-url').value = EMBED_FB_URL;
+    if (EMBED_JB_BIN) document.getElementById('fs-url').value = EMBED_JB_BIN;
+    if (EMBED_JB_KEY) document.getElementById('fs-key').value = EMBED_JB_KEY;
     setTimeout(() => {
-      const el = document.getElementById(EMBED_FB_URL ? 'fs-key' : 'fs-url');
+      const el = document.getElementById(EMBED_JB_BIN ? 'fs-key' : 'fs-url');
       if (el) el.focus();
     }, 80);
     return;
@@ -1161,13 +1177,7 @@ function refreshDetailPopup(doc) {
     ? '<div style="text-align:center;padding:28px;color:#bbb;font-size:13.5px">ยังไม่มีรายการ — ยิงเลข Bag No เพื่อเริ่มบันทึก</div>'
     : `<div class="tbl-wrap"><table>
         <thead><tr><th style="width:36px">#</th><th>Bag No</th><th style="width:110px">Shipment</th><th style="width:120px">Weight (Kg)</th><th style="width:50px"></th></tr></thead>
-        <tbody>${entries.map((e,i)=>`<tr>
-          <td style="color:#ccc;font-size:11px">${i+1}</td>
-          <td class="mono td-edit" title="แก้ไข Bag No" onclick="inlineEditEntry(${doc.id},${e.id},'bagNo',this)">${esc(e.bagNo)}</td>
-          <td class="td-num td-edit" title="แก้ไข Shipment" onclick="inlineEditEntry(${doc.id},${e.id},'shipment',this)">${e.shipment}</td>
-          <td class="td-num td-edit" title="แก้ไข Weight" onclick="inlineEditEntry(${doc.id},${e.id},'weight',this)">${Number(e.weight).toFixed(2)}</td>
-          <td><button class="btn-del-row" onclick="event.stopPropagation();deleteEntry(${doc.id},${e.id})">ลบ</button></td>
-        </tr>`).join('')}</tbody>
+        <tbody>${entries.map((e,i)=>`<tr><td style="color:#ccc;font-size:11px">${i+1}</td><td class="mono">${esc(e.bagNo)}</td><td class="td-num">${e.shipment}</td><td class="td-num">${Number(e.weight).toFixed(2)}</td><td><button class="btn-del-row" onclick="deleteEntry(${doc.id},${e.id})">ลบ</button></td></tr>`).join('')}</tbody>
         <tfoot><tr><td colspan="2" style="text-align:right;color:#888;font-size:11.5px">รวม</td><td class="td-num">${t.shipment}</td><td class="td-num">${t.weight.toFixed(2)}</td><td></td></tr></tfoot>
       </table></div>`;
   document.getElementById('inp-bag').value='';
@@ -1283,40 +1293,6 @@ function deleteEntry(docId,entryId) {
   doc.entries=(doc.entries||[]).filter(e=>e.id!==entryId);
   saveDocs(documents); refreshDetailPopup(doc); renderList();
 }
-function inlineEditEntry(docId, entryId, field, td) {
-  if (td.classList.contains('td-editing')) return;
-  const doc=getDocById(docId); if (!doc) return;
-  const entry=(doc.entries||[]).find(e=>e.id===entryId); if (!entry) return;
-  const origVal=field==='weight'?Number(entry[field]).toFixed(2):String(entry[field]);
-  const isNum=(field==='shipment'||field==='weight');
-  td.classList.add('td-editing');
-  td.innerHTML='<input id="ie-inp" type="'+(isNum?'number':'text')+'" value="'+origVal.replace(/"/g,'&quot;')+'" '+(isNum?'min="0" step="0.01"':'')+' autocomplete="off">';
-  const inp=td.querySelector('input');
-  inp.focus(); inp.select();
-  let done=false;
-  function commit() {
-    if (done) return; done=true;
-    let val=inp.value.trim();
-    if (field==='shipment') val=parseFloat(val)||entry.shipment;
-    else if (field==='weight') val=parseFloat(val)||entry.weight;
-    else val=val||entry.bagNo;
-    entry[field]=val;
-    saveDocs(documents); refreshDetailPopup(doc); renderList();
-  }
-  function cancel() {
-    if (done) return; done=true;
-    td.classList.remove('td-editing'); td.textContent=origVal;
-  }
-  inp.addEventListener('keydown', ev=>{
-    if (ev.key==='Enter'){ ev.preventDefault(); commit(); }
-    if (ev.key==='Escape'){ ev.preventDefault(); cancel(); }
-  });
-  inp.addEventListener('blur', commit, {once:true});
-}
-function fmtDateTag(d) {
-  const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return String(d.getDate()).padStart(2,'0')+M[d.getMonth()]+String(d.getFullYear()).slice(-2);
-}
 
 // ══════════════════════════════════════════════
 //  EXPORT EXCEL
@@ -1341,8 +1317,7 @@ ${row(H.map(h=>cell(h,'String','H')))}
 ${dataRows}
 ${row([cell('รวม','String','S'),...Array(10).fill(cell('')),cell(''),cell(''),cell(String(t.shipment),'Number','S'),cell(String(t.weight.toFixed(2)),'Number','S')])}
 </Table></Worksheet></Workbook>`;
-  const _gw=(doc.gateway||doc.docCode).replace(/[/:*?"<>|\\]/g,'_').trim();
-  downloadBlob(xml,'application/vnd.ms-excel',_gw+'_'+fmtDateTag(new Date())+'.xls');
+  downloadBlob(xml,'application/vnd.ms-excel',doc.docCode+'.xls');
   toast('Export Excel แล้ว');
 }
 
@@ -1566,87 +1541,96 @@ function loadBgSetting() {
 
 
 function openSettingsModalRefreshFb() {
-  const urlEl   = document.getElementById('set-fb-url');
+  const binEl   = document.getElementById('set-fb-url');
   const keyEl   = document.getElementById('set-fb-key');
   const discBtn = document.getElementById('set-fb-disconnect');
   const status  = document.getElementById('set-fb-status');
   const bakeBox = document.getElementById('set-fb-bake-box');
-  const connected = !!(cloudUrl && cloudKey);
-  if (urlEl)   urlEl.value = cloudUrl;
+  const connected = !!(cloudBin && cloudKey);
+  if (binEl)   binEl.value = cloudBin;
   if (keyEl)   keyEl.value = cloudKey ? '••••••••' : '';
   if (discBtn) discBtn.style.display = connected ? '' : 'none';
   if (bakeBox) bakeBox.style.display = connected ? '' : 'none';
   if (status)  status.innerHTML = connected
-    ? '<div style="background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:8px 12px;font-size:12px;color:#2e7d32;font-weight:600">✅ Firebase เชื่อมต่อแล้ว</div>'
+    ? '<div style="background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:8px 12px;font-size:12px;color:#2e7d32;font-weight:600">✅ JSONBin เชื่อมต่อแล้ว</div>'
     : '';
 }
 
 function downloadBakedFile() {
-  if (!cloudUrl || !cloudKey) { toast('ยังไม่ได้เชื่อมต่อ Firebase'); return; }
+  if (!cloudBin || !cloudKey) { toast('ยังไม่ได้เชื่อมต่อ JSONBin'); return; }
   // อ่าน HTML ต้นฉบับแล้วแทนที่ค่า embedded credentials
   let html = document.documentElement.outerHTML;
-  // แทนที่บรรทัด EMBED_FB_URL และ EMBED_FB_KEY
+  // แทนที่บรรทัด EMBED_JB_BIN และ EMBED_JB_KEY
   html = html.replace(
-    /const EMBED_FB_URL\s*=\s*'[^']*';/,
-    "const EMBED_FB_URL = " + JSON.stringify(cloudUrl) + ";"
+    /const EMBED_JB_BIN\s*=\s*'[^']*';/,
+    "const EMBED_JB_BIN = " + JSON.stringify(cloudBin) + ";"
   );
   html = html.replace(
-    /const EMBED_FB_KEY\s*=\s*'[^']*';/,
-    "const EMBED_FB_KEY = " + JSON.stringify(cloudKey) + ";"
+    /const EMBED_JB_KEY\s*=\s*'[^']*';/,
+    "const EMBED_JB_KEY = " + JSON.stringify(cloudKey) + ";"
   );
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'ct-sournong-firebase.html';
+  a.download = 'ct-sournong-jsonbin.html';
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-  toast('📥 ดาวน์โหลดไฟล์ฝัง Firebase แล้ว — นำไปแทนที่ไฟล์เดิมได้เลย');
+  toast('📥 ดาวน์โหลดไฟล์ฝัง JSONBin แล้ว — นำไปแทนที่ไฟล์เดิมได้เลย');
 }
 
 async function adminConnectCloud() {
-  const urlEl  = document.getElementById('set-fb-url');
+  const binEl  = document.getElementById('set-fb-url');
   const keyEl  = document.getElementById('set-fb-key');
   const errEl  = document.getElementById('set-fb-err');
-  const url    = (urlEl.value || '').trim();
+  let bin      = (binEl.value || '').trim();
   let key      = (keyEl.value || '').trim();
   if (key === '••••••••') key = cloudKey;
   errEl.textContent = '';
-  if (!url) { errEl.textContent = 'กรุณาใส่ Database URL'; return; }
-  if (!key) { errEl.textContent = 'กรุณาใส่ Database Secret'; return; }
+  if (!key) { errEl.textContent = 'กรุณาใส่ Master Key'; return; }
 
   const btn = document.querySelector('#settings-modal .btn-blue');
   btn.textContent = '⏳ กำลังเชื่อมต่อ…'; btn.disabled = true;
   try {
-    const endpoint = url.replace(/\/+$/, '') + '/sfintl.json?auth=' + key;
-    const initData = { users: loadUsers(), documents: loadDocs(), bgUrl: localStorage.getItem(LS_BG) || '' };
-    const r = await fetch(endpoint, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(initData)
-    });
-    if (!r.ok) throw new Error(await r.text());
-    cloudUrl = url; cloudKey = key;
-    localStorage.setItem(LS_FBURL, cloudUrl);
-    localStorage.setItem(LS_FBKEY, cloudKey);
+    if (!bin) {
+      // สร้าง Bin ใหม่อัตโนมัติ
+      const initData = { users: loadUsers(), documents: loadDocs(), bgUrl: localStorage.getItem(LS_BG) || '' };
+      const cr = await fetch('https://api.jsonbin.io/v3/b', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': key, 'X-Bin-Name': 'ct-sournong' },
+        body: JSON.stringify(initData)
+      });
+      if (!cr.ok) throw new Error('สร้าง Bin ไม่ได้: HTTP ' + cr.status + ' — ตรวจสอบ Master Key อีกครั้ง');
+      const cj = await cr.json();
+      bin = cj.metadata.id;
+    } else {
+      // ทดสอบการเชื่อมต่อกับ Bin ที่มีอยู่
+      const tr = await fetch('https://api.jsonbin.io/v3/b/' + bin + '/latest', {
+        headers: { 'X-Master-Key': key }
+      });
+      if (!tr.ok) throw new Error('เชื่อมต่อ Bin ไม่ได้: HTTP ' + tr.status + ' — ตรวจสอบ Bin ID และ Master Key');
+    }
+    cloudBin = bin; cloudKey = key;
+    localStorage.setItem(LS_JBBIN, cloudBin);
+    localStorage.setItem(LS_JBKEY, cloudKey);
     openSettingsModalRefreshFb();
     setSyncBadge('ok', 'ซิงค์แล้ว');
     updateCloudAuthBadge();
-    toast('เชื่อมต่อ Firebase สำเร็จ 🔥 — กด "ดาวน์โหลดไฟล์ฝัง" เพื่อแจกจ่าย');
+    toast('เชื่อมต่อ JSONBin สำเร็จ ✅ — Bin ID: ' + bin + ' — กด "ดาวน์โหลดไฟล์ฝัง" เพื่อแจกจ่าย');
   } catch(e) {
     errEl.textContent = 'เชื่อมต่อไม่ได้: ' + (e.message || String(e));
   } finally {
-    if (btn) { btn.textContent = '🔥 เชื่อมต่อ Firebase'; btn.disabled = false; }
+    if (btn) { btn.textContent = '☁️ เชื่อมต่อ JSONBin'; btn.disabled = false; }
   }
 }
 
 function adminDisconnectCloud() {
-  if (!confirm('ยกเลิกการเชื่อมต่อ Firebase ใช่ไหม?')) return;
-  cloudUrl = ''; cloudKey = '';
-  localStorage.removeItem(LS_FBURL); localStorage.removeItem(LS_FBKEY);
+  if (!confirm('ยกเลิกการเชื่อมต่อ JSONBin ใช่ไหม?')) return;
+  cloudBin = ''; cloudKey = '';
+  localStorage.removeItem(LS_JBBIN); localStorage.removeItem(LS_JBKEY);
   openSettingsModalRefreshFb();
   setSyncBadge('', '');
   updateCloudAuthBadge();
-  toast('ยกเลิกการเชื่อมต่อ Firebase แล้ว');
+  toast('ยกเลิกการเชื่อมต่อ JSONBin แล้ว');
 }
 
 function openSettingsModal() {
@@ -1697,28 +1681,43 @@ function clearBg() {
 //  FIRST-TIME SETUP
 // ══════════════════════════════════════════════
 async function fsConnect() {
-  const url = (document.getElementById('fs-url').value || '').trim();
+  let bin = (document.getElementById('fs-url').value || '').trim();
   const key = (document.getElementById('fs-key').value || '').trim();
   const err = document.getElementById('fs-err');
-  if (!url) { err.textContent = 'กรุณาใส่ Database URL'; return; }
-  if (!key) { err.textContent = 'กรุณาใส่ Database Secret'; return; }
+  if (!key) { err.textContent = 'กรุณาใส่ Master Key'; return; }
   err.textContent = '';
 
   const btn = document.querySelector('#first-setup .auth-btn-main');
   btn.textContent = '⏳ กำลังเชื่อมต่อ…'; btn.disabled = true;
 
   try {
-    const endpoint = url.replace(/\/+$/, '') + '/sfintl.json?auth=' + key;
-    const r = await fetch(endpoint);
-    if (!r.ok) throw new Error('HTTP ' + r.status + ' — ตรวจสอบ URL และ Secret อีกครั้ง');
+    if (!bin) {
+      // สร้าง Bin ใหม่อัตโนมัติ
+      const initData = { users: [{id:1,username:'admin',password:'1234',isAdmin:true}], documents: [], bgUrl: '' };
+      const cr = await fetch('https://api.jsonbin.io/v3/b', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': key, 'X-Bin-Name': 'ct-sournong' },
+        body: JSON.stringify(initData)
+      });
+      if (!cr.ok) throw new Error('สร้าง Bin ไม่ได้: HTTP ' + cr.status + ' — ตรวจสอบ Master Key อีกครั้ง');
+      const cj = await cr.json();
+      bin = cj.metadata.id;
+    }
+
+    // ทดสอบการดึงข้อมูล
+    const r = await fetch('https://api.jsonbin.io/v3/b/' + bin + '/latest', {
+      headers: { 'X-Master-Key': key }
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status + ' — ตรวจสอบ Bin ID และ Master Key อีกครั้ง');
 
     // บันทึกลง localStorage — ครั้งต่อไปจะเชื่อมต่ออัตโนมัติ
-    cloudUrl = url; cloudKey = key;
-    localStorage.setItem(LS_FBURL, cloudUrl);
-    localStorage.setItem(LS_FBKEY, cloudKey);
+    cloudBin = bin; cloudKey = key;
+    localStorage.setItem(LS_JBBIN, cloudBin);
+    localStorage.setItem(LS_JBKEY, cloudKey);
 
-    // ดึงข้อมูลทั้งหมดจาก Firebase
-    const data = await r.json();
+    // ดึงข้อมูลทั้งหมดจาก JSONBin
+    const rj = await r.json();
+    const data = rj.record || null;
     if (data) applyCloudData(data);
 
     updateCloudAuthBadge();
