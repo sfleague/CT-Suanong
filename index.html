@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SF International — CT ซั่วหน่อง</title>
+  <title>CT ซั่วหน่อง</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -60,6 +60,29 @@
     .cloud-setup-link { display: inline-block; margin-top: 8px; font-size: 12px; color: #2980b9; cursor: pointer; text-decoration: underline; }
     .cloud-setup-link:hover { color: #1a6ea8; }
 
+
+    /* ── First-time setup overlay ── */
+    #first-setup {
+      position: fixed; inset: 0; z-index: 9999;
+      display: none; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, #0f1d35 0%, #1b2a4a 40%, #1a3a5c 70%, #0d2137 100%);
+    }
+    #first-setup::before {
+      content: ''; position: absolute; inset: 0;
+      background: rgba(10,20,40,.55); backdrop-filter: blur(3px);
+    }
+    .fs-box {
+      position: relative; z-index: 1;
+      background: #fff; border-radius: 16px; padding: 40px;
+      width: 420px; max-width: 95vw;
+      box-shadow: 0 16px 56px rgba(0,0,0,.5);
+      text-align: center;
+    }
+    .fs-box .fs-icon { font-size: 36px; margin-bottom: 10px; }
+    .fs-box h2 { font-size: 20px; font-weight: 700; color: #1b2a4a; margin-bottom: 6px; }
+    .fs-box .fs-sub { font-size: 13px; color: #888; margin-bottom: 24px; line-height: 1.6; }
+    .fs-field { text-align: left; margin-bottom: 14px; }
+    .fs-field label { display: block; font-size: 12px; font-weight: 700; color: #555; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .5px; }
 
     /* ── Sync indicator ── */
     .sync-badge {
@@ -319,10 +342,33 @@
 </head>
 <body>
 
+<!-- FIRST-TIME SETUP (auto-shows when no Firebase credentials saved) -->
+<div id="first-setup">
+  <div class="fs-box">
+    <div class="fs-icon">🔥</div>
+    <h2>ตั้งค่า Firebase</h2>
+    <p class="fs-sub">ครั้งแรกที่ใช้งานบราวเซอร์นี้ — กรอกข้อมูลครั้งเดียว บราวเซอร์จะจำไว้ ครั้งต่อไปเชื่อมต่ออัตโนมัติเลย</p>
+    <div class="fs-field">
+      <label>Firebase Database URL</label>
+      <input id="fs-url" class="auth-input" type="text"
+        placeholder="https://your-project-default-rtdb.firebaseio.com"
+        autocomplete="off" style="margin-bottom:0">
+    </div>
+    <div class="fs-field">
+      <label>Database Secret</label>
+      <input id="fs-key" class="auth-input" type="password"
+        placeholder="Firebase Database Secret"
+        autocomplete="off" style="margin-bottom:0">
+    </div>
+    <div class="auth-err" id="fs-err" style="text-align:left;margin:4px 0 10px"></div>
+    <button class="auth-btn auth-btn-main" onclick="fsConnect()">🔥 บันทึกและเชื่อมต่อ</button>
+  </div>
+</div>
+
 <!-- AUTH -->
 <div id="auth" class="auth-wrap">
   <div class="auth-box">
-    <div class="auth-brand">SF International</div>
+    <div class="auth-brand">CT ซั่วหน่อง</div>
     <div class="auth-icon" style="font-size:36px;margin:8px 0 10px">📦</div>
     <h1>CT ซั่วหน่อง</h1>
     <p>เข้าสู่ระบบเพื่อใช้งาน</p>
@@ -331,6 +377,10 @@
       <input id="auth-user" class="auth-input" type="text" placeholder="Username" maxlength="50" name="username" autocomplete="username">
       <input id="auth-inp"  class="auth-input" type="password" placeholder="Password" maxlength="50" name="password" autocomplete="current-password">
       <div class="auth-err" id="auth-err"></div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#666;margin-bottom:12px;cursor:pointer;user-select:none">
+        <input type="checkbox" id="auth-remember" style="width:16px;height:16px;cursor:pointer" checked>
+        จำฉันไว้ในบราวเซอร์นี้
+      </label>
       <button type="submit" class="auth-btn auth-btn-main">เข้าสู่ระบบ</button>
     </form>
   </div>
@@ -340,7 +390,7 @@
 <div id="main" style="display:none">
   <div class="header">
     <span class="h-logo">📦</span>
-    <span class="h-title">SF International</span>
+    <span class="h-title">CT ซั่วหน่อง</span>
     <span class="h-user" id="h-username"></span>
     <span class="h-sp"></span>
     <div class="h-acts">
@@ -702,8 +752,8 @@ const TTL_MS    = 7 * 24 * 60 * 60 * 1000; // 7 วัน
 // ║  ⚡ ใส่ค่า Firebase ด้านล่าง แล้ว push ขึ้น GitHub ได้เลย       ║
 // ║  ทุกคนที่เปิด URL จะเชื่อมต่อ Firebase อัตโนมัติทันที           ║
 // ╠══════════════════════════════════════════════════════════════════╣
-const EMBED_FB_URL = 'https://ct-suanong-default-rtdb.firebaseio.com';  // ← วาง Firebase Database URL ตรงนี้
-const EMBED_FB_KEY = '40zEI3PAcnA784CqGznLRqriIQWwGLefYViVxSlv';  // ← วาง Firebase Database Secret ตรงนี้
+const EMBED_FB_URL = '';  // ← วาง Firebase Database URL ตรงนี้
+const EMBED_FB_KEY = '';  // ← วาง Firebase Database Secret ตรงนี้
 // ╚══════════════════════════════════════════════════════════════════╝
 
 let cloudUrl = localStorage.getItem(LS_FBURL) || EMBED_FB_URL;
@@ -795,9 +845,26 @@ function loadUsers()   { return safeJSON(localStorage.getItem(STORE_USERS), []);
 function saveUsers(u)  { localStorage.setItem(STORE_USERS, JSON.stringify(u)); scheduleSave(); }
 function loadDocs()    { return safeJSON(localStorage.getItem(STORE_DOCS),  []); }
 function saveDocs(d)   { localStorage.setItem(STORE_DOCS,  JSON.stringify(d)); scheduleSave(); }
-function loadSession() { return safeJSON(sessionStorage.getItem(STORE_SESSION), null); }
-function saveSession(u){ try { sessionStorage.setItem(STORE_SESSION, JSON.stringify(u)); } catch {} }
-function clearSession(){ try { sessionStorage.removeItem(STORE_SESSION); } catch {} }
+function loadSession() {
+  // ตรวจทั้ง localStorage (จำไว้) และ sessionStorage (ชั่วคราว)
+  return safeJSON(localStorage.getItem(STORE_SESSION), null)
+      || safeJSON(sessionStorage.getItem(STORE_SESSION), null);
+}
+function saveSession(u, remember) {
+  try {
+    if (remember) {
+      localStorage.setItem(STORE_SESSION, JSON.stringify(u));
+      sessionStorage.removeItem(STORE_SESSION);
+    } else {
+      sessionStorage.setItem(STORE_SESSION, JSON.stringify(u));
+      localStorage.removeItem(STORE_SESSION);
+    }
+  } catch {}
+}
+function clearSession(){
+  try { sessionStorage.removeItem(STORE_SESSION); } catch {}
+  try { localStorage.removeItem(STORE_SESSION); } catch {}
+}
 
 function applyCloudData(data) {
   if (!data) return;
@@ -895,7 +962,8 @@ async function doAuth() {
   if (!user) { showAuthErr('username หรือ password ไม่ถูกต้อง'); document.getElementById('auth-inp').value=''; return; }
 
   currentUser = { id:user.id, username:user.username, isAdmin:!!user.isAdmin };
-  saveSession(currentUser);
+  const rememberMe = document.getElementById('auth-remember');
+  saveSession(currentUser, rememberMe ? rememberMe.checked : true);
   documents = loadDocs();
   enterMain();
 }
@@ -927,11 +995,22 @@ function logout() {
 async function tryAutoLogin() {
   updateCloudAuthBadge();
 
-  // ดึงข้อมูลล่าสุดจาก Firebase ก่อนเสมอ (ถ้ามี credentials)
-  if (hasCloud()) {
-    const cloudData = await cloudGet();
-    if (cloudData) applyCloudData(cloudData);
+  // ถ้าไม่มี credentials เลย (ทั้งใน localStorage และ EMBED) → แสดงหน้าตั้งค่าครั้งแรก
+  if (!hasCloud()) {
+    document.getElementById('first-setup').style.display = 'flex';
+    document.getElementById('auth').style.display = 'none';
+    // pre-fill ถ้ามีค่า EMBED บางส่วน
+    if (EMBED_FB_URL) document.getElementById('fs-url').value = EMBED_FB_URL;
+    setTimeout(() => {
+      const el = document.getElementById(EMBED_FB_URL ? 'fs-key' : 'fs-url');
+      if (el) el.focus();
+    }, 80);
+    return;
   }
+
+  // ดึงข้อมูลล่าสุดจาก Firebase ก่อนเสมอ
+  const cloudData = await cloudGet();
+  if (cloudData) applyCloudData(cloudData);
 
   const session = loadSession();
   if (!session) { setTimeout(() => document.getElementById('auth-user').focus(), 50); return; }
@@ -1567,6 +1646,61 @@ function clearBg() {
   previewBg('');
 }
 
+
+// ══════════════════════════════════════════════
+//  FIRST-TIME SETUP
+// ══════════════════════════════════════════════
+async function fsConnect() {
+  const url = (document.getElementById('fs-url').value || '').trim();
+  const key = (document.getElementById('fs-key').value || '').trim();
+  const err = document.getElementById('fs-err');
+  if (!url) { err.textContent = 'กรุณาใส่ Database URL'; return; }
+  if (!key) { err.textContent = 'กรุณาใส่ Database Secret'; return; }
+  err.textContent = '';
+
+  const btn = document.querySelector('#first-setup .auth-btn-main');
+  btn.textContent = '⏳ กำลังเชื่อมต่อ…'; btn.disabled = true;
+
+  try {
+    const endpoint = url.replace(/\/+$/, '') + '/sfintl.json?auth=' + key;
+    const r = await fetch(endpoint);
+    if (!r.ok) throw new Error('HTTP ' + r.status + ' — ตรวจสอบ URL และ Secret อีกครั้ง');
+
+    // บันทึกลง localStorage — ครั้งต่อไปจะเชื่อมต่ออัตโนมัติ
+    cloudUrl = url; cloudKey = key;
+    localStorage.setItem(LS_FBURL, cloudUrl);
+    localStorage.setItem(LS_FBKEY, cloudKey);
+
+    // ดึงข้อมูลทั้งหมดจาก Firebase
+    const data = await r.json();
+    if (data) applyCloudData(data);
+
+    updateCloudAuthBadge();
+    setSyncBadge('ok', 'Cloud ✓');
+
+    // ซ่อนหน้าตั้งค่า → แสดงหน้า login
+    document.getElementById('first-setup').style.display = 'none';
+    document.getElementById('auth').style.display = 'flex';
+
+    // ถ้ามี session อยู่แล้ว → เข้าระบบเลย
+    const session = loadSession();
+    if (session) {
+      const users = loadUsers();
+      const user = users.find(u => u.id === session.id);
+      if (user) {
+        currentUser = { id:user.id, username:user.username, isAdmin:!!user.isAdmin };
+        documents = loadDocs();
+        enterMain();
+        return;
+      }
+    }
+    setTimeout(() => { const el = document.getElementById('auth-user'); if (el) el.focus(); }, 80);
+  } catch(e) {
+    err.textContent = 'เชื่อมต่อไม่ได้: ' + (e.message || String(e));
+  } finally {
+    btn.textContent = '🔥 บันทึกและเชื่อมต่อ'; btn.disabled = false;
+  }
+}
 
 // ══════════════════════════════════════════════
 //  BOOT
