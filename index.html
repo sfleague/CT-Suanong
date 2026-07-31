@@ -307,6 +307,14 @@
       font-size: 11px; font-weight: 600; color: #2e7d32; margin-bottom: 14px;
     }
 
+    /* ── Flight Profile Autocomplete ── */
+    #ac-dropdown { position:fixed; z-index:9200; background:#fff; border:1.5px solid #d0d8e8; border-radius:10px; box-shadow:0 8px 28px rgba(0,0,0,.15); max-height:270px; overflow-y:auto; display:none; min-width:260px; }
+    .ac-item { padding:9px 14px; cursor:pointer; border-bottom:1px solid #f0f2f5; transition:background .1s; }
+    .ac-item:last-child { border-bottom:none; }
+    .ac-item:hover { background:#f0f5ff; }
+    .ac-item-main { font-weight:700; font-size:13px; color:#1b2a4a; }
+    .ac-item-sub  { margin-top:2px; font-size:10.5px; color:#888; display:flex; flex-wrap:wrap; gap:4px 8px; }
+
     /* ── Cloud info box ── */
     .cloud-info-box {
       background: #f0f7ff; border: 1.5px solid #bbdefb; border-radius: 10px;
@@ -572,15 +580,15 @@
       </div>
       <div id="uc-flight-section" style="display:none">
         <div class="create-form">
-          <div><label class="field-label">Flight No</label><input id="uc-flightNo" class="field-input" type="text" placeholder="เช่น TG123" style="font-size:16px;font-weight:700"></div>
-          <div><label class="field-label">Flight Time</label><input id="uc-flightTime" class="field-input" type="text" placeholder="เช่น 08:30"></div>
-          <div><label class="field-label">Gateway</label><input id="uc-gateway" class="field-input" type="text" placeholder="เช่น BKK"></div>
-          <div><label class="field-label">Destination</label><input id="uc-destination" class="field-input" type="text" placeholder="ปลายทาง"></div>
-          <div><label class="field-label">Shift</label><input id="uc-shift" class="field-input" type="text" placeholder="A / B / C"></div>
+          <div><label class="field-label">Flight No</label><input id="uc-flightNo" class="field-input" type="text" placeholder="เช่น TG123" style="font-size:16px;font-weight:700" data-acf="flightNo" oninput="acInput(event,'uc-')"></div>
+          <div><label class="field-label">Flight Time</label><input id="uc-flightTime" class="field-input" type="text" placeholder="เช่น 08:30" data-acf="flightTime" oninput="acInput(event,'uc-')"></div>
+          <div><label class="field-label">Gateway</label><input id="uc-gateway" class="field-input" type="text" placeholder="เช่น BKK" data-acf="gateway" oninput="acInput(event,'uc-')"></div>
+          <div><label class="field-label">Destination</label><input id="uc-destination" class="field-input" type="text" placeholder="ปลายทาง" data-acf="destination" oninput="acInput(event,'uc-')"></div>
+          <div><label class="field-label">Shift</label><input id="uc-shift" class="field-input" type="text" placeholder="A / B / C" data-acf="shift" oninput="acInput(event,'uc-')"></div>
           <div><label class="field-label">Export Date</label><input id="uc-exportDate" class="field-input" type="date"></div>
           <div><label class="field-label">Document Date</label><input id="uc-documentDate" class="field-input" type="date"></div>
-          <div><label class="field-label">Car Tag</label><input id="uc-carTag" class="field-input" type="text" placeholder="ทะเบียนรถ"></div>
-          <div style="grid-column:1/-1"><label class="field-label">MAWB</label><input id="uc-mawb" class="field-input" type="text" placeholder="Master Air Waybill"></div>
+          <div><label class="field-label">Car Tag</label><input id="uc-carTag" class="field-input" type="text" placeholder="ทะเบียนรถ" data-acf="carTag" oninput="acInput(event,'uc-')"></div>
+          <div style="grid-column:1/-1"><label class="field-label">MAWB</label><input id="uc-mawb" class="field-input" type="text" placeholder="Master Air Waybill" data-acf="mawb" oninput="acInput(event,'uc-')"></div>
           <div style="grid-column:1/-1"><label class="field-label">Remark</label><input id="uc-remark" class="field-input" type="text" placeholder="หมายเหตุ (ถ้ามี)"></div>
         </div>
       </div>
@@ -598,17 +606,16 @@
     <div class="modal-head"><div><h2>สร้างชีทใหม่</h2><div class="mh-sub">รหัสจะสร้างอัตโนมัติ</div></div>
       <button class="modal-close" onclick="closeCreatePopup()">×</button></div>
     <div class="modal-body">
-      <div id="create-autofill-badge" class="autofill-badge" style="display:none">✨ ดึงข้อมูลไฟลท์ล่าสุดมาให้อัตโนมัติ</div>
       <div class="create-form">
-        <div><label class="field-label">Gateway</label><input id="cf-gateway" class="field-input" type="text" placeholder="เช่น BKK"></div>
-        <div><label class="field-label">Destination</label><input id="cf-destination" class="field-input" type="text" placeholder="ปลายทาง"></div>
+        <div><label class="field-label">Gateway</label><input id="cf-gateway" class="field-input" type="text" placeholder="เช่น BKK" data-acf="gateway" oninput="acInput(event,'cf-')"></div>
+        <div><label class="field-label">Destination</label><input id="cf-destination" class="field-input" type="text" placeholder="ปลายทาง" data-acf="destination" oninput="acInput(event,'cf-')"></div>
         <div><label class="field-label">Export Date</label><input id="cf-exportDate" class="field-input" type="date"></div>
         <div><label class="field-label">Document Date</label><input id="cf-documentDate" class="field-input" type="date"></div>
-        <div><label class="field-label">Shift</label><input id="cf-shift" class="field-input" type="text" placeholder="A / B / C"></div>
-        <div><label class="field-label">Flight No</label><input id="cf-flightNo" class="field-input" type="text" placeholder="เช่น TG123"></div>
-        <div><label class="field-label">Flight Time</label><input id="cf-flightTime" class="field-input" type="text" placeholder="เช่น 08:30"></div>
-        <div><label class="field-label">Car Tag</label><input id="cf-carTag" class="field-input" type="text" placeholder="ทะเบียนรถ"></div>
-        <div style="grid-column:1/-1"><label class="field-label">MAWB</label><input id="cf-mawb" class="field-input" type="text"></div>
+        <div><label class="field-label">Shift</label><input id="cf-shift" class="field-input" type="text" placeholder="A / B / C" data-acf="shift" oninput="acInput(event,'cf-')"></div>
+        <div><label class="field-label">Flight No</label><input id="cf-flightNo" class="field-input" type="text" placeholder="เช่น TG123" data-acf="flightNo" oninput="acInput(event,'cf-')"></div>
+        <div><label class="field-label">Flight Time</label><input id="cf-flightTime" class="field-input" type="text" placeholder="เช่น 08:30" data-acf="flightTime" oninput="acInput(event,'cf-')"></div>
+        <div><label class="field-label">Car Tag</label><input id="cf-carTag" class="field-input" type="text" placeholder="ทะเบียนรถ" data-acf="carTag" oninput="acInput(event,'cf-')"></div>
+        <div style="grid-column:1/-1"><label class="field-label">MAWB</label><input id="cf-mawb" class="field-input" type="text" data-acf="mawb" oninput="acInput(event,'cf-')"></div>
         <div style="grid-column:1/-1"><label class="field-label">Remark</label><input id="cf-remark" class="field-input" type="text" placeholder="หมายเหตุ"></div>
       </div>
     </div>
@@ -964,7 +971,7 @@ function scheduleSave() {
   syncTimer = setTimeout(async () => {
     if (!syncPending) return;
     syncPending = false;
-    const data = { users: loadUsers(), documents: loadDocs(), bgUrl: localStorage.getItem(LS_BG) || '' };
+    const data = { users: loadUsers(), documents: loadDocs(), bgUrl: localStorage.getItem(LS_BG) || '', flightProfiles: loadFlightProfiles() };
     if (hasCloud()) {
       await cloudPut(data);
     } else {
@@ -1080,6 +1087,10 @@ function applyCloudData(data) {
     // ไม่ลบเอกสารเก่า — เก็บทุกอย่างไว้
     localStorage.setItem(STORE_DOCS, JSON.stringify(data.documents));
   }
+  // sync flight profiles from cloud
+  if (Array.isArray(data.flightProfiles)) {
+    localStorage.setItem(LS_FLIGHT_PROFILES, JSON.stringify(data.flightProfiles));
+  }
   // sync background image URL from cloud
   if (typeof data.bgUrl === 'string') {
     if (data.bgUrl) {
@@ -1107,6 +1118,15 @@ function mergeCloudData(cloudData) {
     localStorage.setItem(STORE_DOCS, JSON.stringify(merged));
     // ถ้ามีของ local ที่ไม่อยู่ใน cloud → push ขึ้น cloud ด้วย
     if (localOnly.length > 0) scheduleSave();
+  }
+  // merge flight profiles: cloud + local, deduplicated, newest first
+  if (Array.isArray(cloudData.flightProfiles)) {
+    const sig=p=>[p.flightNo||'',p.gateway||'',p.destination||'',p.shift||''].join('|');
+    const cloudSigs=new Set(cloudData.flightProfiles.map(sig));
+    const localOnly=loadFlightProfiles().filter(p=>!cloudSigs.has(sig(p)));
+    const merged=[...cloudData.flightProfiles,...localOnly].slice(0,60);
+    localStorage.setItem(LS_FLIGHT_PROFILES, JSON.stringify(merged));
+    if (localOnly.length>0) scheduleSave();
   }
   if (typeof cloudData.bgUrl === 'string') {
     if (cloudData.bgUrl) localStorage.setItem(LS_BG, cloudData.bgUrl);
@@ -1260,7 +1280,7 @@ async function tryAutoLogin() {
           documents = loadDocs();
           renderList();
           if (hasCloud() && (!cloudData || (cloudData.documents||[]).length === 0) && documents.length > 0) {
-            const data = { users: loadUsers(), documents: loadDocs(), bgUrl: localStorage.getItem(LS_BG) || '' };
+            const data = { users: loadUsers(), documents: loadDocs(), bgUrl: localStorage.getItem(LS_BG) || '', flightProfiles: loadFlightProfiles() };
             setSyncBadge('saving', 'กำลัง Push…');
             cloudPut(data, true).then(ok => setSyncBadge(ok ? 'ok' : 'error', ok ? 'ซิงค์แล้ว' : 'ซิงค์ไม่ได้'));
           } else {
@@ -1373,20 +1393,79 @@ function genDocCode() {
   const n=documents.filter(d=>d.docCode&&d.docCode.startsWith('P'+t)).length+1;
   return 'P'+t+'-'+String(n).padStart(3,'0');
 }
-function getLastFlight() {
-  if (!documents.length) return null;
-  const l=documents[0];
-  return {gateway:l.gateway,destination:l.destination,shift:l.shift,flightNo:l.flightNo,flightTime:l.flightTime,carTag:l.carTag,mawb:l.mawb};
+// ══════════════════════════════════════════════
+//  FLIGHT PROFILES — saved autocomplete records
+// ══════════════════════════════════════════════
+const LS_FLIGHT_PROFILES = 'flight_profiles_v1';
+function loadFlightProfiles() {
+  try { return JSON.parse(localStorage.getItem(LS_FLIGHT_PROFILES)||'[]'); } catch { return []; }
+}
+function saveFlightProfile(doc) {
+  const keys=['gateway','destination','shift','flightNo','flightTime','carTag','mawb'];
+  const profile={};
+  keys.forEach(k=>{ if(doc[k]&&String(doc[k]).trim()) profile[k]=String(doc[k]).trim(); });
+  if (!Object.keys(profile).length) return;
+  const profiles=loadFlightProfiles();
+  const sig=p=>[p.flightNo||'',p.gateway||'',p.destination||'',p.shift||''].join('|');
+  const mySig=sig(profile);
+  const filtered=profiles.filter(p=>sig(p)!==mySig);
+  filtered.unshift(profile);
+  localStorage.setItem(LS_FLIGHT_PROFILES, JSON.stringify(filtered.slice(0,60)));
+  if (typeof scheduleSave === 'function') scheduleSave();
+}
+
+// ── Autocomplete engine ──
+const AC_FIELD_LABELS={gateway:'Gateway',destination:'Destination',shift:'Shift',flightNo:'Flight No',flightTime:'Flight Time',carTag:'Car Tag',mawb:'MAWB'};
+const AC_FILL_FIELDS=['gateway','destination','shift','flightNo','flightTime','carTag','mawb'];
+let _acPrefix='';
+
+function _getACDropdown() {
+  let d=document.getElementById('ac-dropdown');
+  if (!d) {
+    d=document.createElement('div'); d.id='ac-dropdown'; document.body.appendChild(d);
+    document.addEventListener('mousedown',function(e){if(!document.getElementById('ac-dropdown').contains(e.target))_closeAC();},true);
+  }
+  return d;
+}
+function _closeAC() { const d=document.getElementById('ac-dropdown'); if(d){d.style.display='none';d.innerHTML='';d._matches=null;} }
+function acInput(e, prefix) {
+  _acPrefix=prefix;
+  const field=e.target.dataset.acf, val=(e.target.value||'').trim().toLowerCase();
+  if (!field||!val) { _closeAC(); return; }
+  const profiles=loadFlightProfiles();
+  const matches=profiles.filter(p=>{ const v=(p[field]||'').toLowerCase(); return v.startsWith(val)||v.includes(val); });
+  if (!matches.length) { _closeAC(); return; }
+  const dd=_getACDropdown();
+  const rect=e.target.getBoundingClientRect();
+  dd.style.left=rect.left+'px'; dd.style.top=(rect.bottom+4)+'px';
+  dd.style.width=Math.max(rect.width,280)+'px'; dd.style.display='block';
+  dd._matches=matches;
+  dd.innerHTML=matches.slice(0,8).map((p,i)=>{
+    const main=esc(p[field]||'—');
+    const sub=AC_FILL_FIELDS.filter(f=>f!==field&&p[f]).map(f=>`<span>${AC_FIELD_LABELS[f]}: ${esc(p[f])}</span>`).join('');
+    return `<div class="ac-item" onmousedown="acSelect(event,${i})">` +
+      `<div class="ac-item-main">${main}</div>` +
+      (sub?`<div class="ac-item-sub">${sub}</div>`:'') +
+      `</div>`;
+  }).join('');
+}
+function acSelect(e, idx) {
+  e.preventDefault();
+  const dd=document.getElementById('ac-dropdown');
+  const p=dd&&dd._matches&&dd._matches[idx]; if(!p) return;
+  AC_FILL_FIELDS.forEach(f=>{
+    const el=document.getElementById(_acPrefix+f);
+    if (el&&p[f]!==undefined) el.value=p[f];
+  });
+  _closeAC();
+  toast('เติมข้อมูลจากบันทึกเก่า ✨','success');
 }
 
 // ══════════════════════════════════════════════
 //  CREATE
 // ══════════════════════════════════════════════
 function createDocument() {
-  const last=getLastFlight(), badge=document.getElementById('create-autofill-badge');
-  const fields=['gateway','destination','shift','flightNo','flightTime','carTag','mawb'];
-  if (last) { fields.forEach(f=>{const el=document.getElementById('cf-'+f);if(el)el.value=last[f]||'';}); badge.style.display='inline-flex'; }
-  else      { fields.forEach(f=>{const el=document.getElementById('cf-'+f);if(el)el.value='';}); badge.style.display='none'; }
+  ['gateway','destination','shift','flightNo','flightTime','carTag','mawb','remark'].forEach(f=>{const el=document.getElementById('cf-'+f);if(el)el.value='';});
   const t=today();
   document.getElementById('cf-exportDate').value=t; document.getElementById('cf-documentDate').value=t;
   document.getElementById('create-popup').classList.add('open');
@@ -1398,7 +1477,7 @@ function confirmCreateDocument() {
   const doc={id:nextId(documents),docCode:genDocCode(),gateway:g('cf-gateway'),exportDate:gd('cf-exportDate'),
     shift:g('cf-shift'),flightNo:g('cf-flightNo'),flightTime:g('cf-flightTime'),destination:g('cf-destination'),
     documentDate:gd('cf-documentDate'),carTag:g('cf-carTag'),mawb:g('cf-mawb'),remark:g('cf-remark'),createdAt:Date.now(),entries:[]};
-  documents.unshift(doc); saveDocs(documents); closeCreatePopup(); renderList(); openDetailPopup(doc.id); toast('สร้างชีท '+doc.docCode);
+  saveFlightProfile(doc); documents.unshift(doc); saveDocs(documents); closeCreatePopup(); renderList(); openDetailPopup(doc.id); toast('สร้างชีท '+doc.docCode);
 }
 
 // ══════════════════════════════════════════════
@@ -1801,10 +1880,9 @@ function openUploadCreateModal() {
   document.getElementById('btn-uc-create').textContent='\uD83D\uDCC4 \u0e2a\u0e23\u0e49\u0e32\u0e07\u0e0a\u0e35\u0e17';
   document.getElementById('uc-flight-section').style.display='none';
   document.getElementById('uc-flight-toggle').textContent='\u25BC \u0e02\u0e22\u0e32\u0e22';
-  const last=getLastFlight(), t=today();
+  const t=today();
   const fields=['gateway','destination','shift','flightNo','flightTime','carTag','mawb'];
-  if (last) fields.forEach(f=>{const el=document.getElementById('uc-'+f);if(el)el.value=last[f]||'';});
-  else fields.forEach(f=>{const el=document.getElementById('uc-'+f);if(el)el.value='';});
+  fields.forEach(f=>{const el=document.getElementById('uc-'+f);if(el)el.value='';});
   ['uc-exportDate','uc-documentDate'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=t;});
   const r=document.getElementById('uc-remark'); if(r) r.value='';
   document.getElementById('upload-create-popup').classList.add('open');
@@ -1878,7 +1956,7 @@ function confirmUploadCreate() {
   const doc={id:nextId(documents),docCode:genDocCode(),gateway:g('uc-gateway'),exportDate:gd('uc-exportDate'),
     shift:g('uc-shift'),flightNo:g('uc-flightNo'),flightTime:g('uc-flightTime'),destination:g('uc-destination'),
     documentDate:gd('uc-documentDate'),carTag:g('uc-carTag'),mawb:g('uc-mawb'),remark:g('uc-remark'),createdAt:Date.now(),entries};
-  documents.unshift(doc); saveDocs(documents); renderList(); closeUploadCreateModal(); openDetailPopup(doc.id);
+  saveFlightProfile(doc); documents.unshift(doc); saveDocs(documents); renderList(); closeUploadCreateModal(); openDetailPopup(doc.id);
   toast(entries.length>0?`\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e0a\u0e35\u0e17 ${doc.docCode} \u0e19\u0e33\u0e40\u0e02\u0e49\u0e32 ${entries.length} \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23`:'\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e0a\u0e35\u0e17 '+doc.docCode);
 }
 
@@ -1972,7 +2050,7 @@ async function adminConnectCloud() {
   try {
     if (!bin) {
       // สร้าง Bin ใหม่อัตโนมัติ
-      const initData = { users: loadUsers(), documents: loadDocs(), bgUrl: localStorage.getItem(LS_BG) || '' };
+      const initData = { users: loadUsers(), documents: loadDocs(), bgUrl: localStorage.getItem(LS_BG) || '', flightProfiles: loadFlightProfiles() };
       const cr = await fetch('https://api.jsonbin.io/v3/b', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Master-Key': key, 'X-Bin-Name': 'ct-sournong' },
@@ -2007,7 +2085,7 @@ async function forcePushToCloud() {
   const btn = document.querySelector('#settings-modal .btn-primary');
   const origText = btn ? btn.textContent : '';
   if (btn) { btn.textContent = '⏳ กำลัง Push…'; btn.disabled = true; }
-  const data = { users: loadUsers(), documents: loadDocs(), bgUrl: localStorage.getItem(LS_BG) || '' };
+  const data = { users: loadUsers(), documents: loadDocs(), bgUrl: localStorage.getItem(LS_BG) || '', flightProfiles: loadFlightProfiles() };
   const ok = await cloudPut(data, true);
   if (btn) { btn.textContent = origText; btn.disabled = false; }
   if (ok) {
