@@ -170,7 +170,7 @@
     .tbl-wrap th, .tbl-wrap td { padding: 9px 12px; border-bottom: 1px solid #eee; font-size: 13px; text-align: left; }
     .tbl-wrap th { font-size: 10.5px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .4px; background: #f9fafb; }
     .tbl-wrap tfoot td { font-weight: 700; background: #f6f8fa; font-size: 12px; }
-    .td-num { font-variant-numeric: tabular-nums; text-align: center; }
+    .td-num { font-variant-numeric: tabular-nums; }
     .btn-del-row  { background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 13px; padding: 3px 8px; border-radius: 4px; }
     .btn-del-row:hover  { background: #fde8e8; }
     .btn-edit-row { background: none; border: none; color: #2980b9; cursor: pointer; font-size: 13px; padding: 3px 8px; border-radius: 4px; }
@@ -494,9 +494,8 @@
         <input type="checkbox" id="auth-remember" style="width:16px;height:16px;cursor:pointer" checked>
         จำฉันไว้ในบราวเซอร์นี้
       </label>
-      <button type="submit" id="auth-submit-btn" class="auth-btn auth-btn-main">เข้าสู่ระบบ</button>
+      <button type="submit" class="auth-btn auth-btn-main">เข้าสู่ระบบ</button>
     </form>
-    <span class="auth-reset-link" onclick="openResetConfirm()">🔓 ลืมรหัสผ่าน / รีเซ็ต Admin</span>
   </div>
 </div>
 
@@ -519,7 +518,6 @@
   </div>
   <div id="app"></div>
 </div>
-
 
 
 <!-- ══ Reset admin ══ -->
@@ -928,22 +926,16 @@ function setSyncBadge(state, text) {
   el.innerHTML = `<span class="sync-badge ${cls}"><span class="sync-dot"></span>${text}</span>`;
 }
 
-async function cloudGet(timeoutMs) {
+async function cloudGet() {
   if (!hasCloud()) return null;
-  const ms = timeoutMs || 8000;
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), ms);
   try {
-    const r = await fetch(jbGetUrl(), { headers: { 'X-Master-Key': cloudKey }, signal: ctrl.signal });
+    const r = await fetch(jbGetUrl(), { headers: { 'X-Master-Key': cloudKey } });
     if (!r.ok) throw new Error('status ' + r.status);
     const json = await r.json();
     return json.record || null;
   } catch(e) {
-    if (e.name === 'AbortError') console.warn('jsonbin timeout');
-    else console.warn('jsonbin get error', e);
+    console.warn('jsonbin get error', e);
     return null;
-  } finally {
-    clearTimeout(timer);
   }
 }
 
@@ -959,7 +951,6 @@ async function cloudPut(data) {
     if (!r.ok) throw new Error('status ' + r.status);
     setSyncBadge('ok', 'ซิงค์แล้ว');
     localStorage.setItem(LS_CACHE, JSON.stringify(data));
-    toast('☁️ บันทึกลงคลาวด์แล้ว');
     return true;
   } catch(e) {
     setSyncBadge('error', 'ซิงค์ไม่ได้ ⚠️');
@@ -978,7 +969,6 @@ function scheduleSave() {
       await cloudPut(data);
     } else {
       localStorage.setItem(LS_CACHE, JSON.stringify(data));
-      toast('💾 บันทึกแล้ว');
     }
   }, 800);
 }
@@ -1006,7 +996,7 @@ function setAuthCloudStatus(state, msg) {
 
 async function retryCloudLoad() {
   setAuthCloudStatus('loading', '⏳ กำลังดึงข้อมูลจาก Cloud…');
-  const cloudData = await cloudGet(10000);
+  const cloudData = await cloudGet();
   if (cloudData) {
     mergeCloudData(cloudData);
     const n = (cloudData.documents||[]).length;
@@ -1021,45 +1011,7 @@ async function retryCloudLoad() {
 // ══════════════════════════════════════════════
 const STORE_USERS   = 'parcel_users_v1';
 const STORE_DOCS    = 'parcel_docs_v1';
-const STORE_SESSION  = 'parcel_session_v1';
-const LS_LAST_ACTIVE = 'parcel_last_active';
-
-// ── Session Timeout settings ──
-const SESSION_TIMEOUT_MS = 30 * 60 * 1000;  // 30 นาทีไม่ใช้งาน → logout อัตโนมัติ
-
-let _timeoutTimer = null, _activityThrottle = 0;
-
-function touchActivity() {
-  if (!currentUser) return;
-  localStorage.setItem(LS_LAST_ACTIVE, Date.now().toString());
-  clearTimeout(_timeoutTimer);
-  _timeoutTimer = setTimeout(_autoLogout, SESSION_TIMEOUT_MS);
-}
-
-function _autoLogout() {
-  toast('⏱ หมดเวลาการใช้งาน — กรุณาเข้าสู่ระบบใหม่');
-  setTimeout(logout, 400);
-}
-
-function _onActivity() {
-  const now = Date.now();
-  if (now - _activityThrottle < 15000) return;
-  _activityThrottle = now;
-  touchActivity();
-}
-
-function startSessionTimeout() {
-  ['click','keydown','mousemove','touchstart','scroll'].forEach(
-    ev => document.addEventListener(ev, _onActivity, { passive:true, capture:true }));
-  touchActivity();
-}
-
-function stopSessionTimeout() {
-  clearTimeout(_timeoutTimer);
-  ['click','keydown','mousemove','touchstart','scroll'].forEach(
-    ev => document.removeEventListener(ev, _onActivity, { capture:true }));
-  localStorage.removeItem(LS_LAST_ACTIVE);
-}
+const STORE_SESSION = 'parcel_session_v1';
 
 function safeJSON(str, fb) { try { const v=JSON.parse(str); return v??fb; } catch { return fb; } }
 
@@ -1187,34 +1139,26 @@ async function doAuth() {
   if (!username) { showAuthErr('กรุณาใส่ Username'); return; }
   if (!password) { showAuthErr('กรุณาใส่ Password'); return; }
 
-  const btn = document.getElementById('auth-submit-btn');
+  const btn = document.querySelector('.auth-btn-main');
   btn.textContent = '⏳ กำลังโหลด…'; btn.disabled = true;
 
-  try {
-    // Pull + merge ข้อมูล cloud ด้วย timeout สั้น (5s) — ไม่บล็อก login ถ้า cloud ช้า
-    if (hasCloud()) {
-      const data = await cloudGet(5000);
-      if (data) mergeCloudData(data);
-    }
-
-    const users = loadUsers();
-    const user  = users.find(u => u.username === username && u.password === password);
-    if (!user) {
-      showAuthErr('username หรือ password ไม่ถูกต้อง');
-      document.getElementById('auth-inp').value = '';
-      return;
-    }
-    currentUser = { id:user.id, username:user.username, isAdmin:!!user.isAdmin };
-    const rememberMe = document.getElementById('auth-remember');
-    saveSession(currentUser, rememberMe ? rememberMe.checked : true);
-    documents = loadDocs();
-    enterMain();
-  } catch(e) {
-    console.error('doAuth error', e);
-    showAuthErr('เกิดข้อผิดพลาดที่ไม่คาด — ลองใหม่อีกครั้ง');
-  } finally {
-    btn.textContent = 'เข้าสู่ระบบ'; btn.disabled = false;
+  // Pull + merge latest data from cloud
+  if (hasCloud()) {
+    const data = await cloudGet();
+    if (data) mergeCloudData(data);
   }
+
+  btn.textContent = 'เข้าสู่ระบบ'; btn.disabled = false;
+
+  const users = loadUsers();
+  const user  = users.find(u => u.username === username && u.password === password);
+  if (!user) { showAuthErr('username หรือ password ไม่ถูกต้อง'); document.getElementById('auth-inp').value=''; return; }
+
+  currentUser = { id:user.id, username:user.username, isAdmin:!!user.isAdmin };
+  const rememberMe = document.getElementById('auth-remember');
+  saveSession(currentUser, rememberMe ? rememberMe.checked : true);
+  documents = loadDocs();
+  enterMain();
 }
 
 function showAuthErr(m) { document.getElementById('auth-err').textContent = m; }
@@ -1226,12 +1170,11 @@ function enterMain() {
   document.getElementById('btn-users').style.display = currentUser.isAdmin ? '' : 'none';
   document.getElementById('btn-site-settings').style.display = currentUser.isAdmin ? '' : 'none';
   if (hasCloud()) setSyncBadge('ok', 'Cloud เชื่อมต่อ');
-  startSessionTimeout();
   renderList();
 }
 
 function logout() {
-  stopSessionTimeout(); clearSession(); currentUser=null; documents=[]; currentDocId=null;
+  clearSession(); currentUser=null; documents=[]; currentDocId=null;
   document.getElementById('main').style.display = 'none';
   document.getElementById('auth').style.display = 'flex';
   document.getElementById('auth-user').value = '';
@@ -1273,7 +1216,7 @@ async function tryAutoLogin() {
   authEl.style.display = 'flex';
   setAuthCloudStatus('loading', '⏳ กำลังดึงข้อมูลจาก Cloud…');
 
-  const cloudData = await cloudGet(8000);
+  const cloudData = await cloudGet();
 
   if (cloudData) {
     mergeCloudData(cloudData);
@@ -1288,16 +1231,6 @@ async function tryAutoLogin() {
 
   const session = loadSession();
   if (!session) {
-    setTimeout(() => document.getElementById('auth-user').focus(), 50);
-    return;
-  }
-
-  // ตรวจ session timeout — ถ้า lastActive เกิน SESSION_TIMEOUT_MS เทียบเท่า SESSION_TIMEOUT_MS แล้ว → หมดอายุ
-  const lastActive = parseInt(localStorage.getItem(LS_LAST_ACTIVE) || '0', 10);
-  if (lastActive && (Date.now() - lastActive > SESSION_TIMEOUT_MS)) {
-    clearSession();
-    localStorage.removeItem(LS_LAST_ACTIVE);
-    document.getElementById('auth-err').textContent = '⏱ หมดเวลาเซสชัน — กรุณาเข้าสู่ระบบใหม่';
     setTimeout(() => document.getElementById('auth-user').focus(), 50);
     return;
   }
@@ -1456,7 +1389,7 @@ function refreshDetailPopup(doc) {
   document.getElementById('entries-body').innerHTML=entries.length===0
     ? '<div style="text-align:center;padding:28px;color:#bbb;font-size:13.5px">ยังไม่มีรายการ — ยิงเลข Bag No เพื่อเริ่มบันทึก</div>'
     : `<div class="tbl-wrap"><table>
-        <thead><tr><th style="width:36px">#</th><th>Bag No</th><th style="width:100px;text-align:center">Shipment</th><th style="width:110px;text-align:center">Weight (Kg)</th><th style="width:140px;text-align:center">เวลายิง</th><th style="width:90px"></th></tr></thead>
+        <thead><tr><th style="width:36px">#</th><th>Bag No</th><th style="width:100px">Shipment</th><th style="width:110px">Weight (Kg)</th><th style="width:140px">เวลายิง</th><th style="width:90px"></th></tr></thead>
         <tbody>${entries.map((e,i)=>`<tr><td style="color:#ccc;font-size:11px">${i+1}</td><td class="mono">${esc(e.bagNo)}</td><td class="td-num">${e.shipment}</td><td class="td-num">${Number(e.weight).toFixed(2)}</td><td style="font-size:11.5px;color:#666;white-space:nowrap">${fmtTime(e.scannedAt)}</td><td style="white-space:nowrap"><button class="btn-edit-row" onclick="openEditEntry(${doc.id},${e.id})">✏️</button><button class="btn-del-row" onclick="deleteEntry(${doc.id},${e.id})">ลบ</button></td></tr>`).join('')}</tbody>
         <tfoot><tr><td colspan="2" style="text-align:right;color:#888;font-size:11.5px">รวม</td><td class="td-num">${t.shipment}</td><td class="td-num">${t.weight.toFixed(2)}</td><td></td><td></td></tr></tfoot>
       </table></div>`;
@@ -1634,14 +1567,17 @@ function exportExcel(docId) {
 <Worksheet ss:Name="${escXml(doc.docCode)}"><Table>
 ${row(H.map(h=>cell(h,'String','H')))}
 ${dataRows}
-${row([cell('รวม','String','S'),...Array(10).fill(cell('')),cell(''),cell(''),cell(String(t.shipment),'Number','S'),cell(String(t.weight.toFixed(2)),'Number','S'])}
+${row([cell('รวม','String','S'),...Array(10).fill(cell('')),cell(''),cell(''),cell(String(t.shipment),'Number','S'),cell(String(t.weight.toFixed(2)),'Number','S')])}
 </Table></Worksheet></Workbook>`;
-  const _mn=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const _nd=new Date();
-  const _ds=String(_nd.getDate()).padStart(2,'0')+_mn[_nd.getMonth()]+String(_nd.getFullYear()).slice(-2);
+  const _months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const _ed=doc.exportDate?new Date(doc.exportDate+' 00:00:00'):new Date();
+  const _dd=String(_ed.getDate()).padStart(2,'0');
+  const _mmm=_months[_ed.getMonth()];
+  const _yy=String(_ed.getFullYear()).slice(-2);
+  const _datePart=_dd+_mmm+_yy;
   const _gw=(doc.gateway||'').trim();
-  const _fn=(_gw?_gw+' ':'')+_ds+'.xls';
-  downloadBlob(xml,'application/vnd.ms-excel',_fn);
+  const _fname=[_gw,doc.docCode,_datePart].filter(Boolean).join(' ')+'.xls';
+  downloadBlob(xml,'application/vnd.ms-excel',_fname);
   toast('Export Excel แล้ว');
 }
 
@@ -1656,8 +1592,8 @@ function printDocument(docId) {
     ['Document Date',doc.documentDate],['Car Tag',doc.carTag],['MAWB',doc.mawb],['Remark',doc.remark]];
   const entries=doc.entries||[];
   const rows=entries.length>0
-    ? entries.map((e,i)=>`<tr><td>${i+1}</td><td class="mono">${esc(e.bagNo)}</td><td>${e.shipment}</td><td>${Number(e.weight).toFixed(2)}</td></tr>`).join('')
-    : '<tr><td colspan="4" style="text-align:center;color:#aaa">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23</td></tr>';
+    ? entries.map((e,i)=>`<tr><td>${i+1}</td><td class="mono">${esc(e.bagNo)}</td><td>${e.shipment}</td><td>${Number(e.weight).toFixed(2)}</td><td>${fmtTime(e.scannedAt)}</td></tr>`).join('')
+    : '<tr><td colspan="5" style="text-align:center;color:#aaa">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23</td></tr>';
   const w=window.open('','_blank','width=900,height=700');
   if (!w) { alert('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e2d\u0e19\u0e38\u0e0d\u0e32\u0e15 Popup \u0e43\u0e19\u0e40\u0e1a\u0e23\u0e32\u0e27\u0e4c\u0e40\u0e0b\u0e2d\u0e23\u0e4c'); return; }
   w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${esc(doc.docCode)}</title>
@@ -1671,8 +1607,8 @@ tr:nth-child(even) td{background:#f9fafb;}tfoot td{background:#e8edf3;font-weigh
 @media print{body{padding:14px;}@page{size:A4;margin:14mm;}}</style></head><body>
 <h1>${esc(doc.docCode)}</h1><div class="sub">\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48 ${new Date().toLocaleString('th-TH')}</div>
 <div class="meta">${meta.map(([l,v])=>`<div class="mi"><span class="ml">${l}</span><span class="mv">${esc(v)||'—'}</span></div>`).join('')}</div>
-<table><thead><tr><th>#</th><th>Bag No</th><th>Shipment</th><th>Weight (Kg)</th></tr></thead><tbody>${rows}</tbody>
-<tfoot><tr><td colspan="2" style="text-align:right">\u0e23\u0e27\u0e21</td><td>${t.shipment}</td><td>${t.weight.toFixed(2)}</td></tr></tfoot></table>
+<table><thead><tr><th>#</th><th>Bag No</th><th>Shipment</th><th>Weight (Kg)</th><th>เวลายิง</th></tr></thead><tbody>${rows}</tbody>
+<tfoot><tr><td colspan="2" style="text-align:right">\u0e23\u0e27\u0e21</td><td>${t.shipment}</td><td>${t.weight.toFixed(2)}</td><td></td></tr></tfoot></table>
 <div class="totals">\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23 <strong>${entries.length}</strong> &nbsp;|&nbsp; Shipment \u0e23\u0e27\u0e21 <strong>${t.shipment}</strong> &nbsp;|&nbsp; Weight \u0e23\u0e27\u0e21 <strong>${t.weight.toFixed(2)} Kg</strong></div>
 <script>window.onload=function(){window.print();setTimeout(function(){window.close();},800);};<\/script></body></html>`);
   w.document.close();
