@@ -226,6 +226,7 @@
     #pw-modal     .modal-box { max-width: 380px; }
     #users-modal  .modal-box { max-width: 600px; }
     #cloud-modal  .modal-box { max-width: 480px; }
+    #profiles-modal .modal-box { max-width: 700px; }
     #upload-create-popup .modal-box { max-width: 680px; }
 
     .detail-meta {
@@ -536,6 +537,7 @@
       <button class="btn btn-success" onclick="openUploadCreateModal()">📂 Upload</button>
       <button class="btn btn-ghost btn-sm" id="btn-users" onclick="openUsersModal()" style="display:none" title="จัดการผู้ใช้งาน"><span>👥</span></button>
       <button class="btn btn-ghost btn-sm" id="btn-site-settings" onclick="openSettingsModal()" style="display:none" title="ตั้งค่าเว็บไซต์ / Firebase"><span>⚙️</span></button>
+      <button class="btn btn-ghost btn-sm" onclick="openProfilesModal()" title="จัดการ Flight Profiles"><span>📋</span></button>
       <button class="btn btn-ghost btn-sm" onclick="openPwModal()" title="เปลี่ยนรหัสผ่าน"><span>🔑</span></button>
       <button class="btn btn-ghost btn-sm" onclick="logout()" title="ออกจากระบบ"><span>ออก</span></button>
     </div>
@@ -589,6 +591,7 @@
           <div><label class="field-label">Document Date</label><input id="uc-documentDate" class="field-input" type="date"></div>
           <div><label class="field-label">Car Tag</label><input id="uc-carTag" class="field-input" type="text" placeholder="ทะเบียนรถ" data-acf="carTag" oninput="acInput(event,'uc-')"></div>
           <div style="grid-column:1/-1"><label class="field-label">MAWB</label><input id="uc-mawb" class="field-input" type="text" placeholder="Master Air Waybill" data-acf="mawb" oninput="acInput(event,'uc-')"></div>
+          <div><label class="field-label">Weight Lock (Kg) <span style="font-weight:400;color:#aaa;text-transform:none">0 = ไม่จำกัด</span></label><input id="uc-maxWeight" class="field-input" type="number" min="0" step="0.01" placeholder="0"></div>
           <div style="grid-column:1/-1"><label class="field-label">Remark</label><input id="uc-remark" class="field-input" type="text" placeholder="หมายเหตุ (ถ้ามี)"></div>
         </div>
       </div>
@@ -616,6 +619,7 @@
         <div><label class="field-label">Flight Time</label><input id="cf-flightTime" class="field-input" type="text" placeholder="เช่น 08:30" data-acf="flightTime" oninput="acInput(event,'cf-')"></div>
         <div><label class="field-label">Car Tag</label><input id="cf-carTag" class="field-input" type="text" placeholder="ทะเบียนรถ" data-acf="carTag" oninput="acInput(event,'cf-')"></div>
         <div style="grid-column:1/-1"><label class="field-label">MAWB</label><input id="cf-mawb" class="field-input" type="text" data-acf="mawb" oninput="acInput(event,'cf-')"></div>
+        <div><label class="field-label">Weight Lock (Kg) <span style="font-weight:400;color:#aaa;text-transform:none">0 = ไม่จำกัด</span></label><input id="cf-maxWeight" class="field-input" type="number" min="0" step="0.01" placeholder="0"></div>
         <div style="grid-column:1/-1"><label class="field-label">Remark</label><input id="cf-remark" class="field-input" type="text" placeholder="หมายเหตุ"></div>
       </div>
     </div>
@@ -889,11 +893,62 @@
   </div>
 </div>
 
+<!-- ══ Profiles Manager ══ -->
+<div id="profiles-modal" class="modal-overlay" onclick="if(event.target===this)closeProfilesModal()">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div><h2>📋 จัดการ Flight Profiles</h2><div class="mh-sub">บันทึกข้อมูลไฟลท์ที่ใช้บ่อย — คลิก "ลบ" เพื่อลบรายการที่ไม่ต้องการ</div></div>
+      <button class="modal-close" onclick="closeProfilesModal()">×</button>
+    </div>
+    <div id="profiles-modal-body" style="max-height:60vh;overflow-y:auto"></div>
+    <div class="modal-foot" style="justify-content:space-between">
+      <button class="btn btn-danger btn-sm" onclick="clearAllProfiles()">🗑 ล้างทั้งหมด</button>
+      <button class="btn btn-outline" onclick="closeProfilesModal()">ปิด</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"><span id="toast-icon"></span><span id="toast-msg"></span></div>
 
 <script>
 'use strict';
 // ══════════════════════════════════════════════
+// ══════════════════════════════════════════════
+//  FLIGHT PROFILE MANAGER
+// ══════════════════════════════════════════════
+const AC_PROFILE_LABELS={gateway:'Gateway',destination:'Dest',shift:'Shift',flightNo:'Flight No',flightTime:'Time',carTag:'Car Tag',mawb:'MAWB'};
+const AC_PROFILE_KEYS=['flightNo','gateway','destination','shift','flightTime','carTag','mawb'];
+function openProfilesModal()  { renderProfilesList(); document.getElementById('profiles-modal').classList.add('open'); }
+function closeProfilesModal() { document.getElementById('profiles-modal').classList.remove('open'); }
+function renderProfilesList() {
+  const profiles=loadFlightProfiles();
+  const body=document.getElementById('profiles-modal-body');
+  if (!profiles.length) {
+    body.innerHTML='<div style="text-align:center;padding:48px 20px;color:#ccc"><div style="font-size:44px;margin-bottom:12px">📋</div><div style="font-size:14px">ยังไม่มี Profile<br><span style="font-size:12px;color:#aaa">สร้างชีทแล้วระบบบันทึกให้อัตโนมัติ</span></div></div>';
+    return;
+  }
+  const hdr='<div style="padding:8px 20px;background:#f6f8fa;border-bottom:1px solid #eee;font-size:11px;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:.4px">'+profiles.length+' profiles — เรียงตามล่าสุด</div>';
+  const rows=profiles.map((p,i)=>{
+    const pills=AC_PROFILE_KEYS.filter(k=>p[k]).map(k=>`<span style="background:#e8f0fb;color:#1b2a4a;border-radius:4px;padding:2px 8px;font-size:11.5px;white-space:nowrap"><b>${AC_PROFILE_LABELS[k]}:</b> ${esc(p[k])}</span>`).join('');
+    return `<div style="display:flex;align-items:center;gap:10px;padding:11px 20px;border-bottom:1px solid #f0f2f5">`+
+      `<div style="flex:1;display:flex;flex-wrap:wrap;gap:5px">${pills||'<span style="color:#ccc;font-size:12px">ไม่มีข้อมูล</span>'}</div>`+
+      `<button class="btn btn-danger btn-xs" onclick="deleteFlightProfile(${i})">ลบ</button></div>`;
+  }).join('');
+  body.innerHTML=hdr+rows;
+}
+function deleteFlightProfile(idx) {
+  const profiles=loadFlightProfiles(); profiles.splice(idx,1);
+  localStorage.setItem(LS_FLIGHT_PROFILES,JSON.stringify(profiles));
+  if (typeof scheduleSave==='function') scheduleSave();
+  renderProfilesList(); toast('ลบ Profile แล้ว','warning');
+}
+function clearAllProfiles() {
+  if (!confirm('ล้าง Flight Profiles ทั้งหมด ใช่ไหม?')) return;
+  localStorage.removeItem(LS_FLIGHT_PROFILES);
+  if (typeof scheduleSave==='function') scheduleSave();
+  renderProfilesList(); toast('ล้าง Profiles ทั้งหมดแล้ว','warning');
+}
+
 //  CLOUD — JSONBin REST API
 // ══════════════════════════════════════════════
 const LS_JBBIN  = 'jb_bin_v1';
@@ -1222,7 +1277,7 @@ function logout() {
   document.getElementById('auth-inp').value  = '';
   document.getElementById('auth-err').textContent = '';
   ['create-popup','detail-popup','entry-popup','edit-entry-popup','dup-popup','delete-popup',
-   'edit-modal','pw-modal','users-modal','upload-create-popup']
+   'edit-modal','pw-modal','users-modal','upload-create-popup','profiles-modal']
     .forEach(id => document.getElementById(id).classList.remove('open'));
 }
 
@@ -1466,6 +1521,7 @@ function acSelect(e, idx) {
 // ══════════════════════════════════════════════
 function createDocument() {
   ['gateway','destination','shift','flightNo','flightTime','carTag','mawb','remark'].forEach(f=>{const el=document.getElementById('cf-'+f);if(el)el.value='';});
+  const mwEl=document.getElementById('cf-maxWeight');if(mwEl)mwEl.value='';
   const t=today();
   document.getElementById('cf-exportDate').value=t; document.getElementById('cf-documentDate').value=t;
   document.getElementById('create-popup').classList.add('open');
@@ -1474,9 +1530,10 @@ function createDocument() {
 function closeCreatePopup() { document.getElementById('create-popup').classList.remove('open'); }
 function confirmCreateDocument() {
   const g=id=>document.getElementById(id).value.trim(), gd=id=>document.getElementById(id).value;
+  const maxWt=parseFloat((document.getElementById('cf-maxWeight')||{}).value)||0;
   const doc={id:nextId(documents),docCode:genDocCode(),gateway:g('cf-gateway'),exportDate:gd('cf-exportDate'),
     shift:g('cf-shift'),flightNo:g('cf-flightNo'),flightTime:g('cf-flightTime'),destination:g('cf-destination'),
-    documentDate:gd('cf-documentDate'),carTag:g('cf-carTag'),mawb:g('cf-mawb'),remark:g('cf-remark'),createdAt:Date.now(),entries:[]};
+    documentDate:gd('cf-documentDate'),carTag:g('cf-carTag'),mawb:g('cf-mawb'),remark:g('cf-remark'),maxWeight:maxWt,createdAt:Date.now(),entries:[]};
   saveFlightProfile(doc); documents.unshift(doc); saveDocs(documents); closeCreatePopup(); renderList(); openDetailPopup(doc.id); toast('สร้างชีท '+doc.docCode);
 }
 
@@ -1502,8 +1559,14 @@ function refreshDetailPopup(doc) {
     ['Destination',doc.destination],['Document Date',doc.documentDate],['Car Tag',doc.carTag],['MAWB',doc.mawb]
   ].filter(([,v])=>v);
   document.getElementById('detail-meta').innerHTML=mf.map(([l,v])=>`<div class="dm-item"><div class="dm-label">${l}</div><div class="dm-value">${esc(v)}</div></div>`).join('');
+  const wtLockHtml=doc.maxWeight>0
+    ? (() => { const pct=Math.min(100,(t.weight/doc.maxWeight)*100); const over=t.weight>doc.maxWeight; const c=over?'#e74c3c':pct>=90?'#e67e22':'#27ae60';
+        return `<span style="display:inline-flex;align-items:center;gap:6px">Weight: <strong style="color:${c}">${t.weight.toFixed(2)} / ${doc.maxWeight} Kg</strong>`+
+          `<span style="display:inline-block;width:60px;height:6px;border-radius:3px;background:#eee;vertical-align:middle"><span style="display:block;width:${pct}%;height:100%;border-radius:3px;background:${c};transition:width .3s"></span></span>`+
+          (over?'<span style="color:#e74c3c;font-size:10px;font-weight:700">⛔ เกิน</span>':'')+'</span>'; })()
+    : `<span>Weight: <strong>${t.weight.toFixed(2)} Kg</strong></span>`;
   document.getElementById('entries-sum-bar').innerHTML=
-    `<span>Bag: <strong>${(doc.entries||[]).length}</strong></span><span>Shipment: <strong>${t.shipment}</strong></span><span>Weight: <strong>${t.weight.toFixed(2)} Kg</strong></span>`;
+    `<span>Bag: <strong>${(doc.entries||[]).length}</strong></span><span>Shipment: <strong>${t.shipment}</strong></span>${wtLockHtml}`;
   const entries=doc.entries||[];
   document.getElementById('entries-body').innerHTML=entries.length===0
     ? '<div style="text-align:center;padding:28px;color:#bbb;font-size:13.5px">ยังไม่มีรายการ — ยิงเลข Bag No เพื่อเริ่มบันทึก</div>'
@@ -1539,13 +1602,17 @@ function confirmDeleteDocument() {
 // ══════════════════════════════════════════════
 const FIELDS=[['Gateway','gateway','text'],['Export Date','exportDate','date'],['Destination','destination','text'],
   ['Shift','shift','text'],['Flight No','flightNo','text'],['Flight Time','flightTime','text'],
-  ['Document Date','documentDate','date'],['Car Tag','carTag','text'],['MAWB','mawb','text'],['Remark','remark','text']];
+  ['Document Date','documentDate','date'],['Car Tag','carTag','text'],['MAWB','mawb','text'],['Remark','remark','text'],
+  ['Weight Lock (Kg)','maxWeight','number']];
 function openEditModal(docId) {
   const doc=getDocById(docId); if (!doc) return;
   editingDocId=docId; document.getElementById('edit-modal-title').textContent='แก้ไข '+doc.docCode;
-  document.getElementById('edit-fields').innerHTML=FIELDS.map(([label,field,type])=>`
-    <div><label class="field-label">${label}</label>
-    <input class="field-input" type="${type}" id="ef-${field}" value="${esc(doc[field]??'')}" placeholder="${label}"></div>`).join('');
+  document.getElementById('edit-fields').innerHTML=FIELDS.map(([label,field,type])=>{
+    const val=type==='number'?(doc[field]||0):(doc[field]??'');
+    const extra=type==='number'?' min="0" step="0.01"':'';
+    const ph=type==='number'?'0':label;
+    return `<div><label class="field-label">${label}${field==='maxWeight'?' <span style="font-weight:400;color:#aaa;text-transform:none">0 = ไม่จำกัด</span>':''}</label><input class="field-input" type="${type}"${extra} id="ef-${field}" value="${esc(String(val))}" placeholder="${ph}"></div>`;
+  }).join('');
   document.getElementById('edit-modal').classList.add('open');
   setTimeout(()=>document.getElementById('ef-gateway')?.focus(),100);
 }
@@ -1553,7 +1620,7 @@ function closeEditModal() { document.getElementById('edit-modal').classList.remo
 function saveEditModal() {
   if (!editingDocId) return;
   const idx=documents.findIndex(d=>d.id===editingDocId); if (idx===-1) return;
-  FIELDS.forEach(([,field])=>{ const el=document.getElementById('ef-'+field); if(el) documents[idx][field]=el.value; });
+  FIELDS.forEach(([,field,type])=>{ const el=document.getElementById('ef-'+field); if(el) documents[idx][field]=type==='number'?(parseFloat(el.value)||0):el.value; });
   saveDocs(documents); closeEditModal(); renderList();
   if (currentDocId===editingDocId) refreshDetailPopup(getDocById(editingDocId));
   toast('บันทึกสำเร็จ', 'success');
@@ -1626,6 +1693,13 @@ function saveEntryPopup() {
   const doc=getDocById(currentDocId); if (!doc) return;
   const shipment=parseFloat(document.getElementById('ep-ship').value)||1;
   const weight=parseFloat(document.getElementById('ep-wt').value)||0;
+  if (doc.maxWeight>0) {
+    const cur=docTotals(doc).weight;
+    if (cur+weight>doc.maxWeight) {
+      toast(`⛔ น้ำหนักเกิน! รวมจะเป็น ${(cur+weight).toFixed(2)} Kg เกินลิมิต ${doc.maxWeight} Kg`,'error');
+      return;
+    }
+  }
   const entry={id:nextId(doc.entries||[]),bagNo:entryBagNo,shipment,weight,scannedAt:new Date().toISOString()};
   if (!doc.entries) doc.entries=[];
   doc.entries.push(entry); saveDocs(documents); refreshDetailPopup(doc); renderList();
@@ -1659,6 +1733,13 @@ function saveEditEntry() {
   if (!bagNo) { document.getElementById('ee-bagno').focus(); return; }
   const shipment=parseFloat(document.getElementById('ee-ship').value)||1;
   const weight=parseFloat(document.getElementById('ee-wt').value)||0;
+  if (doc.maxWeight>0) {
+    const otherWt=docTotals(doc).weight - Number(doc.entries[idx].weight||0);
+    if (otherWt+weight>doc.maxWeight) {
+      toast(`⛔ น้ำหนักเกิน! รวมจะเป็น ${(otherWt+weight).toFixed(2)} Kg เกินลิมิต ${doc.maxWeight} Kg`,'error');
+      return;
+    }
+  }
   doc.entries[idx]={...doc.entries[idx],bagNo,shipment,weight};
   saveDocs(documents); refreshDetailPopup(doc); renderList();
   toast('แก้ไข '+bagNo+' แล้ว', 'success');
@@ -1885,6 +1966,7 @@ function openUploadCreateModal() {
   fields.forEach(f=>{const el=document.getElementById('uc-'+f);if(el)el.value='';});
   ['uc-exportDate','uc-documentDate'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=t;});
   const r=document.getElementById('uc-remark'); if(r) r.value='';
+  const mwEl2=document.getElementById('uc-maxWeight');if(mwEl2)mwEl2.value='';
   document.getElementById('upload-create-popup').classList.add('open');
 }
 function closeUploadCreateModal() {
@@ -1953,9 +2035,10 @@ function confirmUploadCreate() {
       entries.push({id:entries.length+1,bagNo:bag,shipment:ship,weight:wt}); seen.add(bag);
     });
   }
+  const maxWtUc=parseFloat((document.getElementById('uc-maxWeight')||{}).value)||0;
   const doc={id:nextId(documents),docCode:genDocCode(),gateway:g('uc-gateway'),exportDate:gd('uc-exportDate'),
     shift:g('uc-shift'),flightNo:g('uc-flightNo'),flightTime:g('uc-flightTime'),destination:g('uc-destination'),
-    documentDate:gd('uc-documentDate'),carTag:g('uc-carTag'),mawb:g('uc-mawb'),remark:g('uc-remark'),createdAt:Date.now(),entries};
+    documentDate:gd('uc-documentDate'),carTag:g('uc-carTag'),mawb:g('uc-mawb'),remark:g('uc-remark'),maxWeight:maxWtUc,createdAt:Date.now(),entries};
   saveFlightProfile(doc); documents.unshift(doc); saveDocs(documents); renderList(); closeUploadCreateModal(); openDetailPopup(doc.id);
   toast(entries.length>0?`\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e0a\u0e35\u0e17 ${doc.docCode} \u0e19\u0e33\u0e40\u0e02\u0e49\u0e32 ${entries.length} \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23`:'\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e0a\u0e35\u0e17 '+doc.docCode);
 }
