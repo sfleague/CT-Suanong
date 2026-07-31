@@ -202,6 +202,15 @@
     .modal-head .mh-sub { font-size: 11px; color: #aaa; margin-top: 1px; }
     .modal-close { background: none; border: none; font-size: 22px; color: #aaa; cursor: pointer; line-height: 1; padding: 0 4px; }
     .modal-close:hover { color: #555; }
+    .btn-close-detail {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #f0f2f5; border: 1.5px solid #d0d5de;
+      color: #4a5568; font-size: 13.5px; font-weight: 600;
+      padding: 8px 16px; border-radius: 8px; cursor: pointer;
+      margin-left: 8px; transition: background .15s, border-color .15s, color .15s;
+      white-space: nowrap; letter-spacing: .1px;
+    }
+    .btn-close-detail:hover { background: #e2e6ed; border-color: #b0b8c8; color: #1b2a4a; }
     .modal-body { padding: 20px; }
     .modal-foot {
       padding: 14px 20px; border-top: 1px solid #eee;
@@ -631,7 +640,7 @@
         <button class="btn btn-teal btn-sm" style="font-size:15px;padding:8px 14px" title="พิมพ์ / บันทึก PDF" onclick="printCurrent()">🖨 PDF</button>
         <button class="btn btn-blue btn-sm" style="font-size:15px;padding:8px 14px" title="ส่งออกเป็น Excel" onclick="exportExcelCurrent()">📊 Excel</button>
         <button class="btn btn-danger btn-sm" style="font-size:15px;padding:8px 14px" title="ลบเอกสารนี้" onclick="deleteDocumentCurrent()">🗑 ลบ</button>
-        <button class="modal-close" onclick="closeDetailPopup()" style="margin-left:4px" title="ปิด">×</button>
+        <button class="btn-close-detail" onclick="closeDetailPopup()" title="ปิด">← ปิด</button>
       </div>
     </div>
     <div class="modal-body">
