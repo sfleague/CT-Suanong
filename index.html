@@ -329,12 +329,23 @@
     /* ── Toast ── */
     #toast {
       position: fixed; bottom: 26px; right: 26px;
-      background: #1b2a4a; color: #fff; padding: 10px 18px; border-radius: 8px;
-      font-size: 13px; font-weight: 600; box-shadow: 0 4px 16px rgba(0,0,0,.2);
-      opacity: 0; transform: translateY(8px); transition: opacity .25s, transform .25s;
-      pointer-events: none; z-index: 9999; max-width: 320px;
+      background: #1b2a4a; color: #fff;
+      padding: 13px 18px 13px 16px; border-radius: 12px;
+      font-size: 13.5px; font-weight: 600;
+      box-shadow: 0 6px 28px rgba(0,0,0,.22);
+      opacity: 0; transform: translateY(14px) scale(.97);
+      transition: opacity .22s, transform .22s;
+      pointer-events: none; z-index: 9999; max-width: 340px;
+      display: flex; align-items: center; gap: 10px;
+      border-left: 4px solid rgba(255,255,255,.35);
     }
-    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.show { opacity: 1; transform: translateY(0) scale(1); }
+    #toast.t-success { background: #1e7e45; border-left-color: #a7f3c0; }
+    #toast.t-error   { background: #c0392b; border-left-color: #ffb3b3; }
+    #toast.t-warning { background: #c87a00; border-left-color: #ffe4a0; }
+    #toast.t-info    { background: #1a6ea8; border-left-color: #a3d4ff; }
+    #toast-icon { font-size: 17px; flex-shrink: 0; }
+    #toast-msg  { line-height: 1.4; }
 
     .uc-section-divider { border: none; border-top: 1.5px dashed #e8e8e8; margin: 18px 0; }
 
@@ -444,7 +455,7 @@
       .upload-zone { flex-wrap: wrap; }
 
       /* ── Toast ── */
-      #toast { bottom: 16px; right: 10px; left: 10px; max-width: unset; text-align: center; }
+      #toast { bottom: 16px; right: 10px; left: 10px; max-width: unset; }
 
       /* ── First-setup box ── */
       .fs-box { padding: 28px 18px; }
@@ -640,7 +651,7 @@
         <button class="btn btn-teal btn-sm" style="font-size:15px;padding:8px 14px" title="พิมพ์ / บันทึก PDF" onclick="printCurrent()">🖨 PDF</button>
         <button class="btn btn-blue btn-sm" style="font-size:15px;padding:8px 14px" title="ส่งออกเป็น Excel" onclick="exportExcelCurrent()">📊 Excel</button>
         <button class="btn btn-danger btn-sm" style="font-size:15px;padding:8px 14px" title="ลบเอกสารนี้" onclick="deleteDocumentCurrent()">🗑 ลบ</button>
-        <button class="btn-close-detail" onclick="closeDetailPopup()" title="ปิด">← ปิด</button>
+        <button class="btn-close-detail" onclick="closeDetailPopup()" title="ปิด">✕ ปิด</button>
       </div>
     </div>
     <div class="modal-body">
@@ -893,7 +904,7 @@
   </div>
 </div>
 
-<div id="toast"></div>
+<div id="toast"><span id="toast-icon"></span><span id="toast-msg"></span></div>
 
 <script>
 'use strict';
@@ -948,7 +959,7 @@ async function cloudGet() {
   }
 }
 
-async function cloudPut(data) {
+async function cloudPut(data, showToast) {
   if (!hasCloud()) return false;
   try {
     setSyncBadge('saving', 'กำลังบันทึก…');
@@ -960,9 +971,11 @@ async function cloudPut(data) {
     if (!r.ok) throw new Error('status ' + r.status);
     setSyncBadge('ok', 'ซิงค์แล้ว');
     localStorage.setItem(LS_CACHE, JSON.stringify(data));
+    if (showToast) toast('บันทึกขึ้น Cloud สำเร็จ ☁️', 'success');
     return true;
   } catch(e) {
     setSyncBadge('error', 'ซิงค์ไม่ได้ ⚠️');
+    toast('ซิงค์ Cloud ไม่สำเร็จ — ตรวจสอบการเชื่อมต่อ', 'error');
     return false;
   }
 }
@@ -1063,7 +1076,7 @@ function _touchActivity() {
 
 function _idleLogout() {
   if (!currentUser) return; // ออกจากระบบแล้ว
-  toast('ออกจากระบบอัตโนมัติ เนื่องจากไม่มีการใช้งานนาน 30 นาที');
+  toast('ออกจากระบบอัตโนมัติ เนื่องจากไม่ได้ใช้งาน 30 นาที', 'warning');
   setTimeout(logout, 1800); // รอ toast แสดงก่อน
 }
 
@@ -1145,7 +1158,7 @@ function confirmResetAdmin() {
   document.getElementById('auth-inp').value  = '1234';
   document.getElementById('auth-err').textContent = '';
   scheduleSave();
-  toast('รีเซ็ต Admin สำเร็จ — เข้าสู่ระบบด้วย admin / 1234');
+  toast('รีเซ็ต Admin สำเร็จ — เข้าสู่ระบบด้วย admin / 1234', 'info');
 }
 
 // ══════════════════════════════════════════════
@@ -1212,6 +1225,7 @@ function enterMain() {
   if (hasCloud()) setSyncBadge('ok', 'Cloud เชื่อมต่อ');
   startIdleTimer();
   renderList();
+  toast('โหลดสำเร็จ — ยินดีต้อนรับ ' + currentUser.username, 'success');
 }
 
 function logout() {
@@ -1283,7 +1297,7 @@ async function tryAutoLogin() {
           if (hasCloud() && (!cloudData || (cloudData.documents||[]).length === 0) && documents.length > 0) {
             const data = { users: loadUsers(), documents: loadDocs(), bgUrl: localStorage.getItem(LS_BG) || '' };
             setSyncBadge('saving', 'กำลัง Push…');
-            cloudPut(data).then(ok => setSyncBadge(ok ? 'ok' : 'error', ok ? 'Push สำเร็จ' : 'Push ไม่สำเร็จ ⚠️'));
+            cloudPut(data, true).then(ok => setSyncBadge(ok ? 'ok' : 'error', ok ? 'ซิงค์แล้ว' : 'ซิงค์ไม่ได้'));
           } else {
             setSyncBadge('ok', 'ซิงค์แล้ว');
           }
@@ -1305,11 +1319,7 @@ async function tryAutoLogin() {
     sessionStorage.removeItem('parcel_last_active');
   }
 
-  // แสดงข้อความโหลดสำเร็จสั้น ๆ แล้วซ่อน
-  if (authStatusEl) {
-    authStatusEl.innerHTML = '<div style="background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:7px 12px;font-size:12px;color:#2e7d32;font-weight:600">✅ โหลดสำเร็จ</div>';
-    setTimeout(() => { if (authStatusEl) authStatusEl.innerHTML = ''; }, 2000);
-  }
+  // toast แจ้งเตือนโหลดสำเร็จจะขึ้นใน enterMain
 
   setTimeout(() => document.getElementById('auth-user').focus(), 50);
 }
@@ -1330,7 +1340,7 @@ function savePw() {
   if (newPw!==confPw) { err.textContent='รหัสใหม่ไม่ตรงกัน'; return; }
   const users=loadUsers(), idx=users.findIndex(u=>u.id===currentUser.id);
   if (idx===-1||users[idx].password!==oldPw) { err.textContent='รหัสปัจจุบันไม่ถูกต้อง'; return; }
-  users[idx].password=newPw; saveUsers(users); closePwModal(); toast('เปลี่ยนรหัสผ่านแล้ว');
+  users[idx].password=newPw; saveUsers(users); closePwModal(); toast('เปลี่ยนรหัสผ่านสำเร็จ', 'success');
 }
 
 // ══════════════════════════════════════════════
@@ -1367,21 +1377,29 @@ function addUser() {
   users.push({id:nextId(users),username,password,isAdmin});
   saveUsers(users); errEl.textContent='';
   document.getElementById('new-username').value=''; document.getElementById('new-password').value='';
-  document.getElementById('new-isadmin').checked=false; refreshUserList(); toast('เพิ่มผู้ใช้ '+username+' แล้ว');
+  document.getElementById('new-isadmin').checked=false; refreshUserList(); toast('เพิ่มผู้ใช้ '+username+' สำเร็จ', 'success');
 }
 function deleteUser(id) {
   if (!confirm('ยืนยันลบผู้ใช้นี้?')) return;
-  saveUsers(loadUsers().filter(u=>u.id!==id)); refreshUserList(); toast('ลบผู้ใช้แล้ว');
+  saveUsers(loadUsers().filter(u=>u.id!==id)); refreshUserList(); toast('ลบผู้ใช้สำเร็จ', 'warning');
 }
 
 // ══════════════════════════════════════════════
 //  HELPERS
 // ══════════════════════════════════════════════
 function today() { return new Date().toISOString().slice(0,10); }
-function toast(msg) {
+function toast(msg, type) {
   const el=document.getElementById('toast');
-  el.textContent=msg; el.classList.add('show');
-  clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),2400);
+  const iconEl=document.getElementById('toast-icon');
+  const msgEl=document.getElementById('toast-msg');
+  const icons={success:'✅',error:'❌',warning:'⚠️',info:'ℹ️'};
+  const dur={error:4000,warning:3200}[type]||2600;
+  el.className=''; // clear type classes
+  if(type) el.classList.add('t-'+type);
+  if(iconEl) iconEl.textContent=icons[type]||'';
+  if(msgEl) msgEl.textContent=msg; else el.textContent=msg;
+  el.classList.add('show');
+  clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),dur);
 }
 function esc(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function escXml(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&apos;').replace(/"/g,'&quot;'); }
@@ -1447,7 +1465,7 @@ function refreshDetailPopup(doc) {
     ? '<div style="text-align:center;padding:28px;color:#bbb;font-size:13.5px">ยังไม่มีรายการ — ยิงเลข Bag No เพื่อเริ่มบันทึก</div>'
     : `<div class="tbl-wrap"><table>
         <thead><tr><th style="width:36px;text-align:center">#</th><th>Bag No</th><th style="width:100px;text-align:center">Shipment</th><th style="width:110px;text-align:center">Weight (Kg)</th><th style="width:140px;text-align:center">เวลายิง</th><th style="width:90px"></th></tr></thead>
-        <tbody>${entries.map((e,i)=>`<tr><td style="color:#ccc;font-size:11px;text-align:center">${i+1}</td><td class="mono">${esc(e.bagNo)}</td><td class="td-num">${e.shipment}</td><td class="td-num">${Number(e.weight).toFixed(2)}</td><td style="font-size:11.5px;color:#666;white-space:nowrap;text-align:center">${fmtTime(e.scannedAt)}</td><td style="white-space:nowrap"><button class="btn-edit-row" onclick="openEditEntry(${doc.id},${e.id})">✏️</button><button class="btn-del-row" onclick="deleteEntry(${doc.id},${e.id})">ลบ</button></td></tr>`).join('')}</tbody>
+        <tbody>${entries.map((e,i)=>`<tr><td style="color:#ccc;font-size:11px;text-align:center">${i+1}</td><td class="mono">${esc(e.bagNo)}</td><td class="td-num">${e.shipment}</td><td class="td-num">${Number(e.weight).toFixed(2)}</td><td style="font-size:11.5px;color:#666;white-space:nowrap;text-align:center">${fmtTime(e.scannedAt)}</td><td style="white-space:nowrap"><button class="btn-edit-row" onclick="openEditEntry(${doc.id},${e.id})">✏️</button><button class="btn-del-row" onclick="deleteEntry(${doc.id},${e.id})" title="ลบ">🗑️</button></td></tr>`).join('')}</tbody>
         <tfoot><tr><td colspan="2" style="text-align:right;color:#888;font-size:11.5px">รวม</td><td class="td-num">${t.shipment}</td><td class="td-num">${t.weight.toFixed(2)}</td><td></td><td></td></tr></tfoot>
       </table></div>`;
   document.getElementById('inp-bag').value='';
@@ -1469,7 +1487,7 @@ function closeDeletePopup() { document.getElementById('delete-popup').classList.
 function confirmDeleteDocument() {
   if (!deleteTargetId) return;
   documents=documents.filter(d=>d.id!==deleteTargetId); saveDocs(documents);
-  closeDeletePopup(); closeDetailPopup(); renderList(); toast('ลบแล้ว');
+  closeDeletePopup(); closeDetailPopup(); renderList(); toast('ลบเอกสารสำเร็จ', 'warning');
 }
 
 // ══════════════════════════════════════════════
@@ -1494,7 +1512,7 @@ function saveEditModal() {
   FIELDS.forEach(([,field])=>{ const el=document.getElementById('ef-'+field); if(el) documents[idx][field]=el.value; });
   saveDocs(documents); closeEditModal(); renderList();
   if (currentDocId===editingDocId) refreshDetailPopup(getDocById(editingDocId));
-  toast('บันทึกแล้ว');
+  toast('บันทึกสำเร็จ', 'success');
 }
 
 // ══════════════════════════════════════════════
@@ -1567,7 +1585,7 @@ function saveEntryPopup() {
   const entry={id:nextId(doc.entries||[]),bagNo:entryBagNo,shipment,weight,scannedAt:new Date().toISOString()};
   if (!doc.entries) doc.entries=[];
   doc.entries.push(entry); saveDocs(documents); refreshDetailPopup(doc); renderList();
-  toast('บันทึก '+entryBagNo+' แล้ว'); closeEntryPopup(false);
+  toast('บันทึก '+entryBagNo+' แล้ว', 'success'); closeEntryPopup(false);
   const inp=document.getElementById('inp-bag'); if(inp){inp.value='';inp.focus();}
 }
 function deleteEntry(docId,entryId) {
@@ -1599,7 +1617,7 @@ function saveEditEntry() {
   const weight=parseFloat(document.getElementById('ee-wt').value)||0;
   doc.entries[idx]={...doc.entries[idx],bagNo,shipment,weight};
   saveDocs(documents); refreshDetailPopup(doc); renderList();
-  toast('แก้ไข '+bagNo+' แล้ว ✅');
+  toast('แก้ไข '+bagNo+' แล้ว', 'success');
   closeEditEntry();
 }
 
@@ -1635,7 +1653,7 @@ ${row([cell('รวม','String','S'),...Array(10).fill(cell('')),cell(''),cell(
   const _gw=(doc.gateway||'').trim();
   const _fname=[_gw,_datePart].filter(Boolean).join(' ')+'.xls';
   downloadBlob(xml,'application/vnd.ms-excel',_fname);
-  toast('Export Excel แล้ว');
+  toast('Export Excel สำเร็จ', 'success');
 }
 
 // ══════════════════════════════════════════════
@@ -1843,7 +1861,7 @@ function handleUCFileUpload(event) {
     try {
       const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
       const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
-      if (rows.length<2) { toast('\u0e44\u0e1f\u0e25\u0e4c\u0e27\u0e48\u0e32\u0e07\u0e40\u0e1b\u0e25\u0e48\u0e32'); return; }
+      if (rows.length<2) { toast('ไฟล์ว่างเปล่า', 'error'); return; }
       uploadColumns=rows[0].map(c=>String(c)); uploadData=rows.slice(1).filter(r=>r.some(c=>c!==''));
       ucFileReady=true;
       const autoBag=matchColumn(uploadColumns,BAG_ALIASES), autoShip=matchColumn(uploadColumns,SHIP_ALIASES), autoWt=matchColumn(uploadColumns,WT_ALIASES);
@@ -1860,7 +1878,7 @@ function handleUCFileUpload(event) {
       document.getElementById('uc-filename').textContent='\uD83D\uDCC4 '+file.name;
       document.getElementById('uc-flight-section').style.display=''; document.getElementById('uc-flight-toggle').textContent='\u25B2 \u0e22\u0e48\u0e2d';
       document.getElementById('uc-file-section').style.display='block'; refreshUCPreview();
-    } catch { toast('\u0e2d\u0e48\u0e32\u0e19\u0e44\u0e1f\u0e25\u0e4c\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49'); }
+    } catch { toast('อ่านไฟล์ไม่ได้', 'error'); }
   };
   reader.readAsArrayBuffer(file);
 }
@@ -1953,7 +1971,7 @@ function openSettingsModalRefreshFb() {
 }
 
 function downloadBakedFile() {
-  if (!cloudBin || !cloudKey) { toast('ยังไม่ได้เชื่อมต่อ JSONBin'); return; }
+  if (!cloudBin || !cloudKey) { toast('ยังไม่ได้เชื่อมต่อ Cloud', 'error'); return; }
   // อ่าน HTML ต้นฉบับแล้วแทนที่ค่า embedded credentials
   let html = document.documentElement.outerHTML;
   // แทนที่บรรทัด EMBED_JB_BIN และ EMBED_JB_KEY
@@ -1971,7 +1989,7 @@ function downloadBakedFile() {
   a.download = 'ct-sournong-jsonbin.html';
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-  toast('📥 ดาวน์โหลดไฟล์ฝัง JSONBin แล้ว — นำไปแทนที่ไฟล์เดิมได้เลย');
+  toast('ดาวน์โหลดไฟล์สำเร็จ', 'success');
 }
 
 async function adminConnectCloud() {
@@ -2020,22 +2038,22 @@ async function adminConnectCloud() {
 }
 
 async function forcePushToCloud() {
-  if (!hasCloud()) { toast('ยังไม่ได้เชื่อมต่อ JSONBin'); return; }
+  if (!hasCloud()) { toast('ยังไม่ได้เชื่อมต่อ Cloud', 'error'); return; }
   const btn = document.querySelector('#settings-modal .btn-primary');
   const origText = btn ? btn.textContent : '';
   if (btn) { btn.textContent = '⏳ กำลัง Push…'; btn.disabled = true; }
   const data = { users: loadUsers(), documents: loadDocs(), bgUrl: localStorage.getItem(LS_BG) || '' };
-  const ok = await cloudPut(data);
+  const ok = await cloudPut(data, true);
   if (btn) { btn.textContent = origText; btn.disabled = false; }
   if (ok) {
-    toast('✅ Push สำเร็จ — ข้อมูล ' + data.documents.length + ' รายการขึ้น Cloud แล้ว');
+    toast('Push สำเร็จ — ' + data.documents.length + ' รายการขึ้น Cloud แล้ว', 'success');
   } else {
-    toast('❌ Push ไม่สำเร็จ — ตรวจสอบการเชื่อมต่อ');
+    toast('Push ไม่สำเร็จ — ตรวจสอบการเชื่อมต่อ', 'error');
   }
 }
 
 function copyBinId() {
-  if (!cloudBin) { toast('ยังไม่มี Bin ID'); return; }
+  if (!cloudBin) { toast('ยังไม่มี Bin ID', 'error'); return; }
   navigator.clipboard.writeText(cloudBin).then(() => {
     const ok = document.getElementById('set-bin-copy-ok');
     if (ok) { ok.style.display = ''; setTimeout(() => ok.style.display = 'none', 3000); }
@@ -2043,7 +2061,7 @@ function copyBinId() {
     // fallback
     const el = document.getElementById('set-fb-url');
     if (el) { el.select(); document.execCommand('copy'); }
-    toast('คัดลอก Bin ID แล้ว: ' + cloudBin);
+    toast('คัดลอก Bin ID แล้ว', 'success');
   });
 }
 
@@ -2054,7 +2072,7 @@ function adminDisconnectCloud() {
   openSettingsModalRefreshFb();
   setSyncBadge('', '');
   updateCloudAuthBadge();
-  toast('ยกเลิกการเชื่อมต่อ JSONBin แล้ว');
+  toast('ยกเลิกการเชื่อมต่อ Cloud แล้ว', 'info');
 }
 
 function openSettingsModal() {
@@ -2092,7 +2110,7 @@ function saveBg() {
   applyBg(url);
   scheduleSave(); // sync to Firebase
   closeSettingsModal();
-  toast(url ? '✅ บันทึกและซิงค์รูปพื้นหลังแล้ว ☁️' : '🗑 ลบรูปพื้นหลังแล้ว');
+  toast(url ? 'บันทึกรูปพื้นหลังสำเร็จ' : 'ลบรูปพื้นหลังแล้ว', url ? 'success' : 'info');
 }
 
 function clearBg() {
