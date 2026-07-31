@@ -1012,6 +1012,7 @@ async function retryCloudLoad() {
 const STORE_USERS   = 'parcel_users_v1';
 const STORE_DOCS    = 'parcel_docs_v1';
 const STORE_SESSION = 'parcel_session_v1';
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 นาที — logout อัตโนมัติเมื่อไม่ได้ใช้งาน
 
 function safeJSON(str, fb) { try { const v=JSON.parse(str); return v??fb; } catch { return fb; } }
 
@@ -1038,6 +1039,36 @@ function saveSession(u, remember) {
 function clearSession(){
   try { sessionStorage.removeItem(STORE_SESSION); } catch {}
   try { localStorage.removeItem(STORE_SESSION); } catch {}
+}
+
+// ══════════════════════════════════════════════
+//  IDLE AUTO-LOGOUT
+// ══════════════════════════════════════════════
+let _idleTimer = null;
+
+function _touchActivity() {
+  sessionStorage.setItem('parcel_last_active', Date.now());
+  if (_idleTimer) { clearTimeout(_idleTimer); _idleTimer = null; }
+  _idleTimer = setTimeout(_idleLogout, IDLE_TIMEOUT_MS);
+}
+
+function _idleLogout() {
+  if (!currentUser) return; // ออกจากระบบแล้ว
+  toast('ออกจากระบบอัตโนมัติ เนื่องจากไม่มีการใช้งานนาน 30 นาที');
+  setTimeout(logout, 1800); // รอ toast แสดงก่อน
+}
+
+function startIdleTimer() {
+  const EVENTS = ['mousemove','mousedown','keydown','touchstart','scroll','click'];
+  EVENTS.forEach(ev => window.addEventListener(ev, _touchActivity, { passive: true }));
+  _touchActivity(); // เริ่มนับทันที
+}
+
+function stopIdleTimer() {
+  const EVENTS = ['mousemove','mousedown','keydown','touchstart','scroll','click'];
+  EVENTS.forEach(ev => window.removeEventListener(ev, _touchActivity));
+  if (_idleTimer) { clearTimeout(_idleTimer); _idleTimer = null; }
+  sessionStorage.removeItem('parcel_last_active');
 }
 
 function applyCloudData(data) {
@@ -1170,10 +1201,12 @@ function enterMain() {
   document.getElementById('btn-users').style.display = currentUser.isAdmin ? '' : 'none';
   document.getElementById('btn-site-settings').style.display = currentUser.isAdmin ? '' : 'none';
   if (hasCloud()) setSyncBadge('ok', 'Cloud เชื่อมต่อ');
+  startIdleTimer();
   renderList();
 }
 
 function logout() {
+  stopIdleTimer();
   clearSession(); currentUser=null; documents=[]; currentDocId=null;
   document.getElementById('main').style.display = 'none';
   document.getElementById('auth').style.display = 'flex';
@@ -1186,7 +1219,9 @@ function logout() {
 }
 
 async function tryAutoLogin() {
-  updateCloudAuthBadge();
+  // ซ่อนสถานะคลาวน์ในหน้า login — ไม่แสดงสถานะ loading/error
+  const authStatusEl = document.getElementById('cloud-status-auth');
+  if (authStatusEl) authStatusEl.innerHTML = '';
 
   // ถ้าไม่มี credentials ครบ → แสดงหน้าตั้งค่า
   if (!hasCloud()) {
@@ -1195,7 +1230,6 @@ async function tryAutoLogin() {
     // pre-fill ค่าที่ embed ไว้
     if (EMBED_JB_BIN) document.getElementById('fs-url').value = EMBED_JB_BIN;
     if (EMBED_JB_KEY) document.getElementById('fs-key').value = EMBED_JB_KEY;
-    // ถ้ามี key แต่ไม่มี bin → โฟกัสที่ช่อง Bin ID และแสดงข้อความแนะนำ
     if (!cloudBin && cloudKey) {
       document.getElementById('fs-setup-hint').style.display = '';
       document.getElementById('fs-setup-new').style.display  = 'none';
@@ -1211,50 +1245,64 @@ async function tryAutoLogin() {
     return;
   }
 
-  // แสดง auth พร้อม loading status
+  // แสดงหน้า login โดยไม่มีสถานะคลาวน์
   const authEl = document.getElementById('auth');
   authEl.style.display = 'flex';
-  setAuthCloudStatus('loading', '⏳ กำลังดึงข้อมูลจาก Cloud…');
 
-  const cloudData = await cloudGet();
-
-  if (cloudData) {
-    mergeCloudData(cloudData);
-    const n = (cloudData.documents||[]).length;
-    setAuthCloudStatus('ok', '☁️ Cloud: พบ ' + n + ' รายการ');
-  } else if (hasCloud()) {
-    const localN = loadDocs().length;
-    setAuthCloudStatus('error',
-      '⚠️ ดึง Cloud ไม่ได้ — ใช้ข้อมูลในเครื่อง (' + localN + ' รายการ) &nbsp;' +
-      '<a href="#" onclick="event.preventDefault();retryCloudLoad()" style="color:#c62828;font-weight:700">↺ ลองใหม่</a>');
-  }
-
+  // ตรวจสอบ session ก่อน (เพื่อ auto-login เร็ว ถ้ายังอยู่ในช่วง idle timeout)
   const session = loadSession();
-  if (!session) {
-    setTimeout(() => document.getElementById('auth-user').focus(), 50);
-    return;
+  const lastAct = parseInt(sessionStorage.getItem('parcel_last_active') || '0', 10);
+  const sessionStillValid = session && (Date.now() - lastAct < IDLE_TIMEOUT_MS);
+
+  // โหลด cloud ในพื้นหลัง (ไม่บล็อก UI)
+  const cloudPromise = hasCloud() ? cloudGet() : Promise.resolve(null);
+
+  if (sessionStillValid) {
+    // รีเฟรชภายใน timeout → auto-login ทันที ไม่รอ cloud
+    const users = loadUsers();
+    const user  = users.find(u => u.id === session.id);
+    if (user) {
+      currentUser = { id:user.id, username:user.username, isAdmin:!!user.isAdmin };
+      documents   = loadDocs();
+      enterMain();
+      // sync cloud หลังจาก login แล้ว
+      cloudPromise.then(cloudData => {
+        if (cloudData) {
+          mergeCloudData(cloudData);
+          documents = loadDocs();
+          renderList();
+          if (hasCloud() && (!cloudData || (cloudData.documents||[]).length === 0) && documents.length > 0) {
+            const data = { users: loadUsers(), documents: loadDocs(), bgUrl: localStorage.getItem(LS_BG) || '' };
+            setSyncBadge('saving', 'กำลัง Push…');
+            cloudPut(data).then(ok => setSyncBadge(ok ? 'ok' : 'error', ok ? 'Push สำเร็จ' : 'Push ไม่สำเร็จ ⚠️'));
+          } else {
+            setSyncBadge('ok', 'ซิงค์แล้ว');
+          }
+        }
+      });
+      return;
+    }
+    clearSession();
   }
 
-  const users = loadUsers();
-  const user  = users.find(u => u.id === session.id);
-  if (!user) {
+  // ไม่มี session หรือ session หมดอายุ → โหลด cloud แล้วรอ login
+  const cloudData = await cloudPromise;
+  if (cloudData) mergeCloudData(cloudData);
+
+  // ถ้ามี session แต่ไม่ใช่ recent refresh → เช็ค user แล้ว login
+  if (session && !sessionStillValid) {
+    // session หมดอายุ (idle) → ล้างและบังคับ login ใหม่
     clearSession();
-    setTimeout(() => document.getElementById('auth-user').focus(), 50);
-    return;
+    sessionStorage.removeItem('parcel_last_active');
   }
-  currentUser = { id:user.id, username:user.username, isAdmin:!!user.isAdmin };
-  documents   = loadDocs();
-  enterMain();
-  // ถ้า cloud ว่างแต่ local มีข้อมูล → push ขึ้น cloud ทันที
-  if (hasCloud() && (!cloudData || (cloudData.documents||[]).length === 0) && documents.length > 0) {
-    setSyncBadge('saving', 'กำลัง Push ข้อมูลขึ้น Cloud…');
-    const data = { users: loadUsers(), documents: loadDocs(), bgUrl: localStorage.getItem(LS_BG) || '' };
-    cloudPut(data).then(ok => {
-      setSyncBadge(ok ? 'ok' : 'error', ok ? 'Push สำเร็จ (' + data.documents.length + ' รายการ)' : 'Push ไม่สำเร็จ ⚠️');
-    });
-  } else {
-    setSyncBadge('ok', 'ซิงค์แล้ว');
+
+  // แสดงข้อความโหลดสำเร็จสั้น ๆ แล้วซ่อน
+  if (authStatusEl) {
+    authStatusEl.innerHTML = '<div style="background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:7px 12px;font-size:12px;color:#2e7d32;font-weight:600">✅ โหลดสำเร็จ</div>';
+    setTimeout(() => { if (authStatusEl) authStatusEl.innerHTML = ''; }, 2000);
   }
+
+  setTimeout(() => document.getElementById('auth-user').focus(), 50);
 }
 
 // ── Change Password ──
