@@ -1389,9 +1389,9 @@ function refreshDetailPopup(doc) {
   document.getElementById('entries-body').innerHTML=entries.length===0
     ? '<div style="text-align:center;padding:28px;color:#bbb;font-size:13.5px">ยังไม่มีรายการ — ยิงเลข Bag No เพื่อเริ่มบันทึก</div>'
     : `<div class="tbl-wrap"><table>
-        <thead><tr><th style="width:36px">#</th><th>Bag No</th><th style="width:110px">Shipment</th><th style="width:120px">Weight (Kg)</th><th style="width:90px"></th></tr></thead>
-        <tbody>${entries.map((e,i)=>`<tr><td style="color:#ccc;font-size:11px">${i+1}</td><td class="mono">${esc(e.bagNo)}</td><td class="td-num">${e.shipment}</td><td class="td-num">${Number(e.weight).toFixed(2)}</td><td style="white-space:nowrap"><button class="btn-edit-row" onclick="openEditEntry(${doc.id},${e.id})">✏️</button><button class="btn-del-row" onclick="deleteEntry(${doc.id},${e.id})">ลบ</button></td></tr>`).join('')}</tbody>
-        <tfoot><tr><td colspan="2" style="text-align:right;color:#888;font-size:11.5px">รวม</td><td class="td-num">${t.shipment}</td><td class="td-num">${t.weight.toFixed(2)}</td><td></td></tr></tfoot>
+        <thead><tr><th style="width:36px">#</th><th>Bag No</th><th style="width:100px">Shipment</th><th style="width:110px">Weight (Kg)</th><th style="width:140px">เวลายิง</th><th style="width:90px"></th></tr></thead>
+        <tbody>${entries.map((e,i)=>`<tr><td style="color:#ccc;font-size:11px">${i+1}</td><td class="mono">${esc(e.bagNo)}</td><td class="td-num">${e.shipment}</td><td class="td-num">${Number(e.weight).toFixed(2)}</td><td style="font-size:11.5px;color:#666;white-space:nowrap">${fmtTime(e.scannedAt)}</td><td style="white-space:nowrap"><button class="btn-edit-row" onclick="openEditEntry(${doc.id},${e.id})">✏️</button><button class="btn-del-row" onclick="deleteEntry(${doc.id},${e.id})">ลบ</button></td></tr>`).join('')}</tbody>
+        <tfoot><tr><td colspan="2" style="text-align:right;color:#888;font-size:11.5px">รวม</td><td class="td-num">${t.shipment}</td><td class="td-num">${t.weight.toFixed(2)}</td><td></td><td></td></tr></tfoot>
       </table></div>`;
   document.getElementById('inp-bag').value='';
 }
@@ -1491,11 +1491,23 @@ function closeEntryPopup(cancelled) {
   document.getElementById('entry-popup').classList.remove('open'); entryBagNo='';
   if (cancelled) { const inp=document.getElementById('inp-bag'); if(inp){inp.value='';inp.focus();} }
 }
+function fmtTime(iso) {
+  if (!iso) return '—';
+  try {
+    const d = new Date(iso);
+    const dd = String(d.getDate()).padStart(2,'0');
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const yy = d.getFullYear();
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mn = String(d.getMinutes()).padStart(2,'0');
+    return dd+'/'+mm+'/'+yy+' '+hh+':'+mn;
+  } catch(err) { return iso || '—'; }
+}
 function saveEntryPopup() {
   const doc=getDocById(currentDocId); if (!doc) return;
   const shipment=parseFloat(document.getElementById('ep-ship').value)||1;
   const weight=parseFloat(document.getElementById('ep-wt').value)||0;
-  const entry={id:nextId(doc.entries||[]),bagNo:entryBagNo,shipment,weight};
+  const entry={id:nextId(doc.entries||[]),bagNo:entryBagNo,shipment,weight,scannedAt:new Date().toISOString()};
   if (!doc.entries) doc.entries=[];
   doc.entries.push(entry); saveDocs(documents); refreshDetailPopup(doc); renderList();
   toast('บันทึก '+entryBagNo+' แล้ว'); closeEntryPopup(false);
@@ -1540,14 +1552,14 @@ function saveEditEntry() {
 function exportExcel(docId) {
   const doc=getDocById(docId); if (!doc) return;
   const t=docTotals(doc);
-  const H=['Doc Code','Gateway','Export Date','Shift','Flight No','Flight Time','Destination','Document Date','Car Tag','MAWB','Remark','Bag No','Shipment','Weight (Kg)'];
+  const H=['Doc Code','Gateway','Export Date','Shift','Flight No','Flight Time','Destination','Document Date','Car Tag','MAWB','Remark','Bag No','Shipment','Weight (Kg)','Scanned At'];
   const cell=(v,type,sid)=>`<Cell${sid?` ss:StyleID="${sid}"`:''}><Data ss:Type="${type||'String'}">${escXml(v)}</Data></Cell>`;
   const row=cells=>'<Row>'+cells.join('')+'</Row>';
   const meta=[doc.docCode,doc.gateway,doc.exportDate,doc.shift,doc.flightNo,doc.flightTime,doc.destination,doc.documentDate,doc.carTag,doc.mawb,doc.remark||''];
   const entries=doc.entries||[];
   const dataRows=entries.length>0
-    ? entries.map(e=>row(meta.map(v=>cell(v)).concat([cell(e.bagNo),cell(String(e.shipment),'Number'),cell(String(Number(e.weight).toFixed(2)),'Number')]))).join('\n')
-    : row(meta.map(v=>cell(v)).concat([cell(''),cell('0','Number'),cell('0','Number')]));
+    ? entries.map(e=>row(meta.map(v=>cell(v)).concat([cell(e.bagNo),cell(String(e.shipment),'Number'),cell(String(Number(e.weight).toFixed(2)),'Number'),cell(fmtTime(e.scannedAt))]))).join('\n')
+    : row(meta.map(v=>cell(v)).concat([cell(''),cell('0','Number'),cell('0','Number'),cell('')]));
   const xml=`<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?>
 <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
 <Styles><Style ss:ID="H"><Font ss:Bold="1"/><Interior ss:Color="#D0D8E8" ss:Pattern="Solid"/></Style>
@@ -1555,7 +1567,7 @@ function exportExcel(docId) {
 <Worksheet ss:Name="${escXml(doc.docCode)}"><Table>
 ${row(H.map(h=>cell(h,'String','H')))}
 ${dataRows}
-${row([cell('รวม','String','S'),...Array(10).fill(cell('')),cell(''),cell(''),cell(String(t.shipment),'Number','S'),cell(String(t.weight.toFixed(2)),'Number','S')])}
+${row([cell('รวม','String','S'),...Array(10).fill(cell('')),cell(''),cell(''),cell(String(t.shipment),'Number','S'),cell(String(t.weight.toFixed(2)),'Number','S'),cell('')])}
 </Table></Worksheet></Workbook>`;
   downloadBlob(xml,'application/vnd.ms-excel',doc.docCode+'.xls');
   toast('Export Excel แล้ว');
@@ -1572,8 +1584,8 @@ function printDocument(docId) {
     ['Document Date',doc.documentDate],['Car Tag',doc.carTag],['MAWB',doc.mawb],['Remark',doc.remark]];
   const entries=doc.entries||[];
   const rows=entries.length>0
-    ? entries.map((e,i)=>`<tr><td>${i+1}</td><td class="mono">${esc(e.bagNo)}</td><td>${e.shipment}</td><td>${Number(e.weight).toFixed(2)}</td></tr>`).join('')
-    : '<tr><td colspan="4" style="text-align:center;color:#aaa">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23</td></tr>';
+    ? entries.map((e,i)=>`<tr><td>${i+1}</td><td class="mono">${esc(e.bagNo)}</td><td>${e.shipment}</td><td>${Number(e.weight).toFixed(2)}</td><td>${fmtTime(e.scannedAt)}</td></tr>`).join('')
+    : '<tr><td colspan="5" style="text-align:center;color:#aaa">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23</td></tr>';
   const w=window.open('','_blank','width=900,height=700');
   if (!w) { alert('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e2d\u0e19\u0e38\u0e0d\u0e32\u0e15 Popup \u0e43\u0e19\u0e40\u0e1a\u0e23\u0e32\u0e27\u0e4c\u0e40\u0e0b\u0e2d\u0e23\u0e4c'); return; }
   w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${esc(doc.docCode)}</title>
@@ -1587,8 +1599,8 @@ tr:nth-child(even) td{background:#f9fafb;}tfoot td{background:#e8edf3;font-weigh
 @media print{body{padding:14px;}@page{size:A4;margin:14mm;}}</style></head><body>
 <h1>${esc(doc.docCode)}</h1><div class="sub">\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48 ${new Date().toLocaleString('th-TH')}</div>
 <div class="meta">${meta.map(([l,v])=>`<div class="mi"><span class="ml">${l}</span><span class="mv">${esc(v)||'—'}</span></div>`).join('')}</div>
-<table><thead><tr><th>#</th><th>Bag No</th><th>Shipment</th><th>Weight (Kg)</th></tr></thead><tbody>${rows}</tbody>
-<tfoot><tr><td colspan="2" style="text-align:right">\u0e23\u0e27\u0e21</td><td>${t.shipment}</td><td>${t.weight.toFixed(2)}</td></tr></tfoot></table>
+<table><thead><tr><th>#</th><th>Bag No</th><th>Shipment</th><th>Weight (Kg)</th><th>เวลายิง</th></tr></thead><tbody>${rows}</tbody>
+<tfoot><tr><td colspan="2" style="text-align:right">\u0e23\u0e27\u0e21</td><td>${t.shipment}</td><td>${t.weight.toFixed(2)}</td><td></td></tr></tfoot></table>
 <div class="totals">\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23 <strong>${entries.length}</strong> &nbsp;|&nbsp; Shipment \u0e23\u0e27\u0e21 <strong>${t.shipment}</strong> &nbsp;|&nbsp; Weight \u0e23\u0e27\u0e21 <strong>${t.weight.toFixed(2)} Kg</strong></div>
 <script>window.onload=function(){window.print();setTimeout(function(){window.close();},800);};<\/script></body></html>`);
   w.document.close();
