@@ -329,12 +329,116 @@
 
     .uc-section-divider { border: none; border-top: 1.5px dashed #e8e8e8; margin: 18px 0; }
 
-    @media (max-width: 600px) {
-      .auth-box { padding: 32px 22px; width: 95%; }
+    /* ============================================================
+       MOBILE RESPONSIVE — max-width 640px
+       ============================================================ */
+    @media (max-width: 640px) {
+      /* ── Auth ── */
+      .auth-box { padding: 28px 18px; width: 95%; }
+
+      /* ── Header ── */
+      .header {
+        padding: 6px 10px; height: auto; min-height: 48px;
+        flex-wrap: wrap; gap: 4px;
+      }
+      .h-logo  { font-size: 18px; }
+      .h-title { font-size: 14px; }
+      .h-user  { font-size: 11px; }
+      .h-sp    { flex: 1; min-width: 8px; }
+      .h-acts  { gap: 4px; flex-wrap: wrap; }
+      .h-acts .btn { padding: 5px 8px; font-size: 12px; }
+      .h-acts .btn-sm span { display: none; }
+      /* ── Sync badge ── */
+      .sync-badge { font-size: 10px; padding: 2px 7px; }
+
+      /* ── Page ── */
+      .page { padding: 14px 10px; }
+      .page-head { flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 14px; }
+      .page-head h2 { font-size: 18px; }
+
+      /* ── Forms ── */
       .create-form, .ep-fields { grid-template-columns: 1fr; }
       .detail-meta { grid-template-columns: 1fr 1fr; }
       .add-user-form { grid-template-columns: 1fr; }
-      .h-acts .btn-sm span { display: none; }
+
+      /* ── Sum bar ── */
+      .sum-bar { flex-wrap: wrap; gap: 6px 14px; }
+
+      /* ── Modal: slide up from bottom ── */
+      .modal-overlay { padding: 0; align-items: flex-end; }
+      .modal-box {
+        border-radius: 16px 16px 0 0; max-height: 94vh;
+        width: 100%; max-width: 100%;
+      }
+      .modal-head { padding: 12px 14px; }
+      .modal-body { padding: 14px; }
+      .modal-foot { padding: 10px 14px; flex-wrap: wrap; }
+      .modal-foot .btn { flex: 1; justify-content: center; min-width: 90px; }
+
+      /* ── Detail popup: action buttons ── */
+      #detail-popup .modal-head {
+        flex-wrap: wrap; row-gap: 8px;
+      }
+      #detail-popup .modal-head .detail-head-acts {
+        width: 100%; justify-content: stretch;
+      }
+      #detail-popup .modal-head .detail-head-acts .btn-sm {
+        flex: 1; justify-content: center; padding: 7px 4px; font-size: 13px;
+      }
+
+      /* ── Doc-table: mobile card layout ── */
+      .doc-table thead { display: none; }
+      .doc-table { border-spacing: 0 8px; }
+      .doc-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        border-radius: 10px;
+      }
+      .doc-row td { display: block; border-bottom: none; }
+      .doc-row .dtr-num { display: none; }
+      .doc-row td:nth-child(2) { padding: 12px 12px 2px; }
+      .doc-row td:nth-child(3) { padding: 2px 12px 6px; font-size: 11.5px; }
+      .doc-row td:nth-child(4) { padding: 2px 12px 10px; }
+      .doc-row td:nth-child(5),
+      .doc-row td:nth-child(6) { display: none; }
+      .doc-row .dtr-remark { display: none; }
+      .doc-row .dtr-stat { text-align: left; }
+      .doc-row .dtr-sval { font-size: 13px; }
+      .doc-row .dtr-stat::before {
+        content: '📦 Bag: ';
+        font-size: 10.5px; font-weight: 700; color: #aaa; text-transform: uppercase;
+      }
+      .doc-row .dtr-actions {
+        grid-column: 2;
+        grid-row: 1 / 4;
+        display: flex !important;
+        flex-direction: column;
+        gap: 4px;
+        padding: 8px 8px 8px 4px !important;
+        align-items: stretch;
+        white-space: normal;
+      }
+      .doc-row .dtr-actions .btn {
+        padding: 8px 6px; font-size: 15px;
+        justify-content: center; flex: 1;
+      }
+
+      /* ── Entries table ── */
+      .entries-head { flex-direction: column; align-items: flex-start; gap: 6px; }
+      .tbl-wrap { -webkit-overflow-scrolling: touch; }
+
+      /* ── Scan box ── */
+      .scan-box { flex-wrap: wrap; }
+      .scan-box input { width: 100%; flex: unset; }
+
+      /* ── Upload zone ── */
+      .upload-zone { flex-wrap: wrap; }
+
+      /* ── Toast ── */
+      #toast { bottom: 16px; right: 10px; left: 10px; max-width: unset; text-align: center; }
+
+      /* ── First-setup box ── */
+      .fs-box { padding: 28px 18px; }
     }
     @media print {
       * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -522,7 +626,7 @@
   <div class="modal-box">
     <div class="modal-head">
       <div><h2 id="detail-title">—</h2><div class="mh-sub" id="detail-subtitle"></div></div>
-      <div style="display:flex;gap:6px;align-items:center">
+      <div class="detail-head-acts" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
         <button class="btn btn-outline btn-sm" style="font-size:15px;padding:8px 14px" title="แก้ไขเอกสาร" onclick="openEditModalCurrent()">✏️ แก้ไข</button>
         <button class="btn btn-teal btn-sm" style="font-size:15px;padding:8px 14px" title="พิมพ์ / บันทึก PDF" onclick="printCurrent()">🖨 PDF</button>
         <button class="btn btn-blue btn-sm" style="font-size:15px;padding:8px 14px" title="ส่งออกเป็น Excel" onclick="exportExcelCurrent()">📊 Excel</button>
@@ -1504,6 +1608,7 @@ function renderList() {
   }
   el.innerHTML=`<div class="page">
     <div class="page-head"><div><h2>\u0e40\u0e2d\u0e01\u0e2a\u0e32\u0e23\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14</h2><p>${docs.length} \u0e0a\u0e35\u0e17</p></div></div>
+    <div class="doc-table-wrap" style="overflow-x:auto">
     <table class="doc-table">
       <thead><tr><th>#</th><th>Gateway / \u0e44\u0e1f\u0e25\u0e17\u0e4c</th><th>\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48</th>
         <th style="text-align:center">Bag</th><th style="text-align:center">Shipment</th>
@@ -1532,6 +1637,7 @@ function renderList() {
           </td>
         </tr>`;}).join('')}</tbody>
     </table>
+    </div>
   </div>`;
 }
 
