@@ -494,7 +494,7 @@
         <input type="checkbox" id="auth-remember" style="width:16px;height:16px;cursor:pointer" checked>
         จำฉันไว้ในบราวเซอร์นี้
       </label>
-      <button type="submit" class="auth-btn auth-btn-main">เข้าสู่ระบบ</button>
+      <button type="submit" id="auth-submit-btn" class="auth-btn auth-btn-main">เข้าสู่ระบบ</button>
     </form>
   </div>
 </div>
@@ -1141,7 +1141,7 @@ async function doAuth() {
   if (!username) { showAuthErr('กรุณาใส่ Username'); return; }
   if (!password) { showAuthErr('กรุณาใส่ Password'); return; }
 
-  const btn = document.querySelector('.auth-btn-main');
+  const btn = document.getElementById('auth-submit-btn');
   btn.textContent = '⏳ กำลังโหลด…'; btn.disabled = true;
 
   // Pull + merge latest data from cloud
