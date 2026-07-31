@@ -1576,7 +1576,7 @@ ${row([cell('รวม','String','S'),...Array(10).fill(cell('')),cell(''),cell(
   const _yy=String(_ed.getFullYear()).slice(-2);
   const _datePart=_dd+_mmm+_yy;
   const _gw=(doc.gateway||'').trim();
-  const _fname=[_gw,doc.docCode,_datePart].filter(Boolean).join(' ')+'.xls';
+  const _fname=[_gw,_datePart].filter(Boolean).join(' ')+'.xls';
   downloadBlob(xml,'application/vnd.ms-excel',_fname);
   toast('Export Excel แล้ว');
 }
@@ -1592,8 +1592,8 @@ function printDocument(docId) {
     ['Document Date',doc.documentDate],['Car Tag',doc.carTag],['MAWB',doc.mawb],['Remark',doc.remark]];
   const entries=doc.entries||[];
   const rows=entries.length>0
-    ? entries.map((e,i)=>`<tr><td>${i+1}</td><td class="mono">${esc(e.bagNo)}</td><td>${e.shipment}</td><td>${Number(e.weight).toFixed(2)}</td><td>${fmtTime(e.scannedAt)}</td></tr>`).join('')
-    : '<tr><td colspan="5" style="text-align:center;color:#aaa">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23</td></tr>';
+    ? entries.map((e,i)=>`<tr><td>${i+1}</td><td class="mono">${esc(e.bagNo)}</td><td>${e.shipment}</td><td>${Number(e.weight).toFixed(2)}</td></tr>`).join('')
+    : '<tr><td colspan="4" style="text-align:center;color:#aaa">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23</td></tr>';
   const w=window.open('','_blank','width=900,height=700');
   if (!w) { alert('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e2d\u0e19\u0e38\u0e0d\u0e32\u0e15 Popup \u0e43\u0e19\u0e40\u0e1a\u0e23\u0e32\u0e27\u0e4c\u0e40\u0e0b\u0e2d\u0e23\u0e4c'); return; }
   w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${esc(doc.docCode)}</title>
@@ -1607,8 +1607,8 @@ tr:nth-child(even) td{background:#f9fafb;}tfoot td{background:#e8edf3;font-weigh
 @media print{body{padding:14px;}@page{size:A4;margin:14mm;}}</style></head><body>
 <h1>${esc(doc.docCode)}</h1><div class="sub">\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48 ${new Date().toLocaleString('th-TH')}</div>
 <div class="meta">${meta.map(([l,v])=>`<div class="mi"><span class="ml">${l}</span><span class="mv">${esc(v)||'—'}</span></div>`).join('')}</div>
-<table><thead><tr><th>#</th><th>Bag No</th><th>Shipment</th><th>Weight (Kg)</th><th>เวลายิง</th></tr></thead><tbody>${rows}</tbody>
-<tfoot><tr><td colspan="2" style="text-align:right">\u0e23\u0e27\u0e21</td><td>${t.shipment}</td><td>${t.weight.toFixed(2)}</td><td></td></tr></tfoot></table>
+<table><thead><tr><th>#</th><th>Bag No</th><th>Shipment</th><th>Weight (Kg)</th></tr></thead><tbody>${rows}</tbody>
+<tfoot><tr><td colspan="2" style="text-align:right">\u0e23\u0e27\u0e21</td><td>${t.shipment}</td><td>${t.weight.toFixed(2)}</td></tr></tfoot></table>
 <div class="totals">\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23 <strong>${entries.length}</strong> &nbsp;|&nbsp; Shipment \u0e23\u0e27\u0e21 <strong>${t.shipment}</strong> &nbsp;|&nbsp; Weight \u0e23\u0e27\u0e21 <strong>${t.weight.toFixed(2)} Kg</strong></div>
 <script>window.onload=function(){window.print();setTimeout(function(){window.close();},800);};<\/script></body></html>`);
   w.document.close();
