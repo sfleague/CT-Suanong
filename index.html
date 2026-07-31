@@ -54,11 +54,7 @@
     .auth-btn  { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; margin-bottom: 8px; transition: background .15s; }
     .auth-btn-main { background: #1b2a4a; color: #fff; }
     .auth-btn-main:hover { background: #2c4170; }
-    .auth-hint { font-size: 11px; color: #bbb; margin-top: 10px; }
-    .auth-reset-link { display: inline-block; margin-top: 14px; font-size: 12px; color: #aaa; cursor: pointer; text-decoration: underline; }
-    .auth-reset-link:hover { color: #e74c3c; }
-    .cloud-setup-link { display: inline-block; margin-top: 8px; font-size: 12px; color: #2980b9; cursor: pointer; text-decoration: underline; }
-    .cloud-setup-link:hover { color: #1a6ea8; }
+
 
 
     /* ── First-time setup overlay ── */
@@ -228,7 +224,6 @@
     #edit-modal   .modal-box { max-width: 600px; }
     #pw-modal     .modal-box { max-width: 380px; }
     #users-modal  .modal-box { max-width: 600px; }
-    #reset-confirm .modal-box { max-width: 380px; }
     #cloud-modal  .modal-box { max-width: 480px; }
     #upload-create-popup .modal-box { max-width: 680px; }
 
@@ -540,24 +535,6 @@
 </div>
 
 
-<!-- ══ Reset admin ══ -->
-<div id="reset-confirm" class="modal-overlay" onclick="if(event.target===this)closeResetConfirm()">
-  <div class="modal-box">
-    <div class="modal-head"><h2>🔓 รีเซ็ตรหัสผ่าน Admin</h2><button class="modal-close" onclick="closeResetConfirm()">×</button></div>
-    <div class="modal-body" style="text-align:center;padding:28px 20px">
-      <div style="font-size:44px;margin-bottom:14px">⚠️</div>
-      <div style="font-size:15px;font-weight:600;color:#1b2a4a;margin-bottom:10px">รีเซ็ต Admin เป็นค่าเริ่มต้น</div>
-      <div style="font-size:13px;color:#888;line-height:1.7;margin-bottom:16px">
-        จะ<b>ลบข้อมูลผู้ใช้ทั้งหมด</b> และสร้าง admin ใหม่ด้วย<br>username: <b>admin</b> / password: <b>1234</b><br>
-        <span style="color:#27ae60">✔ ข้อมูลพัสดุและเอกสารยังคงอยู่</span>
-      </div>
-    </div>
-    <div class="modal-foot">
-      <button class="btn btn-outline" onclick="closeResetConfirm()">ยกเลิก</button>
-      <button class="btn btn-danger" onclick="confirmResetAdmin()" style="min-width:140px">🔓 รีเซ็ต Admin</button>
-    </div>
-  </div>
-</div>
 
 <!-- ══ Upload+Create ══ -->
 <div id="upload-create-popup" class="modal-overlay" onclick="if(event.target===this)closeUploadCreateModal()">
@@ -1147,19 +1124,6 @@ function initStorage() {
 // ══════════════════════════════════════════════
 //  RESET ADMIN
 // ══════════════════════════════════════════════
-function openResetConfirm()  { document.getElementById('reset-confirm').classList.add('open'); }
-function closeResetConfirm() { document.getElementById('reset-confirm').classList.remove('open'); }
-function confirmResetAdmin() {
-  const users = [{id:1, username:'admin', password:'1234', isAdmin:true}];
-  localStorage.setItem(STORE_USERS, JSON.stringify(users));
-  clearSession();
-  closeResetConfirm();
-  document.getElementById('auth-user').value = 'admin';
-  document.getElementById('auth-inp').value  = '1234';
-  document.getElementById('auth-err').textContent = '';
-  scheduleSave();
-  toast('รีเซ็ต Admin สำเร็จ — เข้าสู่ระบบด้วย admin / 1234', 'info');
-}
 
 // ══════════════════════════════════════════════
 //  STATE
@@ -1237,7 +1201,7 @@ function logout() {
   document.getElementById('auth-inp').value  = '';
   document.getElementById('auth-err').textContent = '';
   ['create-popup','detail-popup','entry-popup','edit-entry-popup','dup-popup','delete-popup',
-   'edit-modal','pw-modal','users-modal','upload-create-popup','reset-confirm']
+   'edit-modal','pw-modal','users-modal','upload-create-popup']
     .forEach(id => document.getElementById(id).classList.remove('open'));
 }
 
