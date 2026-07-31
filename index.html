@@ -1635,30 +1635,107 @@ ${row([cell('รวม','String','S'),...Array(10).fill(cell('')),cell(''),cell(
 function printDocument(docId) {
   const doc=getDocById(docId); if (!doc) return;
   const t=docTotals(doc);
-  const meta=[['Doc Code',doc.docCode],['Gateway',doc.gateway],['Export Date',doc.exportDate],['Shift',doc.shift],
-    ['Flight No',doc.flightNo],['Flight Time',doc.flightTime],['Destination',doc.destination],
-    ['Document Date',doc.documentDate],['Car Tag',doc.carTag],['MAWB',doc.mawb],['Remark',doc.remark]];
   const entries=doc.entries||[];
   const rows=entries.length>0
-    ? entries.map((e,i)=>`<tr><td>${i+1}</td><td class="mono">${esc(e.bagNo)}</td><td>${e.shipment}</td><td>${Number(e.weight).toFixed(2)}</td></tr>`).join('')
-    : '<tr><td colspan="4" style="text-align:center;color:#aaa">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23</td></tr>';
-  const w=window.open('','_blank','width=900,height=700');
+    ? entries.map((e,i)=>`<tr><td class="c-no">${i+1}</td><td class="c-bag mono">${esc(e.bagNo)}</td><td class="c-num">${e.shipment}</td><td class="c-num">${Number(e.weight).toFixed(2)}</td></tr>`).join('')
+    : '<tr><td colspan="4" class="empty">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23</td></tr>';
+  const mv=(v)=>esc(v)||'\u2014';
+  const printDate=new Date().toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  const w=window.open('','_blank','width=960,height=760');
   if (!w) { alert('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e2d\u0e19\u0e38\u0e0d\u0e32\u0e15 Popup \u0e43\u0e19\u0e40\u0e1a\u0e23\u0e32\u0e27\u0e4c\u0e40\u0e0b\u0e2d\u0e23\u0e4c'); return; }
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${esc(doc.docCode)}</title>
-<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Segoe UI',Arial,sans-serif;padding:28px;font-size:12px;}
-h1{font-size:18px;font-weight:700;margin-bottom:4px;color:#1b2a4a;}.sub{font-size:11px;color:#888;margin-bottom:18px;}
-.meta{display:grid;grid-template-columns:repeat(3,1fr);gap:6px 16px;margin-bottom:20px;padding-bottom:16px;border-bottom:1.5px solid #ddd;}
-.mi{display:flex;flex-direction:column;}.ml{font-size:9px;font-weight:700;color:#aaa;text-transform:uppercase;}.mv{font-size:12px;font-weight:600;margin-top:1px;}
-table{width:100%;border-collapse:collapse;}th,td{padding:7px 10px;border:1px solid #ccc;font-size:11.5px;}th{background:#e8edf3;font-weight:700;}
-tr:nth-child(even) td{background:#f9fafb;}tfoot td{background:#e8edf3;font-weight:700;}.mono{font-family:monospace;}
-.totals{margin-top:14px;font-size:12px;color:#555;text-align:right;}.totals strong{color:#1b2a4a;}
-@media print{body{padding:14px;}@page{size:A4;margin:14mm;}}</style></head><body>
-<h1>${esc(doc.docCode)}</h1><div class="sub">\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48 ${new Date().toLocaleString('th-TH')}</div>
-<div class="meta">${meta.map(([l,v])=>`<div class="mi"><span class="ml">${l}</span><span class="mv">${esc(v)||'—'}</span></div>`).join('')}</div>
-<table><thead><tr><th>#</th><th>Bag No</th><th>Shipment</th><th>Weight (Kg)</th></tr></thead><tbody>${rows}</tbody>
-<tfoot><tr><td colspan="2" style="text-align:right">\u0e23\u0e27\u0e21</td><td>${t.shipment}</td><td>${t.weight.toFixed(2)}</td></tr></tfoot></table>
-<div class="totals">\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23 <strong>${entries.length}</strong> &nbsp;|&nbsp; Shipment \u0e23\u0e27\u0e21 <strong>${t.shipment}</strong> &nbsp;|&nbsp; Weight \u0e23\u0e27\u0e21 <strong>${t.weight.toFixed(2)} Kg</strong></div>
-<script>window.onload=function(){window.print();setTimeout(function(){window.close();},800);};<\/script></body></html>`);
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>${esc(doc.gateway||doc.docCode)}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#222;font-size:12px;padding:32px 36px;}
+
+/* ── Header ── */
+.doc-header{display:flex;align-items:flex-start;justify-content:space-between;border-bottom:3px solid #1b2a4a;padding-bottom:14px;margin-bottom:20px;}
+.doc-header-left{}
+.doc-gw{font-size:28px;font-weight:800;color:#1b2a4a;letter-spacing:.5px;line-height:1;}
+.doc-code{font-size:12px;color:#888;margin-top:4px;font-weight:500;letter-spacing:.3px;}
+.doc-header-right{text-align:right;}
+.doc-print-date{font-size:10px;color:#aaa;}
+.doc-totals-badge{margin-top:6px;display:flex;gap:8px;justify-content:flex-end;}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10.5px;font-weight:700;}
+.badge-bag{background:#fff3e0;color:#e65100;}
+.badge-ship{background:#e8f5e9;color:#2e7d32;}
+.badge-wt{background:#e3f2fd;color:#1565c0;}
+
+/* ── Meta grid ── */
+.meta-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid #d8dde6;border-radius:8px;overflow:hidden;margin-bottom:22px;}
+.meta-cell{padding:9px 13px;border-right:1px solid #d8dde6;border-bottom:1px solid #d8dde6;}
+.meta-cell:nth-child(4n){border-right:none;}
+.meta-cell:nth-last-child(-n+4){border-bottom:none;}
+.meta-cell.wide{grid-column:span 2;}
+.ml{font-size:9px;font-weight:700;color:#9aa0ab;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;}
+.mv{font-size:12px;font-weight:600;color:#1b2a4a;}
+
+/* ── Table ── */
+table{width:100%;border-collapse:collapse;font-size:11.5px;}
+colgroup col.c-no  {width:44px;}
+colgroup col.c-bag {width:auto;}
+colgroup col.c-num {width:90px;}
+thead tr{background:#1b2a4a;color:#fff;}
+thead th{padding:9px 12px;font-weight:700;text-align:left;font-size:11px;letter-spacing:.3px;}
+thead th.r{text-align:right;}
+tbody tr:nth-child(even){background:#f5f7fa;}
+tbody tr:hover{background:#eef2f8;}
+tbody td{padding:8px 12px;border-bottom:1px solid #e8eaef;vertical-align:middle;}
+td.c-no{color:#bbb;font-size:10px;text-align:center;}
+td.c-bag{font-family:'Courier New',monospace;font-size:12.5px;font-weight:600;letter-spacing:.3px;}
+td.c-num{text-align:right;font-variant-numeric:tabular-nums;}
+td.empty{text-align:center;color:#bbb;padding:24px;}
+tfoot tr{background:#eef2f8;}
+tfoot td{padding:9px 12px;font-weight:700;font-size:12px;border-top:2px solid #1b2a4a;}
+tfoot td.r{text-align:right;}
+
+@media print{
+  body{padding:14px 16px;}
+  thead tr{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  @page{size:A4;margin:12mm 14mm;}
+}
+</style></head><body>
+
+<div class="doc-header">
+  <div class="doc-header-left">
+    <div class="doc-gw">${esc(doc.gateway||'\u2014')}</div>
+    <div class="doc-code">Doc: ${esc(doc.docCode)}${doc.destination?' &nbsp;\u00B7&nbsp; Dest: '+esc(doc.destination):''}</div>
+  </div>
+  <div class="doc-header-right">
+    <div class="doc-print-date">\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48 ${printDate}</div>
+    <div class="doc-totals-badge">
+      <span class="badge badge-bag">Bag ${entries.length}</span>
+      <span class="badge badge-ship">Shipment ${t.shipment}</span>
+      <span class="badge badge-wt">Weight ${t.weight.toFixed(2)} Kg</span>
+    </div>
+  </div>
+</div>
+
+<div class="meta-grid">
+  <div class="meta-cell"><div class="ml">Export Date</div><div class="mv">${mv(doc.exportDate)}</div></div>
+  <div class="meta-cell"><div class="ml">Document Date</div><div class="mv">${mv(doc.documentDate)}</div></div>
+  <div class="meta-cell"><div class="ml">Shift</div><div class="mv">${mv(doc.shift)}</div></div>
+  <div class="meta-cell"><div class="ml">Car Tag</div><div class="mv">${mv(doc.carTag)}</div></div>
+  <div class="meta-cell"><div class="ml">Flight No</div><div class="mv">${mv(doc.flightNo)}</div></div>
+  <div class="meta-cell"><div class="ml">Flight Time</div><div class="mv">${mv(doc.flightTime)}</div></div>
+  <div class="meta-cell wide"><div class="ml">MAWB</div><div class="mv">${mv(doc.mawb)}</div></div>
+  ${doc.remark?`<div class="meta-cell wide" style="grid-column:span 4"><div class="ml">Remark</div><div class="mv">${esc(doc.remark)}</div></div>`:''}
+</div>
+
+<table>
+  <colgroup><col class="c-no"><col class="c-bag"><col class="c-num"><col class="c-num"></colgroup>
+  <thead><tr><th style="text-align:center">#</th><th>Bag No</th><th class="r">Shipment</th><th class="r">Weight (Kg)</th></tr></thead>
+  <tbody>${rows}</tbody>
+  <tfoot><tr>
+    <td colspan="2" style="text-align:right;color:#555">\u0e23\u0e27\u0e21\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14 ${entries.length} \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23</td>
+    <td class="r">${t.shipment}</td>
+    <td class="r">${t.weight.toFixed(2)}</td>
+  </tr></tfoot>
+</table>
+
+<script>window.onload=function(){window.print();setTimeout(function(){window.close();},800);};<\/script>
+</body></html>`);
   w.document.close();
 }
 
