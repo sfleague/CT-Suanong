@@ -1184,23 +1184,31 @@ async function doAuth() {
   const btn = document.getElementById('auth-submit-btn');
   btn.textContent = '⏳ กำลังโหลด…'; btn.disabled = true;
 
-  // Pull + merge latest data from cloud
-  if (hasCloud()) {
-    const data = await cloudGet();
-    if (data) mergeCloudData(data);
+  try {
+    // Pull + merge latest data from cloud
+    if (hasCloud()) {
+      const data = await cloudGet();
+      if (data) mergeCloudData(data);
+    }
+
+    const users = loadUsers();
+    const user  = users.find(u => u.username === username && u.password === password);
+    if (!user) {
+      showAuthErr('username หรือ password ไม่ถูกต้อง');
+      document.getElementById('auth-inp').value = '';
+      return;
+    }
+    currentUser = { id:user.id, username:user.username, isAdmin:!!user.isAdmin };
+    const rememberMe = document.getElementById('auth-remember');
+    saveSession(currentUser, rememberMe ? rememberMe.checked : true);
+    documents = loadDocs();
+    enterMain();
+  } catch(e) {
+    console.error('doAuth error', e);
+    showAuthErr('เกิดข้อผิดพลาดที่ไม่คาด — ลองใหม่อีกครั้ง');
+  } finally {
+    btn.textContent = 'เข้าสู่ระบบ'; btn.disabled = false;
   }
-
-  btn.textContent = 'เข้าสู่ระบบ'; btn.disabled = false;
-
-  const users = loadUsers();
-  const user  = users.find(u => u.username === username && u.password === password);
-  if (!user) { showAuthErr('username หรือ password ไม่ถูกต้อง'); document.getElementById('auth-inp').value=''; return; }
-
-  currentUser = { id:user.id, username:user.username, isAdmin:!!user.isAdmin };
-  const rememberMe = document.getElementById('auth-remember');
-  saveSession(currentUser, rememberMe ? rememberMe.checked : true);
-  documents = loadDocs();
-  enterMain();
 }
 
 function showAuthErr(m) { document.getElementById('auth-err').textContent = m; }
@@ -1283,7 +1291,7 @@ async function tryAutoLogin() {
   if (lastActive && (Date.now() - lastActive > SESSION_TIMEOUT_MS)) {
     clearSession();
     localStorage.removeItem(LS_LAST_ACTIVE);
-    setAuthCloudStatus('error', '⏱ เซสสันหมดอายุเพราะไม่ใช้งานนานเกิน ' + Math.round(SESSION_TIMEOUT_MS/60000) + ' นาที — กรุณาเข้าสู่ระบบใหม่');
+    document.getElementById('auth-err').textContent = '⏱ หมดเวลาเซสชัน — กรุณาเข้าสู่ระบบใหม่';
     setTimeout(() => document.getElementById('auth-user').focus(), 50);
     return;
   }
