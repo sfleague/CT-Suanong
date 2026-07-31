@@ -142,7 +142,7 @@
     .dtr-gw     { font-size: 14px; font-weight: 700; color: #1b2a4a; }
     .dtr-flight { font-size: 11.5px; color: #e67e22; margin-top: 2px; }
     .dtr-code   { font-size: 10px; color: #bbb; font-family: monospace; margin-top: 2px; }
-    .dtr-date   { font-size: 12px; color: #666; text-align: center; }
+    .dtr-date   { font-size: 12px; color: #666; }
     .dtr-stat   { text-align: center; }
     .dtr-sval   { font-size: 15px; font-weight: 700; }
     .dtr-remark { font-size: 11.5px; color: #888; max-width: 160px; }
@@ -228,7 +228,6 @@
     #cloud-modal  .modal-box { max-width: 480px; }
     #profiles-modal .modal-box { max-width: 700px; }
     #upload-create-popup .modal-box { max-width: 680px; }
-    #confirm-popup .modal-box { max-width: 380px; }
 
     .detail-meta {
       display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -768,22 +767,6 @@
   </div>
 </div>
 
-<!-- ══ Generic Confirm ══ -->
-<div id="confirm-popup" class="modal-overlay" onclick="if(event.target===this)closeConfirmPopup()">
-  <div class="modal-box">
-    <div class="modal-head"><h2 id="confirm-title">ยืนยัน</h2><button class="modal-close" onclick="closeConfirmPopup()">×</button></div>
-    <div class="modal-body" style="text-align:center;padding:28px 20px">
-      <div id="confirm-icon" style="font-size:44px;margin-bottom:14px">⚠️</div>
-      <div id="confirm-msg" style="font-size:15px;font-weight:600;color:#1b2a4a;margin-bottom:6px"></div>
-      <div id="confirm-sub" style="font-size:13px;color:#888"></div>
-    </div>
-    <div class="modal-foot">
-      <button class="btn btn-outline" onclick="closeConfirmPopup()">ยกเลิก</button>
-      <button class="btn btn-danger" id="confirm-ok-btn" onclick="executeConfirm()">ยืนยัน</button>
-    </div>
-  </div>
-</div>
-
 <!-- ══ Edit ══ -->
 <div id="edit-modal" class="modal-overlay" onclick="if(event.target===this)closeEditModal()">
   <div class="modal-box">
@@ -954,12 +937,10 @@ function renderProfilesList() {
   body.innerHTML=hdr+rows;
 }
 function deleteFlightProfile(idx) {
-  showConfirm('ยืนยันการลบ','ลบ Flight Profile นี้ใช่ไหม?','ไม่สามารถกู้คืนได้','🗑 ลบ',()=>{
-    const profiles=loadFlightProfiles(); profiles.splice(idx,1);
-    localStorage.setItem(LS_FLIGHT_PROFILES,JSON.stringify(profiles));
-    if (typeof scheduleSave==='function') scheduleSave();
-    renderProfilesList(); toast('ลบ Profile แล้ว','warning');
-  });
+  const profiles=loadFlightProfiles(); profiles.splice(idx,1);
+  localStorage.setItem(LS_FLIGHT_PROFILES,JSON.stringify(profiles));
+  if (typeof scheduleSave==='function') scheduleSave();
+  renderProfilesList(); toast('ลบ Profile แล้ว','warning');
 }
 function clearAllProfiles() {
   if (!confirm('ล้าง Flight Profiles ทั้งหมด ใช่ไหม?')) return;
@@ -1727,12 +1708,8 @@ function saveEntryPopup() {
 }
 function deleteEntry(docId,entryId) {
   const doc=getDocById(docId); if (!doc) return;
-  const entry=(doc.entries||[]).find(e=>e.id===entryId); if (!entry) return;
-  showConfirm('ยืนยันการลบ',`ลบ Bag No ${entry.bagNo} ใช่ไหม?','ไม่สามารถกู้คืนได้','🗑 ลบ',()=>{
-    doc.entries=(doc.entries||[]).filter(e=>e.id!==entryId);
-    saveDocs(documents); refreshDetailPopup(doc); renderList();
-    toast('ลบรายการแล้ว','warning');
-  });
+  doc.entries=(doc.entries||[]).filter(e=>e.id!==entryId);
+  saveDocs(documents); refreshDetailPopup(doc); renderList();
 }
 
 function openEditEntry(docId,entryId) {
@@ -1930,7 +1907,7 @@ function renderList() {
     <div class="page-head"><div><h2>\u0e40\u0e2d\u0e01\u0e2a\u0e32\u0e23\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14</h2><p>${docs.length} \u0e0a\u0e35\u0e17</p></div></div>
     <div class="doc-table-wrap" style="overflow-x:auto">
     <table class="doc-table">
-      <thead><tr><th>#</th><th>Gateway / \u0e44\u0e1f\u0e25\u0e17\u0e4c</th><th style="text-align:center">\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48</th>
+      <thead><tr><th>#</th><th>Gateway / \u0e44\u0e1f\u0e25\u0e17\u0e4c</th><th>\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48</th>
         <th style="text-align:center">Bag</th><th style="text-align:center">Shipment</th>
         <th style="text-align:center">Weight (Kg)</th><th>Remark</th><th></th></tr></thead>
       <tbody>${docs.map((doc,idx)=>{
@@ -1944,7 +1921,7 @@ function renderList() {
             ${fl?`<div class="dtr-flight">${esc(fl)}</div>`:''}
             <div class="dtr-code">${esc(doc.docCode)}</div>
           </td>
-          <td class="dtr-date" onclick="openDetailPopup(${doc.id})" style="cursor:pointer">${esc(dl||'\u2014')}${doc.createdAt?`<div style="font-size:10.5px;color:#aaa;margin-top:3px">\u2605 ${fmtTime(doc.createdAt)}</div>`:''}</td>
+          <td class="dtr-date" onclick="openDetailPopup(${doc.id})" style="cursor:pointer">${esc(dl||'\u2014')}</td>
           <td class="dtr-stat"><div class="dtr-sval" style="color:#e67e22">${(doc.entries||[]).length}</div></td>
           <td class="dtr-stat"><div class="dtr-sval" style="color:#27ae60">${t.shipment}</div></td>
           <td class="dtr-stat"><div class="dtr-sval" style="color:#2980b9">${t.weight.toFixed(2)}</div></td>
@@ -2344,29 +2321,6 @@ async function fsConnect() {
 initStorage();
 loadBgSetting();
 tryAutoLogin();
-
-// ══════════════════════════════
-//  GENERIC CONFIRM POPUP
-// ══════════════════════════════
-let _confirmCallback = null;
-function showConfirm(title, msg, sub, okLabel, callback) {
-  _confirmCallback = callback;
-  document.getElementById('confirm-title').textContent = title;
-  document.getElementById('confirm-msg').textContent = msg;
-  document.getElementById('confirm-sub').textContent = sub || '';
-  const btn = document.getElementById('confirm-ok-btn');
-  if (btn) btn.textContent = okLabel || 'ยืนยัน';
-  document.getElementById('confirm-popup').classList.add('open');
-}
-function closeConfirmPopup() {
-  document.getElementById('confirm-popup').classList.remove('open');
-  _confirmCallback = null;
-}
-function executeConfirm() {
-  const cb = _confirmCallback;
-  closeConfirmPopup();
-  if (cb) cb();
-}
 </script>
 </body>
 </html>
