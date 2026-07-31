@@ -1628,7 +1628,7 @@ function exportExcel(docId) {
 <Worksheet ss:Name="${escXml(doc.docCode)}"><Table>
 ${row(H.map(h=>cell(h,'String','H')))}
 ${dataRows}
-${row([cell('รวม','String','S'),...Array(10).fill(cell('')),cell(''),cell(''),cell(String(t.shipment),'Number','S'),cell(String(t.weight.toFixed(2)),'Number','S')]}
+${row([cell('รวม','String','S'),...Array(10).fill(cell('')),cell(''),cell(''),cell(String(t.shipment),'Number','S'),cell(String(t.weight.toFixed(2)),'Number','S'])}
 </Table></Worksheet></Workbook>`;
   const _mn=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const _nd=new Date();
