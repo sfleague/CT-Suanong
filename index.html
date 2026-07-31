@@ -327,21 +327,6 @@
     }
     #toast.show { opacity: 1; transform: translateY(0); }
 
-    /* ── Session Warn Bar ── */
-    #session-warn-bar {
-      display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 8888;
-      background: #e67e22; color: #fff;
-      padding: 10px 20px; gap: 14px;
-      align-items: center; justify-content: center; font-size: 13px; font-weight: 600;
-      box-shadow: 0 2px 8px rgba(0,0,0,.25);
-    }
-    #session-warn-bar .swb-btn {
-      background: rgba(255,255,255,.25); border: 1.5px solid rgba(255,255,255,.6);
-      color: #fff; border-radius: 6px; padding: 4px 14px; font-size: 12px;
-      font-weight: 700; cursor: pointer;
-    }
-    #session-warn-bar .swb-btn:hover { background: rgba(255,255,255,.4); }
-
     .uc-section-divider { border: none; border-top: 1.5px dashed #e8e8e8; margin: 18px 0; }
 
     /* ============================================================
@@ -511,6 +496,7 @@
       </label>
       <button type="submit" id="auth-submit-btn" class="auth-btn auth-btn-main">เข้าสู่ระบบ</button>
     </form>
+    <span class="auth-reset-link" onclick="openResetConfirm()">🔓 ลืมรหัสผ่าน / รีเซ็ต Admin</span>
   </div>
 </div>
 
@@ -534,11 +520,6 @@
   <div id="app"></div>
 </div>
 
-<!-- Session timeout warning bar -->
-<div id="session-warn-bar">
-  <span id="session-warn-text">⏱ ไม่มีการใช้งานนาน — ระบบจะออกในไม่ช้า</span>
-  <button class="swb-btn" onclick="touchActivity()">ยังใช้งานอยู่</button>
-</div>
 
 
 <!-- ══ Reset admin ══ -->
@@ -1038,46 +1019,18 @@ const STORE_SESSION  = 'parcel_session_v1';
 const LS_LAST_ACTIVE = 'parcel_last_active';
 
 // ── Session Timeout settings ──
-const SESSION_TIMEOUT_MS = 30 * 60 * 1000;  // 30 นาทีไม่ใช้ → logout
-const SESSION_WARN_MS    =  2 * 60 * 1000;  // แจ้งเตือนก่อน 2 นาที
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000;  // 30 นาทีไม่ใช้งาน → logout อัตโนมัติ
 
-let _timeoutTimer = null, _warnTimer = null, _warnShown = false, _activityThrottle = 0;
+let _timeoutTimer = null, _activityThrottle = 0;
 
 function touchActivity() {
   if (!currentUser) return;
   localStorage.setItem(LS_LAST_ACTIVE, Date.now().toString());
-  if (_warnShown) { hideSessionWarn(); _warnShown = false; }
-  _resetSessionTimers();
-}
-
-function _resetSessionTimers() {
-  clearTimeout(_timeoutTimer); clearTimeout(_warnTimer);
-  const remaining = SESSION_TIMEOUT_MS - SESSION_WARN_MS;
-  if (remaining > 0) _warnTimer = setTimeout(_showSessionWarn, remaining);
+  clearTimeout(_timeoutTimer);
   _timeoutTimer = setTimeout(_autoLogout, SESSION_TIMEOUT_MS);
 }
 
-function _showSessionWarn() {
-  _warnShown = true;
-  let secs = Math.round(SESSION_WARN_MS / 1000);
-  const bar = document.getElementById('session-warn-bar');
-  const txt = document.getElementById('session-warn-text');
-  if (bar) bar.style.display = 'flex';
-  const tick = setInterval(() => {
-    if (!_warnShown) { clearInterval(tick); return; }
-    secs--;
-    if (txt) txt.textContent = '⏱ ไม่มีการใช้งานนาน — ระบบจะออกอัตโนมัติใน ' + secs + ' วินาที';
-    if (secs <= 0) clearInterval(tick);
-  }, 1000);
-}
-
-function hideSessionWarn() {
-  const bar = document.getElementById('session-warn-bar');
-  if (bar) bar.style.display = 'none';
-}
-
 function _autoLogout() {
-  hideSessionWarn();
   toast('⏱ หมดเวลาการใช้งาน — กรุณาเข้าสู่ระบบใหม่');
   setTimeout(logout, 400);
 }
@@ -1096,8 +1049,7 @@ function startSessionTimeout() {
 }
 
 function stopSessionTimeout() {
-  clearTimeout(_timeoutTimer); clearTimeout(_warnTimer);
-  _warnShown = false; hideSessionWarn();
+  clearTimeout(_timeoutTimer);
   ['click','keydown','mousemove','touchstart','scroll'].forEach(
     ev => document.removeEventListener(ev, _onActivity, { capture:true }));
   localStorage.removeItem(LS_LAST_ACTIVE);
