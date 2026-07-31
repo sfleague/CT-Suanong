@@ -6,7 +6,8 @@
   <title>CT ซั่วหน่อง</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    /* ทุก element (รวม input/button/table) ใช้ฟอนต์ชุดเดียวกันทั้งหมด */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; font-family: inherit; }
     body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background: #f0f2f5; color: #222; min-height: 100vh; }
 
 
@@ -141,7 +142,7 @@
     .dtr-num    { color: #ccc; font-size: 11px; width: 32px; }
     .dtr-gw     { font-size: 14px; font-weight: 700; color: #1b2a4a; }
     .dtr-flight { font-size: 11.5px; color: #e67e22; margin-top: 2px; }
-    .dtr-code   { font-size: 10px; color: #bbb; font-family: monospace; margin-top: 2px; }
+    .dtr-code   { font-size: 10px; color: #bbb; font-family: inherit; letter-spacing: .3px; margin-top: 2px; }
     .dtr-date   { font-size: 12px; color: #666; text-align: center; }
     .dtr-stat   { text-align: center; }
     .dtr-sval   { font-size: 15px; font-weight: 700; }
@@ -172,7 +173,8 @@
     .btn-del-row:hover  { background: #fde8e8; }
     .btn-edit-row { background: none; border: none; color: #2980b9; cursor: pointer; font-size: 13px; padding: 3px 8px; border-radius: 4px; }
     .btn-edit-row:hover { background: #e8f4fb; }
-    .mono { font-family: monospace; letter-spacing: .3px; }
+    /* ฟอนต์ในชีทใช้ชุดเดียวกันทั้งหมด (ไม่ใช้ monospace) */
+    .mono { font-family: inherit; letter-spacing: .3px; font-variant-numeric: tabular-nums; }
     .sum-bar { display: flex; gap: 20px; font-size: 13px; color: #555; }
     .sum-bar strong { color: #1b2a4a; }
 
@@ -268,7 +270,7 @@
 
     .ep-bagno-box { background: #f0f4fa; border: 1.5px solid #d0daea; border-radius: 8px; padding: 12px 16px; margin-bottom: 18px; }
     .ep-bagno-box .ep-lbl { font-size: 10px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .6px; }
-    .ep-bagno-box .ep-val { font-size: 20px; font-weight: 700; font-family: monospace; color: #1b2a4a; margin-top: 2px; }
+    .ep-bagno-box .ep-val { font-size: 20px; font-weight: 700; font-family: inherit; letter-spacing: .5px; color: #1b2a4a; margin-top: 2px; }
     .ep-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     .ep-field  { display: flex; flex-direction: column; gap: 6px; }
     .ep-input {
@@ -277,6 +279,56 @@
       color: #1b2a4a; background: #fafafa; text-align: center; transition: border-color .15s;
     }
     .ep-input:focus { outline: none; border-color: #e67e22; background: #fff; }
+
+    /* ── Dimension (กว้าง x ยาว x สูง) ── */
+    .ep-dim-block { margin-top: 16px; background: #f7f9fc; border: 1.5px solid #e3e9f2; border-radius: 8px; padding: 12px 14px; }
+    .ep-dim-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+    .ep-dim-head .field-label { margin: 0; }
+    .ep-dim-opt { font-size: 10.5px; color: #aaa; font-weight: 600; }
+    .ep-dim-row { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: end; gap: 6px; }
+    .ep-dim-x { font-size: 16px; font-weight: 700; color: #bbb; padding-bottom: 10px; }
+    .ep-dim-cell { display: flex; flex-direction: column; gap: 4px; }
+    .ep-dim-cap { font-size: 10px; font-weight: 700; color: #9aa0ab; text-transform: uppercase; letter-spacing: .5px; text-align: center; }
+    .ep-dim-input { width: 100%; border: 1.5px solid #e8e8e8; border-radius: 8px; padding: 8px 6px; font-size: 18px; font-weight: 700; color: #1b2a4a; background: #fff; text-align: center; transition: border-color .15s; }
+    .ep-dim-input:focus { outline: none; border-color: #e67e22; }
+    .td-dim { font-family: inherit; font-size: 13px; text-align: center; white-space: nowrap; color: #555; font-variant-numeric: tabular-nums; }
+
+    /* ── Dimension: ล็อคค่า + ค่าที่บันทึกไว้ ── */
+    .dim-lock-row {
+      margin-top: 10px; display: flex; align-items: center; justify-content: space-between;
+      gap: 8px; flex-wrap: wrap; border-top: 1px dashed #dde4ee; padding-top: 10px;
+    }
+    .dim-lock-toggle {
+      display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+      font-size: 12.5px; font-weight: 700; color: #555;
+      background: #fff; border: 1.5px solid #e3e9f2; border-radius: 20px; padding: 5px 12px;
+      transition: background .15s, border-color .15s, color .15s;
+    }
+    .dim-lock-toggle input { width: 15px; height: 15px; accent-color: #e67e22; cursor: pointer; }
+    .dim-lock-toggle.on { background: #fff4e6; border-color: #e67e22; color: #b35c00; }
+    .dim-save-btn {
+      background: #fff; border: 1.5px solid #d0daea; color: #2980b9;
+      font-size: 12px; font-weight: 700; border-radius: 20px; padding: 5px 12px; cursor: pointer;
+    }
+    .dim-save-btn:hover { background: #eaf4fc; }
+    .dim-presets { margin-top: 10px; }
+    .dim-presets-lbl { font-size: 10px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+    .dim-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .dim-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #fff; border: 1.5px solid #e3e9f2; border-radius: 20px;
+      padding: 5px 6px 5px 11px; font-size: 12.5px; font-weight: 700; color: #1b2a4a;
+      cursor: pointer; transition: background .15s, border-color .15s;
+      font-variant-numeric: tabular-nums;
+    }
+    .dim-chip:hover { background: #f0f5ff; border-color: #a9c2e8; }
+    .dim-chip .dim-chip-x {
+      border: none; background: none; color: #ccc; font-size: 14px; line-height: 1;
+      cursor: pointer; padding: 0 3px; border-radius: 50%;
+    }
+    .dim-chip .dim-chip-x:hover { color: #e74c3c; background: #fde8e8; }
+    .dim-empty { font-size: 11.5px; color: #bbb; }
+
 
     .dup-existing { background: #fff4f4; border: 1.5px solid #f5c6c6; border-radius: 8px; padding: 12px 16px; margin-top: 14px; display: flex; flex-direction: column; gap: 4px; }
     .dup-existing .dup-row { display: flex; justify-content: space-between; font-size: 13px; }
@@ -534,7 +586,7 @@
     <span class="h-sp"></span>
     <div class="h-acts">
 
-      <button class="btn btn-primary" onclick="createDocument()">+ สร้างชีทใหม่</button>
+      <button class="btn btn-primary" onclick="createDocument()">+ สร้างชี   ใหม่</button>
       <button class="btn btn-success" onclick="openUploadCreateModal()">📂 Upload</button>
       <button class="btn btn-ghost btn-sm" id="btn-users" onclick="openUsersModal()" style="display:none" title="จัดการผู้ใช้งาน"><span>👥</span></button>
       <button class="btn btn-ghost btn-sm" id="btn-site-settings" onclick="openSettingsModal()" style="display:none" title="ตั้งค่าเว็บไซต์ / Firebase"><span>⚙️</span></button>
@@ -570,7 +622,7 @@
         <div class="upload-stats" id="uc-upload-stats"></div>
         <div class="upload-preview-table" style="margin-top:10px">
           <table>
-            <thead><tr><th>#</th><th>Bag No</th><th>Shipment</th><th>Weight (Kg)</th><th>สถานะ</th></tr></thead>
+            <thead><tr><th>#</th><th>Bag No</th><th>Shipment</th><th>Weight (Kg)</th><th>Dimension (ซม.)</th><th>สถานะ</th></tr></thead>
             <tbody id="uc-preview-body"></tbody>
           </table>
         </div>
@@ -669,12 +721,12 @@
     <div class="modal-head"><h2>⚠️ รูปแบบไม่ถูกต้อง</h2><button class="modal-close" onclick="closeInvalidBagPopup()">×</button></div>
     <div class="modal-body" style="text-align:center;padding:22px 20px 18px">
       <div style="font-size:42px;margin-bottom:10px">🚫</div>
-      <div id="invalid-bag-scanned" style="font-size:20px;font-weight:700;font-family:monospace;color:#e74c3c;margin-bottom:12px;word-break:break-all"></div>
+      <div id="invalid-bag-scanned" style="font-size:20px;font-weight:700;color:#e74c3c;margin-bottom:12px;word-break:break-all"></div>
       <div id="invalid-bag-msg" style="font-size:14px;color:#555;line-height:1.6;margin-bottom:14px"></div>
       <div style="font-size:12px;color:#aaa;background:#f8f8f8;border-radius:8px;padding:10px 12px;text-align:left">
         <div style="font-weight:700;color:#888;margin-bottom:4px">รูปแบบที่รองรับ:</div>
-        <div>📦 <span style="font-family:monospace">SF</span> + ตัวเลข <b>13 หลัก</b> → <span style="font-family:monospace;color:#27ae60">SF1234567890123</span></div>
-        <div style="margin-top:4px">🔢 ตัวเลขล้วน → <span style="font-family:monospace;color:#27ae60">943276203568</span></div>
+        <div>📦 <span style="">SF</span> + ตัวเลข <b>13 หลัก</b> → <span style="color:#27ae60">SF1234567890123</span></div>
+        <div style="margin-top:4px">🔢 ตัวเลขล้วน → <span style="color:#27ae60">943276203568</span></div>
       </div>
     </div>
     <div class="modal-foot" style="justify-content:center">
@@ -689,7 +741,7 @@
     <div class="modal-head"><h2>⚠️ เลขซ้ำ</h2><button class="modal-close" onclick="closeDupPopup()">×</button></div>
     <div class="modal-body" style="text-align:center;padding:22px 20px 18px">
       <div style="font-size:42px;margin-bottom:10px">🚫</div>
-      <div id="dup-bagno" style="font-size:22px;font-weight:700;font-family:monospace;color:#e74c3c;margin-bottom:6px"></div>
+      <div id="dup-bagno" style="font-size:22px;font-weight:700;color:#e74c3c;margin-bottom:6px"></div>
       <div class="dup-existing" id="dup-existing-info"></div>
     </div>
     <div class="modal-foot" style="justify-content:center">
@@ -711,7 +763,43 @@
         </div>
         <div class="ep-field">
           <label class="field-label">น้ำหนัก (Kg)</label>
-          <input id="ep-wt" class="ep-input" type="number" value="" min="0" step="0.01" placeholder="0.00" onkeydown="if(event.key==='Enter')saveEntryPopup()">
+          <input id="ep-wt" class="ep-input" type="number" value="" min="0" step="0.01" placeholder="0.00" onkeydown="if(event.key==='Enter')document.getElementById('ep-dimL').focus()">
+        </div>
+      </div>
+      <div class="ep-dim-block">
+        <div class="ep-dim-head">
+          <label class="field-label">ขนาด Dimension (ซม.)</label>
+          <span class="ep-dim-opt">ไม่บังคับ — เว้นว่างได้</span>
+        </div>
+        <div class="ep-dim-row">
+          <div class="ep-dim-cell">
+            <span class="ep-dim-cap">กว้าง</span>
+            <input id="ep-dimL" class="ep-dim-input" type="number" min="0" step="0.1" placeholder="0" inputmode="decimal"
+              onkeydown="if(event.key==='Enter')document.getElementById('ep-dimW').focus()">
+          </div>
+          <span class="ep-dim-x">×</span>
+          <div class="ep-dim-cell">
+            <span class="ep-dim-cap">ยาว</span>
+            <input id="ep-dimW" class="ep-dim-input" type="number" min="0" step="0.1" placeholder="0" inputmode="decimal"
+              onkeydown="if(event.key==='Enter')document.getElementById('ep-dimH').focus()">
+          </div>
+          <span class="ep-dim-x">×</span>
+          <div class="ep-dim-cell">
+            <span class="ep-dim-cap">สูง</span>
+            <input id="ep-dimH" class="ep-dim-input" type="number" min="0" step="0.1" placeholder="0" inputmode="decimal"
+              onkeydown="if(event.key==='Enter')saveEntryPopup()">
+          </div>
+        </div>
+        <div class="dim-lock-row">
+          <label class="dim-lock-toggle" id="ep-dim-lock-wrap" for="ep-dim-lock">
+            <input type="checkbox" id="ep-dim-lock" onchange="toggleDimLock()">
+            🔒 ล็อคขนาดนี้ไว้ใช้ทุกครั้ง
+          </label>
+          <button type="button" class="dim-save-btn" onclick="saveCurrentDimPreset('ep')">💾 บันทึกขนาดนี้</button>
+        </div>
+        <div class="dim-presets">
+          <div class="dim-presets-lbl">ขนาดที่บันทึกไว้ — กดเพื่อใช้</div>
+          <div class="dim-chips" id="ep-dim-chips"></div>
         </div>
       </div>
     </div>
@@ -729,7 +817,7 @@
     <div class="modal-body">
       <div class="ep-bagno-box">
         <div class="ep-lbl">Bag No</div>
-        <input id="ee-bagno" class="ep-input" type="text" style="font-size:18px;font-weight:700;font-family:monospace;text-align:center;width:100%;margin-top:6px"
+        <input id="ee-bagno" class="ep-input" type="text" style="font-size:18px;font-weight:700;letter-spacing:.5px;text-align:center;width:100%;margin-top:6px"
           onkeydown="if(event.key==='Enter')document.getElementById('ee-ship').focus()">
       </div>
       <div class="ep-fields">
@@ -741,7 +829,39 @@
         <div class="ep-field">
           <label class="field-label">น้ำหนัก (Kg)</label>
           <input id="ee-wt" class="ep-input" type="number" min="0" step="0.01" placeholder="0.00"
-            onkeydown="if(event.key==='Enter')saveEditEntry()">
+            onkeydown="if(event.key==='Enter')document.getElementById('ee-dimL').focus()">
+        </div>
+      </div>
+      <div class="ep-dim-block">
+        <div class="ep-dim-head">
+          <label class="field-label">ขนาด Dimension (ซม.)</label>
+          <span class="ep-dim-opt">ไม่บังคับ — เว้นว่างได้</span>
+        </div>
+        <div class="ep-dim-row">
+          <div class="ep-dim-cell">
+            <span class="ep-dim-cap">กว้าง</span>
+            <input id="ee-dimL" class="ep-dim-input" type="number" min="0" step="0.1" placeholder="0" inputmode="decimal"
+              onkeydown="if(event.key==='Enter')document.getElementById('ee-dimW').focus()">
+          </div>
+          <span class="ep-dim-x">×</span>
+          <div class="ep-dim-cell">
+            <span class="ep-dim-cap">ยาว</span>
+            <input id="ee-dimW" class="ep-dim-input" type="number" min="0" step="0.1" placeholder="0" inputmode="decimal"
+              onkeydown="if(event.key==='Enter')document.getElementById('ee-dimH').focus()">
+          </div>
+          <span class="ep-dim-x">×</span>
+          <div class="ep-dim-cell">
+            <span class="ep-dim-cap">สูง</span>
+            <input id="ee-dimH" class="ep-dim-input" type="number" min="0" step="0.1" placeholder="0" inputmode="decimal"
+              onkeydown="if(event.key==='Enter')saveEditEntry()">
+          </div>
+        </div>
+        <div class="dim-lock-row" style="justify-content:flex-end">
+          <button type="button" class="dim-save-btn" onclick="saveCurrentDimPreset('ee')">💾 บันทึกขนาดนี้</button>
+        </div>
+        <div class="dim-presets">
+          <div class="dim-presets-lbl">ขนาดที่บันทึกไว้ — กดเพื่อใช้</div>
+          <div class="dim-chips" id="ee-dim-chips"></div>
         </div>
       </div>
     </div>
@@ -758,7 +878,7 @@
     <div class="modal-head"><h2>ยืนยันการลบ</h2><button class="modal-close" onclick="closeDeletePopup()">×</button></div>
     <div class="modal-body" style="text-align:center;padding:28px 20px">
       <div style="font-size:44px;margin-bottom:14px">🗑️</div>
-      <div style="font-size:15px;font-weight:600;color:#1b2a4a;margin-bottom:6px">ลบชีท <span id="delete-doc-code" style="color:#e74c3c;font-family:monospace"></span> ใช่ไหม?</div>
+      <div style="font-size:15px;font-weight:600;color:#1b2a4a;margin-bottom:6px">ลบชีท <span id="delete-doc-code" style="color:#e74c3c;"></span> ใช่ไหม?</div>
       <div style="font-size:13px;color:#888">ไม่สามารถกู้คืนได้</div>
     </div>
     <div class="modal-foot">
@@ -896,7 +1016,7 @@
             ✅ JSONBin เชื่อมต่อแล้ว — กดปุ่มด้านล่างเพื่อสร้างไฟล์ใหม่ที่<b>ฝัง JSONBin ไว้ในตัว</b><br>
             ทุกเบราว์เซอร์ที่เปิดไฟล์นี้จะ<b>เชื่อมต่อ JSONBin อัตโนมัติ</b> โดยไม่ต้องตั้งค่าอีก
             <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
-              <button class="btn btn-primary btn-sm" onclick="forcePushToCloud()" style="width:100%">🔄 Push ข้อมูลในเครื่องนี้ขึ้น Cloud ทันที</button>
+              <button class="btn btn-primary btn-sm" onclick="forcePushToCloud()" style="width:100%">🔄 Push    ้อมูลในเครื่องนี้ขึ้น Cloud ทันที</button>
               <button class="btn btn-success btn-sm" onclick="downloadBakedFile()" style="width:100%">📥 ดาวน์โหลดไฟล์ฝัง JSONBin (แจกจ่ายได้เลย)</button>
             </div>
           </div>
@@ -1148,7 +1268,7 @@ async function retryCloudLoad() {
 // ══════════════════════════════════════════════
 const STORE_USERS   = 'parcel_users_v1';
 const STORE_DOCS    = 'parcel_docs_v1';
-const STORE_TOMB    = 'parcel_tombstones_v1'; // { docId: deletedAt } — จำการลบเพื่อไม่ให้ข้อมูลกลับมา
+const STORE_TOMB    = 'parcel_tombstones_v1'; // { docId: deletedAt } — จำการลบเพื่อไม่ให้ข้อมูลกลับม   
 const STORE_SESSION = 'parcel_session_v1';
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 นาที — logout อัตโนมัติเมื่อไม่ได้ใช้งาน
 
@@ -1160,7 +1280,11 @@ function saveUsers(u)  { localStorage.setItem(STORE_USERS, JSON.stringify(u)); s
 function normDoc(doc) {
   if (!doc) return doc;
   if (doc.id != null) doc.id = String(doc.id);
-  if (Array.isArray(doc.entries)) doc.entries.forEach(e => { if (e && e.id != null) e.id = String(e.id); });
+  if (Array.isArray(doc.entries)) doc.entries.forEach(e => {
+    if (e && e.id != null) e.id = String(e.id);
+    // ขนาด Dimension (ซม.) — ข้อมูลเก่าที่ไม่มีค่าจะ  ูกตั้งเป็น 0
+    if (e) { ['dimL','dimW','dimH'].forEach(k => { const n = parseFloat(e[k]); e[k] = (isFinite(n) && n > 0) ? n : 0; }); }
+  });
   return doc;
 }
 function loadDocs()    { return safeJSON(localStorage.getItem(STORE_DOCS),  []).map(normDoc); }
@@ -1326,12 +1450,111 @@ let editEntryId     = null;
 let deleteTargetId = null;
 let uploadData   = [], uploadColumns = [];
 let ucBagIdx=-1, ucShipIdx=-1, ucWtIdx=-1, ucFileReady=false;
+let ucDimLIdx=-1, ucDimWIdx=-1, ucDimHIdx=-1, ucDimIdx=-1;
 
 function getDocById(id) { return documents.find(d => String(d.id) === String(id)); }
+
+// ══ DIMENSION (กว้าง x ยาว x สูง, ซม.) ══
+function dimNum(v) { const n = parseFloat(v); return (isFinite(n) && n > 0) ? n : 0; }
+function entryDims(e) { return { l: dimNum(e && e.dimL), w: dimNum(e && e.dimW), h: dimNum(e && e.dimH) }; }
+function hasDim(e) { const d = entryDims(e); return d.l > 0 && d.w > 0 && d.h > 0; }
+function fmtDimNum(n) { return Number(n) % 1 === 0 ? String(Number(n)) : Number(n).toFixed(1); }
+function dimText(e) { const d = entryDims(e); return hasDim(e) ? fmtDimNum(d.l)+'×'+fmtDimNum(d.w)+'×'+fmtDimNum(d.h) : ''; }
+
 function docTotals(doc) {
-  let s=0, w=0;
-  (doc.entries||[]).forEach(e => { s += Number(e.shipment)||0; w += Number(e.weight)||0; });
-  return { shipment: s, weight: w };
+  let s=0, w=0, dimCount=0;
+  (doc.entries||[]).forEach(e => {
+    s += Number(e.shipment)||0; w += Number(e.weight)||0;
+    if (hasDim(e)) dimCount++;
+  });
+  return { shipment: s, weight: w, dimCount };
+}
+
+// ══ DIMENSION MEMORY: บันทึกขนาดไว้ใช้ซ้ำ + ล็อคค่า ══
+const LS_DIM_PRESETS = 'dim_presets_v1';   // ขนาดที่บันทึกไว้ (กดใช้ซ้ำได้)
+const LS_DIM_LOCK    = 'dim_lock_v1';      // ขนาดที่ล็อคไว้ — เติมอัตโนมัติทุกครั้ง
+
+function loadDimPresets() {
+  const arr = safeJSON(localStorage.getItem(LS_DIM_PRESETS), []);
+  return Array.isArray(arr) ? arr.filter(p => p && dimNum(p.l)>0 && dimNum(p.w)>0 && dimNum(p.h)>0) : [];
+}
+function storeDimPresets(list) { localStorage.setItem(LS_DIM_PRESETS, JSON.stringify(list.slice(0,12))); }
+function addDimPreset(l, w, h) {
+  if (!(l>0 && w>0 && h>0)) return false;
+  const list = loadDimPresets().filter(p => !(p.l===l && p.w===w && p.h===h));
+  list.unshift({ l, w, h });
+  storeDimPresets(list);
+  return true;
+}
+function removeDimPreset(idx, prefix) {
+  const list = loadDimPresets();
+  list.splice(idx, 1); storeDimPresets(list);
+  renderDimChips('ep'); renderDimChips('ee');
+  toast('ลบขนาดที่บันทึกไว้แล้ว', 'warning');
+}
+function loadDimLock() {
+  const o = safeJSON(localStorage.getItem(LS_DIM_LOCK), null);
+  return (o && dimNum(o.l)>0 && dimNum(o.w)>0 && dimNum(o.h)>0) ? o : null;
+}
+function storeDimLock(o) {
+  if (o) localStorage.setItem(LS_DIM_LOCK, JSON.stringify(o));
+  else localStorage.removeItem(LS_DIM_LOCK);
+}
+// อ่านค่าขนาดจากช่องกรอกในป็อปอัป (prefix = 'ep' หรือ 'ee')
+function readDimInputs(prefix) {
+  return {
+    l: dimNum((document.getElementById(prefix+'-dimL')||{}).value),
+    w: dimNum((document.getElementById(prefix+'-dimW')||{}).value),
+    h: dimNum((document.getElementById(prefix+'-dimH')||{}).value)
+  };
+}
+function setDimInputs(prefix, l, w, h) {
+  const set=(id,v)=>{const el=document.getElementById(id); if(el) el.value=(v>0?v:'');};
+  set(prefix+'-dimL', l); set(prefix+'-dimW', w); set(prefix+'-dimH', h);
+}
+function renderDimChips(prefix) {
+  const box = document.getElementById(prefix+'-dim-chips'); if (!box) return;
+  const list = loadDimPresets();
+  if (list.length === 0) { box.innerHTML = '<span class="dim-empty">ยังไม่มี — กรอกขนาดแล้วกด "บันทึกขนาดนี้"</span>'; return; }
+  box.innerHTML = list.map((p,i)=>
+    `<span class="dim-chip" onclick="applyDimPreset('${prefix}',${p.l},${p.w},${p.h})" title="ใช้ขนาดนี้">`+
+    `${fmtDimNum(p.l)}×${fmtDimNum(p.w)}×${fmtDimNum(p.h)}`+
+    `<button type="button" class="dim-chip-x" title="ลบ" onclick="event.stopPropagation();removeDimPreset(${i},'${prefix}')">×</button></span>`
+  ).join('');
+}
+function applyDimPreset(prefix, l, w, h) {
+  setDimInputs(prefix, l, w, h);
+  toast('ใช้ขนาด '+fmtDimNum(l)+'×'+fmtDimNum(w)+'×'+fmtDimNum(h)+' ซม.', 'success');
+}
+function saveCurrentDimPreset(prefix) {
+  const d = readDimInputs(prefix);
+  if (!(d.l>0 && d.w>0 && d.h>0)) { toast('กรอกขนาดให้ครบ 3 ช่องก่อนบันทึก', 'error'); return; }
+  addDimPreset(d.l, d.w, d.h);
+  renderDimChips('ep'); renderDimChips('ee');
+  toast('บันทึกขนาด '+fmtDimNum(d.l)+'×'+fmtDimNum(d.w)+'×'+fmtDimNum(d.h)+' ซม. แล้ว', 'success');
+}
+// ล็อค/ปลดล็อคขนาด — เมื่อล็อค ระบบจะเติมค่านี้ให้ทุกครั้งที่ยิงเลขใหม่
+function toggleDimLock() {
+  const cb = document.getElementById('ep-dim-lock'); if (!cb) return;
+  if (cb.checked) {
+    const d = readDimInputs('ep');
+    if (!(d.l>0 && d.w>0 && d.h>0)) {
+      cb.checked = false; syncDimLockUI();
+      toast('กรอกขนาดให้ครบ 3 ช่องก่อนล็อค', 'error'); return;
+    }
+    storeDimLock(d); addDimPreset(d.l, d.w, d.h);
+    renderDimChips('ep'); renderDimChips('ee');
+    toast('🔒 ล็อคขนาด '+fmtDimNum(d.l)+'×'+fmtDimNum(d.w)+'×'+fmtDimNum(d.h)+' ซม. ไว้แล้ว', 'success');
+  } else {
+    storeDimLock(null);
+    toast('ปลดล็อคขนาดแล้ว', 'warning');
+  }
+  syncDimLockUI();
+}
+function syncDimLockUI() {
+  const cb = document.getElementById('ep-dim-lock'), wrap = document.getElementById('ep-dim-lock-wrap');
+  if (!cb || !wrap) return;
+  wrap.classList.toggle('on', cb.checked);
 }
 function nextId(arr) { return (!arr||arr.length===0) ? 1 : Math.max(...arr.map(x=>x.id||0))+1; }
 // Collision-proof unique id (timestamp + random) — ปลอดภัยข้ามหลายเครื่อง
@@ -1686,9 +1909,9 @@ function refreshDetailPopup(doc) {
   document.getElementById('entries-body').innerHTML=entries.length===0
     ? '<div style="text-align:center;padding:28px;color:#bbb;font-size:13.5px">ยังไม่มีรายการ — ยิงเลข Bag No เพื่อเริ่มบันทึก</div>'
     : `<div class="tbl-wrap"><table>
-        <thead><tr><th style="width:36px;text-align:center">#</th><th>Bag No</th><th style="width:100px;text-align:center">Shipment</th><th style="width:110px;text-align:center">Weight (Kg)</th><th style="width:140px;text-align:center">เวลายิง</th><th style="width:90px"></th></tr></thead>
-        <tbody>${entries.map((e,i)=>`<tr><td style="color:#ccc;font-size:11px;text-align:center">${i+1}</td><td class="mono">${esc(e.bagNo)}</td><td class="td-num">${e.shipment}</td><td class="td-num">${Number(e.weight).toFixed(2)}</td><td style="font-size:11.5px;color:#666;white-space:nowrap;text-align:center">${fmtTime(e.scannedAt)}</td><td style="white-space:nowrap"><button class="btn-edit-row" onclick="openEditEntry('${doc.id}','${e.id}')">✏️</button><button class="btn-del-row" onclick="deleteEntry('${doc.id}','${e.id}')" title="ลบ">🗑️</button></td></tr>`).join('')}</tbody>
-        <tfoot><tr><td colspan="2" style="text-align:right;color:#888;font-size:11.5px">รวม</td><td class="td-num">${t.shipment}</td><td class="td-num">${t.weight.toFixed(2)}</td><td></td><td></td></tr></tfoot>
+        <thead><tr><th style="width:36px;text-align:center">#</th><th>Bag No</th><th style="width:100px;text-align:center">Shipment</th><th style="width:110px;text-align:center">Weight (Kg)</th><th style="width:140px;text-align:center">Dimension (ซม.)</th><th style="width:140px;text-align:center">เวลายิง</th><th style="width:90px"></th></tr></thead>
+        <tbody>${entries.map((e,i)=>`<tr><td style="color:#ccc;font-size:11px;text-align:center">${i+1}</td><td class="mono">${esc(e.bagNo)}</td><td class="td-num">${e.shipment}</td><td class="td-num">${Number(e.weight).toFixed(2)}</td><td class="td-dim">${hasDim(e)?esc(dimText(e)):'<span style="color:#ccc">—</span>'}</td><td style="font-size:11.5px;color:#666;white-space:nowrap;text-align:center">${fmtTime(e.scannedAt)}</td><td style="white-space:nowrap"><button class="btn-edit-row" onclick="openEditEntry('${doc.id}','${e.id}')">✏️</button><button class="btn-del-row" onclick="deleteEntry('${doc.id}','${e.id}')" title="ลบ">🗑️</button></td></tr>`).join('')}</tbody>
+        <tfoot><tr><td colspan="2" style="text-align:right;color:#888;font-size:11.5px">รวม</td><td class="td-num">${t.shipment}</td><td class="td-num">${t.weight.toFixed(2)}</td><td class="td-dim" style="color:#aaa;font-size:11px">${t.dimCount}/${entries.length} ใส่ขนาด</td><td></td><td></td></tr></tfoot>
       </table></div>`;
   document.getElementById('inp-bag').value='';
 }
@@ -1776,12 +1999,20 @@ function openEntryPopup() {
       document.getElementById('dup-bagno').textContent=bagNo;
       document.getElementById('dup-existing-info').innerHTML=
         `<div class="dup-row"><span class="dup-lbl">Shipment</span><span class="dup-val">${dup.shipment}</span></div>
-         <div class="dup-row"><span class="dup-lbl">Weight (Kg)</span><span class="dup-val">${Number(dup.weight).toFixed(2)}</span></div>`;
+         <div class="dup-row"><span class="dup-lbl">Weight (Kg)</span><span class="dup-val">${Number(dup.weight).toFixed(2)}</span></div>
+         <div class="dup-row"><span class="dup-lbl">Dimension (ซม.)</span><span class="dup-val">${hasDim(dup)?esc(dimText(dup)):'—'}</span></div>`;
       document.getElementById('dup-popup').classList.add('open'); return;
     }
   }
   entryBagNo=bagNo; document.getElementById('ep-bagno-display').textContent=bagNo;
   document.getElementById('ep-ship').value='1'; document.getElementById('ep-wt').value='';
+  // ── ขนาด Dimension: ถ้าล็อคไว้จะเติมค่าให้อัตโนมัติ (ไม่ต้องกรอกใหม่ทุกครั้ง) ──
+  const lock=loadDimLock();
+  const lockCb=document.getElementById('ep-dim-lock');
+  if (lockCb) lockCb.checked=!!lock;
+  syncDimLockUI();
+  if (lock) setDimInputs('ep',lock.l,lock.w,lock.h); else setDimInputs('ep',0,0,0);
+  renderDimChips('ep');
   document.getElementById('entry-popup').classList.add('open');
   setTimeout(()=>document.getElementById('ep-ship').select(),80);
 }
@@ -1816,7 +2047,14 @@ function saveEntryPopup() {
       return;
     }
   }
-  const entry={id:uid(),bagNo:entryBagNo,shipment,weight,scannedAt:new Date().toISOString()};
+  const {l:dimL,w:dimW,h:dimH}=readDimInputs('ep');
+  // จำขนาดล่าสุดไว้ให้เลือกใช้ซ้ำ + อัปเดตค่าที่ล็อคถ้าเปิดล็อคอยู่
+  if (dimL>0&&dimW>0&&dimH>0) {
+    addDimPreset(dimL,dimW,dimH);
+    const lockCb=document.getElementById('ep-dim-lock');
+    if (lockCb&&lockCb.checked) storeDimLock({l:dimL,w:dimW,h:dimH});
+  }
+  const entry={id:uid(),bagNo:entryBagNo,shipment,weight,dimL,dimW,dimH,scannedAt:new Date().toISOString()};
   if (!doc.entries) doc.entries=[];
   doc.entries.push(entry); touchDoc(doc); saveDocs(documents); refreshDetailPopup(doc); renderList();
   toast('บันทึก '+entryBagNo+' แล้ว', 'success'); closeEntryPopup(false);
@@ -1825,7 +2063,7 @@ function saveEntryPopup() {
 function deleteEntry(docId,entryId) {
   const doc=getDocById(docId); if (!doc) return;
   const entry=(doc.entries||[]).find(e=>e.id===entryId); if (!entry) return;
-  showConfirm('ยืนยันการลบ',`ลบ Bag No ${entry.bagNo} ใช่ไหม?`,'ไม่สามารถกู้คืนได้','🗑 ลบ',()=>{
+  showConfirm('ยืนยันการลบ',`ลบ Bag No ${entry.bagNo} ใช่ไหม?`,'ไม่ส   มารถกู้คืนได้','🗑 ลบ',()=>{
     doc.entries=(doc.entries||[]).filter(e=>e.id!==entryId);
     touchDoc(doc); saveDocs(documents); refreshDetailPopup(doc); renderList();
     toast('ลบรายการแล้ว','warning');
@@ -1839,6 +2077,9 @@ function openEditEntry(docId,entryId) {
   document.getElementById('ee-bagno').value=entry.bagNo;
   document.getElementById('ee-ship').value=entry.shipment;
   document.getElementById('ee-wt').value=Number(entry.weight).toFixed(2);
+  const d=entryDims(entry);
+  setDimInputs('ee',d.l,d.w,d.h);
+  renderDimChips('ee');
   document.getElementById('edit-entry-popup').classList.add('open');
   setTimeout(()=>document.getElementById('ee-bagno').focus(),80);
 }
@@ -1860,7 +2101,9 @@ function saveEditEntry() {
       return;
     }
   }
-  doc.entries[idx]={...doc.entries[idx],bagNo,shipment,weight};
+  const {l:dimL,w:dimW,h:dimH}=readDimInputs('ee');
+  if (dimL>0&&dimW>0&&dimH>0) addDimPreset(dimL,dimW,dimH);
+  doc.entries[idx]={...doc.entries[idx],bagNo,shipment,weight,dimL,dimW,dimH};
   touchDoc(doc); saveDocs(documents); refreshDetailPopup(doc); renderList();
   toast('แก้ไข '+bagNo+' แล้ว', 'success');
   closeEditEntry();
@@ -1872,22 +2115,35 @@ function saveEditEntry() {
 function exportExcel(docId) {
   const doc=getDocById(docId); if (!doc) return;
   const t=docTotals(doc);
-  const H=['Doc Code','Gateway','Export Date','Shift','Flight No','Flight Time','Destination','Document Date','Car Tag','MAWB','Remark','Bag No','Shipment','Weight (Kg)'];
+  const H=['Doc Code','Gateway','Export Date','Shift','Flight No','Flight Time','Destination','Document Date','Car Tag','MAWB','Remark','Bag No','Shipment','Weight (Kg)','Width (cm)','Length (cm)','Height (cm)','Dimension (cm)'];
   const cell=(v,type,sid)=>`<Cell${sid?` ss:StyleID="${sid}"`:''}><Data ss:Type="${type||'String'}">${escXml(v)}</Data></Cell>`;
   const row=cells=>'<Row>'+cells.join('')+'</Row>';
   const meta=[doc.docCode,doc.gateway,doc.exportDate,doc.shift,doc.flightNo,doc.flightTime,doc.destination,doc.documentDate,doc.carTag,doc.mawb,doc.remark||''];
   const entries=doc.entries||[];
+  // เซลล์ขนาด Dimension — ถ้าไม่ได้กรอกจะเว้นว่าง (ไม่ใส่ 0) เพื่อไม่ให้เข้าใจผิด
+  const dimCells=e=>{
+    const d=entryDims(e), ok=hasDim(e);
+    return [
+      ok?cell(String(d.l),'Number'):cell(''),
+      ok?cell(String(d.w),'Number'):cell(''),
+      ok?cell(String(d.h),'Number'):cell(''),
+      cell(ok?dimText(e).replace(/×/g,'x'):'')
+    ];
+  };
   const dataRows=entries.length>0
-    ? entries.map(e=>row(meta.map(v=>cell(v)).concat([cell(e.bagNo),cell(String(e.shipment),'Number'),cell(String(Number(e.weight).toFixed(2)),'Number')]))).join('\n')
-    : row(meta.map(v=>cell(v)).concat([cell(''),cell('0','Number'),cell('0','Number')]));
+    ? entries.map(e=>row(meta.map(v=>cell(v)).concat([cell(e.bagNo),cell(String(e.shipment),'Number'),cell(String(Number(e.weight).toFixed(2)),'Number')],dimCells(e)))).join('\n')
+    : row(meta.map(v=>cell(v)).concat([cell(''),cell('0','Number'),cell('0','Number')],dimCells({})));
   const xml=`<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?>
 <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
-<Styles><Style ss:ID="H"><Font ss:Bold="1"/><Interior ss:Color="#D0D8E8" ss:Pattern="Solid"/></Style>
-<Style ss:ID="S"><Font ss:Bold="1"/><Interior ss:Color="#EFF2F7" ss:Pattern="Solid"/></Style></Styles>
+<Styles>
+<Style ss:ID="Default" ss:Name="Normal"><Font ss:FontName="Tahoma" ss:Size="10"/><Alignment ss:Vertical="Center"/></Style>
+<Style ss:ID="H"><Font ss:FontName="Tahoma" ss:Size="10" ss:Bold="1"/><Interior ss:Color="#D0D8E8" ss:Pattern="Solid"/></Style>
+<Style ss:ID="S"><Font ss:FontName="Tahoma" ss:Size="10" ss:Bold="1"/><Interior ss:Color="#EFF2F7" ss:Pattern="Solid"/></Style>
+</Styles>
 <Worksheet ss:Name="${escXml(doc.docCode)}"><Table>
 ${row(H.map(h=>cell(h,'String','H')))}
 ${dataRows}
-${row([cell('รวม','String','S'),...Array(10).fill(cell('')),cell(''),cell(''),cell(String(t.shipment),'Number','S'),cell(String(t.weight.toFixed(2)),'Number','S')])}
+${row([cell('รวม','String','S'),...Array(10).fill(cell('')),cell(''),cell(String(t.shipment),'Number','S'),cell(String(t.weight.toFixed(2)),'Number','S'),cell(''),cell(''),cell(''),cell('')])}
 </Table></Worksheet></Workbook>`;
   const _months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const _ed=doc.exportDate?new Date(doc.exportDate+' 00:00:00'):new Date();
@@ -1909,8 +2165,8 @@ function printDocument(docId) {
   const t=docTotals(doc);
   const entries=doc.entries||[];
   const rows=entries.length>0
-    ? entries.map((e,i)=>`<tr><td class="c-no">${i+1}</td><td class="c-bag mono">${esc(e.bagNo)}</td><td class="c-num">${e.shipment}</td><td class="c-num">${Number(e.weight).toFixed(2)}</td></tr>`).join('')
-    : '<tr><td colspan="4" class="empty">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23</td></tr>';
+    ? entries.map((e,i)=>`<tr><td class="c-no">${i+1}</td><td class="c-bag mono">${esc(e.bagNo)}</td><td class="c-num">${e.shipment}</td><td class="c-num">${Number(e.weight).toFixed(2)}</td><td class="c-dim">${hasDim(e)?esc(dimText(e).replace(/×/g,' x ')):'\u2014'}</td></tr>`).join('')
+    : '<tr><td colspan="5" class="empty">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23</td></tr>';
   const mv=(v)=>esc(v)||'\u2014';
   const printDate=new Date().toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'});
   const w=window.open('','_blank','width=960,height=760');
@@ -1918,8 +2174,9 @@ function printDocument(docId) {
   w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
 <title>${esc(doc.gateway||doc.docCode)}</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#222;font-size:12px;padding:32px 36px;}
+/* ทุก element ในชีทใช้ฟอนต์ชุดเดียวกันทั้งหมด */
+*{box-sizing:border-box;margin:0;padding:0;font-family:inherit;}
+body{font-family:'Segoe UI','Helvetica Neue',Arial,sans-serif;background:#fff;color:#222;font-size:12px;padding:32px 36px;}
 
 /* ── Header ── */
 .doc-header{display:flex;align-items:flex-start;justify-content:space-between;border-bottom:3px solid #1b2a4a;padding-bottom:14px;margin-bottom:20px;}
@@ -1948,18 +2205,21 @@ table{width:100%;border-collapse:collapse;font-size:11.5px;}
 colgroup col.c-no  {width:44px;}
 colgroup col.c-bag {width:auto;}
 colgroup col.c-num {width:90px;}
+colgroup col.c-dim {width:130px;}
+/* ฟอนต์ในชีทใช้ชุดเดียวกันทั้งหมด */
+td.c-dim{font-family:inherit;font-size:11.5px;text-align:center;color:#555;font-variant-numeric:tabular-nums;}
 thead tr{background:#1b2a4a;color:#fff;}
-thead th{padding:9px 12px;font-weight:700;text-align:left;font-size:11px;letter-spacing:.3px;}
+thead th{padding:9px 12px;font-weight:700;text-align:left;font-size:11.5px;letter-spacing:.3px;}
 thead th.r{text-align:right;}
 tbody tr:nth-child(even){background:#f5f7fa;}
 tbody tr:hover{background:#eef2f8;}
 tbody td{padding:8px 12px;border-bottom:1px solid #e8eaef;vertical-align:middle;}
-td.c-no{color:#bbb;font-size:10px;text-align:center;}
-td.c-bag{font-family:'Courier New',monospace;font-size:12.5px;font-weight:600;letter-spacing:.3px;}
+td.c-no{color:#bbb;font-size:11.5px;text-align:center;}
+td.c-bag{font-family:inherit;font-size:11.5px;font-weight:600;letter-spacing:.3px;font-variant-numeric:tabular-nums;}
 td.c-num{text-align:right;font-variant-numeric:tabular-nums;}
 td.empty{text-align:center;color:#bbb;padding:24px;}
 tfoot tr{background:#eef2f8;}
-tfoot td{padding:9px 12px;font-weight:700;font-size:12px;border-top:2px solid #1b2a4a;}
+tfoot td{padding:9px 12px;font-weight:700;font-size:11.5px;border-top:2px solid #1b2a4a;}
 tfoot td.r{text-align:right;}
 
 @media print{
@@ -1996,13 +2256,14 @@ tfoot td.r{text-align:right;}
 </div>
 
 <table>
-  <colgroup><col class="c-no"><col class="c-bag"><col class="c-num"><col class="c-num"></colgroup>
-  <thead><tr><th style="text-align:center">#</th><th>Bag No</th><th class="r">Shipment</th><th class="r">Weight (Kg)</th></tr></thead>
+  <colgroup><col class="c-no"><col class="c-bag"><col class="c-num"><col class="c-num"><col class="c-dim"></colgroup>
+  <thead><tr><th style="text-align:center">#</th><th>Bag No</th><th class="r">Shipment</th><th class="r">Weight (Kg)</th><th style="text-align:center">Dimension (\u0e0b\u0e21.)</th></tr></thead>
   <tbody>${rows}</tbody>
   <tfoot><tr>
     <td colspan="2" style="text-align:right;color:#555">\u0e23\u0e27\u0e21\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14 ${entries.length} \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23</td>
     <td class="r">${t.shipment}</td>
     <td class="r">${t.weight.toFixed(2)}</td>
+    <td style="text-align:center;font-weight:400;color:#888">${t.dimCount}/${entries.length} \u0e43\u0e2a\u0e48\u0e02\u0e19\u0e32\u0e14</td>
   </tr></tfoot>
 </table>
 
@@ -2071,11 +2332,34 @@ const FTM_ALIASES=['flight time','flighttime','เวลาบิน','dep time'
 const SHF_ALIASES=['shift','กะ'];
 const MAWB_ALIASES=['mawb','master air waybill','awb'];
 const CAR_ALIASES=['car tag','cartag','ทะเบียนรถ','vehicle','plate'];
+// ── ขนาด Dimension ──
+const DIML_ALIASES=['width','width (cm)','w','กว้าง','ความกว้าง','กว้าง (cm)','กว้าง (ซม.)','dim w','w (cm)'];
+const DIMW_ALIASES=['length','length (cm)','l','ยาว','ความยาว','ยาว (cm)','ยาว (ซม.)','dim l','l (cm)'];
+const DIMH_ALIASES=['height','height (cm)','h','สูง','ความสูง','สูง (cm)','สูง (ซม.)','dim h','h (cm)'];
+const DIM_ALIASES=['dimension','dimension (cm)','dimension (ซม.)','dim','size','ขนาด','ขนาด (ซม.)','กว้างxยาวxสูง','wxlxh','lxwxh'];
 
 function matchColumn(headers,aliases) { for (const h of headers) if (aliases.some(a=>(h||'').toLowerCase().trim()===a)) return h; return ''; }
+// แยกข้อความขนาดรวม เช่น "40x30x20", "40 × 30 × 20 cm", "40*30*20"
+function parseDimText(v) {
+  const s=String(v==null?'':v).replace(/cm|ซม\.?|มม\.?|mm/gi,'').trim();
+  if (!s) return null;
+  const parts=s.split(/[x×*/\s,]+/).map(p=>parseFloat(p)).filter(n=>isFinite(n)&&n>0);
+  if (parts.length<3) return null;
+  return { l:parts[0], w:parts[1], h:parts[2] };
+}
+// ดึงขนาดจากแถวของไฟล์ Excel (คอลัมน์แยก หรือคอลัมน์รวม)
+function rowDims(row) {
+  let l=dimNum(ucDimLIdx>=0?row[ucDimLIdx]:0), w=dimNum(ucDimWIdx>=0?row[ucDimWIdx]:0), h=dimNum(ucDimHIdx>=0?row[ucDimHIdx]:0);
+  if (!(l>0&&w>0&&h>0) && ucDimIdx>=0) {
+    const p=parseDimText(row[ucDimIdx]);
+    if (p) { l=p.l; w=p.w; h=p.h; }
+  }
+  return { dimL:l, dimW:w, dimH:h };
+}
 
 function openUploadCreateModal() {
   ucFileReady=false; uploadData=[]; uploadColumns=[]; ucBagIdx=-1; ucShipIdx=-1; ucWtIdx=-1;
+  ucDimLIdx=-1; ucDimWIdx=-1; ucDimHIdx=-1; ucDimIdx=-1;
   document.getElementById('uc-file-section').style.display='none';
   document.getElementById('uc-filename').textContent='\u0e23\u0e2d\u0e07\u0e23\u0e31\u0e1a .xlsx, .xls, .csv';
   document.getElementById('btn-uc-create').textContent='\uD83D\uDCC4 \u0e2a\u0e23\u0e49\u0e32\u0e07\u0e0a\u0e35\u0e17';
@@ -2113,13 +2397,23 @@ function handleUCFileUpload(event) {
       ucBagIdx=autoBag?uploadColumns.indexOf(autoBag):0;
       ucShipIdx=autoShip?uploadColumns.indexOf(autoShip):(uploadColumns.length>1?1:-1);
       ucWtIdx=autoWt?uploadColumns.indexOf(autoWt):(uploadColumns.length>2?2:-1);
+      // ตรวจคอลัมน์ขนาด Dimension (ถ้าไม่มีจะข้ามไป — ไม่บังคับ)
+      const colDimL=matchColumn(uploadColumns,DIML_ALIASES), colDimW=matchColumn(uploadColumns,DIMW_ALIASES),
+            colDimH=matchColumn(uploadColumns,DIMH_ALIASES), colDim=matchColumn(uploadColumns,DIM_ALIASES);
+      ucDimLIdx=colDimL?uploadColumns.indexOf(colDimL):-1;
+      ucDimWIdx=colDimW?uploadColumns.indexOf(colDimW):-1;
+      ucDimHIdx=colDimH?uploadColumns.indexOf(colDimH):-1;
+      ucDimIdx =colDim ?uploadColumns.indexOf(colDim) :-1;
       [[GW_ALIASES,'uc-gateway'],[DEST_ALIASES,'uc-destination'],[FNO_ALIASES,'uc-flightNo'],[FTM_ALIASES,'uc-flightTime'],
        [SHF_ALIASES,'uc-shift'],[MAWB_ALIASES,'uc-mawb'],[CAR_ALIASES,'uc-carTag']].forEach(([al,fid])=>{
         const col=matchColumn(uploadColumns,al); if (!col) return;
         const ci=uploadColumns.indexOf(col);
         for (const row of uploadData) { const v=String(row[ci]||'').trim(); if(v){const el=document.getElementById(fid);if(el)el.value=v;break;} }
       });
-      document.getElementById('uc-col-info').innerHTML='\u2728 \u0e15\u0e23\u0e27\u0e08\u0e1e\u0e1a\u0e04\u0e2d\u0e25\u0e31\u0e21\u0e19\u0e4c\u0e2d\u0e31\u0e15\u0e42\u0e19\u0e21\u0e31\u0e15\u0e34 — \uD83D\uDCE6 Bag No: <b>'+esc(uploadColumns[ucBagIdx]??'—')+'</b>';
+      const dimCols=[colDimL,colDimW,colDimH].filter(Boolean);
+      const dimInfo=dimCols.length===3?' \u00B7 \uD83D\uDCD0 Dimension: <b>'+esc(dimCols.join(' / '))+'</b>'
+        :(colDim?' \u00B7 \uD83D\uDCD0 Dimension: <b>'+esc(colDim)+'</b>':'');
+      document.getElementById('uc-col-info').innerHTML='\u2728 \u0e15\u0e23\u0e27\u0e08\u0e1e\u0e1a\u0e04\u0e2d\u0e25\u0e31\u0e21\u0e19\u0e4c\u0e2d\u0e31\u0e15\u0e42\u0e19\u0e21\u0e31\u0e15\u0e34 — \uD83D\uDCE6 Bag No: <b>'+esc(uploadColumns[ucBagIdx]??'—')+'</b>'+dimInfo;
       document.getElementById('uc-filename').textContent='\uD83D\uDCC4 '+file.name;
       document.getElementById('uc-flight-section').style.display=''; document.getElementById('uc-flight-toggle').textContent='\u25B2 \u0e22\u0e48\u0e2d';
       document.getElementById('uc-file-section').style.display='block'; refreshUCPreview();
@@ -2136,7 +2430,8 @@ function refreshUCPreview() {
     if (!bag){st='\u0e44\u0e21\u0e48\u0e21\u0e35 Bag No';col='#e67e22';skipped++;}
     else if (seen.has(bag)){st='\u0e0b\u0e49\u0e33';col='#e74c3c';skipped++;}
     else{st='\u2713 OK';col='#27ae60';valid++;seen.add(bag);}
-    if (i<50) rows.push(`<tr><td style="color:#ccc;font-size:11px">${i+1}</td><td class="mono">${esc(bag)||'—'}</td><td>${ship}</td><td>${wt}</td><td style="color:${col};font-size:12px;font-weight:600">${st}</td></tr>`);
+    const dm=rowDims(row);
+    if (i<50) rows.push(`<tr><td style="color:#ccc;font-size:11px">${i+1}</td><td class="mono">${esc(bag)||'—'}</td><td>${ship}</td><td>${wt}</td><td class="td-dim">${hasDim(dm)?esc(dimText(dm)):'<span style="color:#ccc">—</span>'}</td><td style="color:${col};font-size:12px;font-weight:600">${st}</td></tr>`);
   });
   document.getElementById('uc-preview-body').innerHTML=rows.join('');
   document.getElementById('uc-upload-stats').innerHTML=
@@ -2152,7 +2447,8 @@ function confirmUploadCreate() {
     uploadData.forEach(row=>{
       const bag=ucBagIdx>=0?String(row[ucBagIdx]||'').trim():''; if (!bag||seen.has(bag)) return;
       const ship=parseFloat(ucShipIdx>=0?row[ucShipIdx]:1)||1, wt=parseFloat(ucWtIdx>=0?row[ucWtIdx]:0)||0;
-      entries.push({id:uid(),bagNo:bag,shipment:ship,weight:wt}); seen.add(bag);
+      const dm=rowDims(row);
+      entries.push({id:uid(),bagNo:bag,shipment:ship,weight:wt,dimL:dm.dimL,dimW:dm.dimW,dimH:dm.dimH}); seen.add(bag);
     });
   }
   const maxWtUc=parseFloat((document.getElementById('uc-maxWeight')||{}).value)||0;
@@ -2252,7 +2548,7 @@ async function adminConnectCloud() {
   btn.textContent = '⏳ กำลังเชื่อมต่อ…'; btn.disabled = true;
   try {
     if (!bin) {
-      // สร้าง Bin ใหม่อัตโนมัติ
+      // สร้าง Bin ใหม่อัตโนมัต  
       const initData = { users: loadUsers(), documents: loadDocs(), bgUrl: localStorage.getItem(LS_BG) || '', flightProfiles: loadFlightProfiles() };
       const cr = await fetch('https://api.jsonbin.io/v3/b', {
         method: 'POST',
