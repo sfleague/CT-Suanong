@@ -167,6 +167,7 @@
     .tbl-wrap th { font-size: 10.5px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .4px; background: #f9fafb; }
     .tbl-wrap tfoot td { font-weight: 700; background: #f6f8fa; font-size: 12px; }
     .td-num { font-variant-numeric: tabular-nums; text-align: center; }
+    .tbl-wrap td.td-num { text-align: center; }
     .btn-del-row  { background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 13px; padding: 3px 8px; border-radius: 4px; }
     .btn-del-row:hover  { background: #fde8e8; }
     .btn-edit-row { background: none; border: none; color: #2980b9; cursor: pointer; font-size: 13px; padding: 3px 8px; border-radius: 4px; }
@@ -522,7 +523,7 @@
     <span class="h-user" id="h-username"></span>
     <span class="h-sp"></span>
     <div class="h-acts">
-      <span id="h-sync-badge"></span>
+
       <button class="btn btn-primary" onclick="createDocument()">+ สร้างชีทใหม่</button>
       <button class="btn btn-success" onclick="openUploadCreateModal()">📂 Upload</button>
       <button class="btn btn-ghost btn-sm" id="btn-users" onclick="openUsersModal()" style="display:none" title="จัดการผู้ใช้งาน"><span>👥</span></button>
