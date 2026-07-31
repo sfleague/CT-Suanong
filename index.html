@@ -991,6 +991,10 @@ if (EMBED_JB_BIN && cloudBin) localStorage.setItem(LS_JBBIN, cloudBin);
 if (EMBED_JB_KEY && cloudKey) localStorage.setItem(LS_JBKEY, cloudKey);
 let syncTimer = null;
 let syncPending = false;
+// จนกว่าจะโหลดข้อมูลจาก cloud สำเร็จอย่างน้อย 1 ครั้ง ห้ามเขียนทับ cloud (กันข้อมูลหาย)
+let cloudReady = false;
+let syncing    = false;   // ล็อกไม่ให้ save ซ้อนกัน (กัน race)
+let queuedSave = false;   // มีคำขอ save เข้ามาระหว่างกำลัง sync อยู่
 
 function hasCloud() { return !!(cloudBin && cloudKey); }
 function jbGetUrl()  { return 'https://api.jsonbin.io/v3/b/' + cloudBin + '/latest'; }
@@ -1005,39 +1009,91 @@ function setSyncBadge(state, text) {
   el.innerHTML = `<span class="sync-badge ${cls}"><span class="sync-dot"></span>${text}</span>`;
 }
 
+let lastCloudGetOk = false; // GET ล่าสุดสำเร็จหรือไม่ (แยกกรณี "เชื่อมต่อไม่ได้" ออกจาก "bin ว่าง")
 async function cloudGet() {
-  if (!hasCloud()) return null;
+  if (!hasCloud()) { lastCloudGetOk = false; return null; }
   try {
     const r = await fetch(jbGetUrl(), { headers: { 'X-Master-Key': cloudKey } });
     if (!r.ok) throw new Error('status ' + r.status);
     const json = await r.json();
+    lastCloudGetOk = true;          // เชื่อมต่อสำเร็จ (แม้ record จะว่าง)
     return json.record || null;
   } catch(e) {
     console.warn('jsonbin get error', e);
+    lastCloudGetOk = false;         // เชื่อมต่อไม่ได้ — ห้ามเปิด cloudReady
     return null;
   }
 }
+// เปิดใช้งานการเขียนขึ้น cloud หลังโหลดครั้งแรกสำเร็จ แล้ว flush งานที่ค้างไว้
+function markCloudReadyAndFlush() {
+  if (lastCloudGetOk && !cloudReady) {
+    cloudReady = true;
+    // reconcile รอบแรกแบบไม่ทำลายข้อมูล: merge cloud+local แล้วเขียนกลับ
+    // ทำให้เอกสารที่มีเฉพาะในเครื่องถูก push ขึ้น cloud และดึงของเครื่องอื่นลงมาครบ
+    queuedSave = false; syncPending = false;
+    syncNow(false);
+  }
+}
 
-async function cloudPut(data, showToast) {
-  if (!hasCloud()) return false;
+// เขียนข้อมูลขึ้น cloud แบบดิบ (ใช้เฉพาะภายใน syncNow หลัง merge แล้วเท่านั้น)
+async function cloudPutRaw(data) {
+  const r = await fetch(jbPutUrl(), {
+    method: 'PUT',
+    headers: jbHeaders(),
+    body: JSON.stringify(data)
+  });
+  if (!r.ok) throw new Error('status ' + r.status);
+  localStorage.setItem(LS_CACHE, JSON.stringify(data));
+  return true;
+}
+
+// สร้าง snapshot ปัจจุบันจาก local
+function localSnapshot() {
+  return {
+    users:          loadUsers(),
+    documents:      loadDocs(),
+    tombstones:     loadTombstones(),
+    bgUrl:          localStorage.getItem(LS_BG) || '',
+    flightProfiles: loadFlightProfiles()
+  };
+}
+
+// ═══ หัวใจของการกันข้อมูลหาย ═══
+// ทุกครั้งที่ save จะ: ดึง cloud ล่าสุด → merge กับ local (ใครใหม่กว่าใช้อันนั้น + เคารพการลบ) → เขียนกลับ
+// จึงไม่มีทางที่เครื่องหนึ่งจะเขียนทับข้อมูลของอีกเครื่อง
+async function syncNow(showToast) {
+  if (!hasCloud()) { localStorage.setItem(LS_CACHE, JSON.stringify(localSnapshot())); return true; }
+  if (!cloudReady) { queuedSave = true; return false; } // ยังโหลด cloud ไม่เสร็จ — ห้ามเขียนทับ
+  if (syncing)     { queuedSave = true; return false; } // มีการ sync ค้างอยู่ — เข้าคิวไว้
+
+  syncing = true;
+  setSyncBadge('saving', 'กำลังบันทึก…');
   try {
-    setSyncBadge('saving', 'กำลังบันทึก…');
-    const r = await fetch(jbPutUrl(), {
-      method: 'PUT',
-      headers: jbHeaders(),
-      body: JSON.stringify(data)
-    });
-    if (!r.ok) throw new Error('status ' + r.status);
+    const remote = await cloudGet();            // ดึงของล่าสุดบน cloud ก่อนเสมอ
+    const merged = mergeSnapshots(remote, localSnapshot()); // รวมแบบ newest-wins + tombstones
+    applyMergedToLocal(merged);                 // อัปเดต local ให้ตรงกับผลรวม
+    await cloudPutRaw(merged);                  // เขียนผลรวมกลับขึ้น cloud
     setSyncBadge('ok', 'ซิงค์แล้ว');
-    localStorage.setItem(LS_CACHE, JSON.stringify(data));
     if (showToast) toast('บันทึกขึ้น Cloud สำเร็จ ☁️', 'success');
+    // ถ้าระหว่างนั้นมีการแก้ไขเข้ามาอีก → sync ซ้ำอีกรอบ
+    if (queuedSave) { queuedSave = false; syncing = false; return syncNow(false); }
+    syncing = false;
     return true;
   } catch(e) {
+    console.warn('sync error', e);
+    syncing = false;
     setSyncBadge('error', 'ซิงค์ไม่ได้ ⚠️');
-    toast('ซิงค์ Cloud ไม่สำเร็จ — ตรวจสอบการเชื่อมต่อ', 'error');
+    // ข้อมูลยังอยู่ใน local ครบ — ลองใหม่อัตโนมัติในไม่ช้า
+    queuedSave = true;
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(() => { if (queuedSave) { queuedSave = false; syncNow(false); } }, 5000);
+    if (showToast) toast('ซิงค์ Cloud ไม่สำเร็จ — จะลองใหม่อัตโนมัติ (ข้อมูลยังอยู่ในเครื่อง)', 'warning');
     return false;
   }
 }
+
+// ให้เข้ากันได้กับโค้ดเดิมที่เรียก cloudPut(...)
+async function cloudPut(_data, showToast) { return syncNow(showToast); }
 
 function scheduleSave() {
   syncPending = true;
@@ -1045,11 +1101,10 @@ function scheduleSave() {
   syncTimer = setTimeout(async () => {
     if (!syncPending) return;
     syncPending = false;
-    const data = { users: loadUsers(), documents: loadDocs(), bgUrl: localStorage.getItem(LS_BG) || '', flightProfiles: loadFlightProfiles() };
     if (hasCloud()) {
-      await cloudPut(data);
+      await syncNow(false);
     } else {
-      localStorage.setItem(LS_CACHE, JSON.stringify(data));
+      localStorage.setItem(LS_CACHE, JSON.stringify(localSnapshot()));
     }
   }, 800);
 }
@@ -1078,9 +1133,10 @@ function setAuthCloudStatus(state, msg) {
 async function retryCloudLoad() {
   setAuthCloudStatus('loading', '⏳ กำลังดึงข้อมูลจาก Cloud…');
   const cloudData = await cloudGet();
-  if (cloudData) {
-    mergeCloudData(cloudData);
-    const n = (cloudData.documents||[]).length;
+  if (lastCloudGetOk) {
+    if (cloudData) mergeCloudData(cloudData);
+    markCloudReadyAndFlush();
+    const n = (cloudData && cloudData.documents ? cloudData.documents.length : 0);
     setAuthCloudStatus('ok', '☁️ Cloud: พบ ' + n + ' รายการ — รีเฟรชหน้าเพื่อโหลดใหม่');
   } else {
     setAuthCloudStatus('error', '❌ ยังดึงไม่ได้ — ตรวจสอบ Internet แล้วลองใหม่ &nbsp;<a href="#" onclick="event.preventDefault();retryCloudLoad()" style="color:#c62828;font-weight:700">↺ ลองใหม่</a>');
@@ -1092,6 +1148,7 @@ async function retryCloudLoad() {
 // ══════════════════════════════════════════════
 const STORE_USERS   = 'parcel_users_v1';
 const STORE_DOCS    = 'parcel_docs_v1';
+const STORE_TOMB    = 'parcel_tombstones_v1'; // { docId: deletedAt } — จำการลบเพื่อไม่ให้ข้อมูลกลับมา
 const STORE_SESSION = 'parcel_session_v1';
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 นาที — logout อัตโนมัติเมื่อไม่ได้ใช้งาน
 
@@ -1099,8 +1156,23 @@ function safeJSON(str, fb) { try { const v=JSON.parse(str); return v??fb; } catc
 
 function loadUsers()   { return safeJSON(localStorage.getItem(STORE_USERS), []); }
 function saveUsers(u)  { localStorage.setItem(STORE_USERS, JSON.stringify(u)); scheduleSave(); }
-function loadDocs()    { return safeJSON(localStorage.getItem(STORE_DOCS),  []); }
-function saveDocs(d)   { localStorage.setItem(STORE_DOCS,  JSON.stringify(d)); scheduleSave(); }
+// แปลง id ของเอกสารและ entry ให้เป็น string เสมอ (รองรับข้อมูลเก่าที่เป็นตัวเลข)
+function normDoc(doc) {
+  if (!doc) return doc;
+  if (doc.id != null) doc.id = String(doc.id);
+  if (Array.isArray(doc.entries)) doc.entries.forEach(e => { if (e && e.id != null) e.id = String(e.id); });
+  return doc;
+}
+function loadDocs()    { return safeJSON(localStorage.getItem(STORE_DOCS),  []).map(normDoc); }
+function saveDocs(d)   {
+  // ประทับ updatedAt ให้เอกสารที่ยังไม่มี เพื่อให้ merge ทำงานถูกต้อง
+  (d||[]).forEach(doc => { if (doc && !doc.updatedAt) doc.updatedAt = nowTs(); });
+  localStorage.setItem(STORE_DOCS,  JSON.stringify(d)); scheduleSave();
+}
+// ── Tombstones (บันทึกการลบ) ──
+function loadTombstones()  { return safeJSON(localStorage.getItem(STORE_TOMB), {}) || {}; }
+function saveTombstones(t) { localStorage.setItem(STORE_TOMB, JSON.stringify(t||{})); }
+function markDeleted(id)   { const t=loadTombstones(); t[id]=nowTs(); saveTombstones(t); }
 function loadSession() {
   // ตรวจทั้ง localStorage (จำไว้) และ sessionStorage (ชั่วคราว)
   return safeJSON(localStorage.getItem(STORE_SESSION), null)
@@ -1152,62 +1224,83 @@ function stopIdleTimer() {
   sessionStorage.removeItem('parcel_last_active');
 }
 
-function applyCloudData(data) {
-  if (!data) return;
-  if (Array.isArray(data.users) && data.users.length > 0) {
-    localStorage.setItem(STORE_USERS, JSON.stringify(data.users));
-  }
-  if (Array.isArray(data.documents)) {
-    // ไม่ลบเอกสารเก่า — เก็บทุกอย่างไว้
-    localStorage.setItem(STORE_DOCS, JSON.stringify(data.documents));
-  }
-  // sync flight profiles from cloud
-  if (Array.isArray(data.flightProfiles)) {
-    localStorage.setItem(LS_FLIGHT_PROFILES, JSON.stringify(data.flightProfiles));
-  }
-  // sync background image URL from cloud
-  if (typeof data.bgUrl === 'string') {
-    if (data.bgUrl) {
-      localStorage.setItem(LS_BG, data.bgUrl);
-    } else {
-      localStorage.removeItem(LS_BG);
+// ═══ MERGE ENGINE — รวมข้อมูล 2 ชุดแบบปลอดภัย ═══
+// กติกา: เอกสาร id ซ้ำ → ใช้อันที่ updatedAt ใหม่กว่า | ถ้าถูกลบ (tombstone) หลังแก้ไขล่าสุด → ลบทิ้ง
+function mergeSnapshots(a, b) {
+  a = a || {}; b = b || {};
+
+  // tombstones: รวมทั้งสองฝั่ง เอาเวลาลบล่าสุด
+  const tomb = {};
+  [a.tombstones, b.tombstones].forEach(t => {
+    if (t && typeof t === 'object') {
+      for (const id in t) { const ts = t[id] || 0; if (ts > (tomb[id] || 0)) tomb[id] = ts; }
     }
-    applyBg(data.bgUrl);
+  });
+
+  // documents: รวมตาม id, newest-wins ด้วย updatedAt
+  const byId = new Map();
+  const consider = doc => {
+    if (!doc || doc.id == null) return;
+    const cur = byId.get(doc.id);
+    const t = doc.updatedAt || 0;
+    if (!cur || t >= (cur.updatedAt || 0)) byId.set(doc.id, doc);
+  };
+  (Array.isArray(a.documents) ? a.documents : []).map(normDoc).forEach(consider);
+  (Array.isArray(b.documents) ? b.documents : []).map(normDoc).forEach(consider);
+
+  // ตัดเอกสารที่ถูกลบออก (ถ้า tombstone ใหม่กว่าหรือเท่ากับ updatedAt)
+  let documents = [];
+  byId.forEach((doc, id) => {
+    const delAt = tomb[id];
+    if (delAt && delAt >= (doc.updatedAt || 0)) return; // ถูกลบทีหลัง → ไม่เอา
+    documents.push(doc);
+  });
+  // เรียงใหม่สุดขึ้นก่อน
+  documents.sort((x, y) => (y.updatedAt || 0) - (x.updatedAt || 0));
+
+  // ล้าง tombstone เก่าเกิน 30 วัน กันบวม
+  const CUTOFF = nowTs() - 30 * 24 * 60 * 60 * 1000;
+  for (const id in tomb) { if (tomb[id] < CUTOFF) delete tomb[id]; }
+
+  // users: ฝั่งที่มีข้อมูลมากกว่าเป็นหลัก (โดยปกติแก้ไม่บ่อย)
+  const usersA = Array.isArray(a.users) ? a.users : [];
+  const usersB = Array.isArray(b.users) ? b.users : [];
+  const users = usersA.length >= usersB.length ? (usersA.length ? usersA : usersB) : usersB;
+
+  // flightProfiles: รวม dedupe
+  const sig = p => [p.flightNo||'',p.gateway||'',p.destination||'',p.shift||''].join('|');
+  const seen = new Set(); const profiles = [];
+  [...(a.flightProfiles||[]), ...(b.flightProfiles||[])].forEach(p => {
+    const s = sig(p); if (!seen.has(s)) { seen.add(s); profiles.push(p); }
+  });
+
+  // bgUrl: ใช้ค่าที่มี (ฝั่ง b/local ก่อน ถ้าไม่มีค่อยใช้ a)
+  const bgUrl = (typeof b.bgUrl === 'string' && b.bgUrl !== '') ? b.bgUrl
+              : (typeof a.bgUrl === 'string' ? a.bgUrl : '');
+
+  return { users, documents, tombstones: tomb, bgUrl, flightProfiles: profiles.slice(0, 60) };
+}
+
+// นำผล merge ไปเขียนลง local ทั้งหมด
+function applyMergedToLocal(m) {
+  if (!m) return;
+  if (Array.isArray(m.users) && m.users.length > 0) localStorage.setItem(STORE_USERS, JSON.stringify(m.users));
+  localStorage.setItem(STORE_DOCS, JSON.stringify(m.documents || []));
+  saveTombstones(m.tombstones || {});
+  localStorage.setItem(LS_FLIGHT_PROFILES, JSON.stringify(m.flightProfiles || []));
+  if (typeof m.bgUrl === 'string') {
+    if (m.bgUrl) localStorage.setItem(LS_BG, m.bgUrl); else localStorage.removeItem(LS_BG);
+    applyBg(m.bgUrl);
   }
 }
 
-// merge: รวมข้อมูล local กับ cloud โดยใช้ id เป็น key — เอาอันที่ใหม่กว่าเป็นหลัก
+// เรียกตอนโหลด cloud มา — merge เข้ากับ local ปัจจุบันแล้วเขียนลง local
 function mergeCloudData(cloudData) {
-  if (!cloudData) return;
-  // Users: cloud wins ถ้ามีข้อมูล
-  if (Array.isArray(cloudData.users) && cloudData.users.length > 0) {
-    localStorage.setItem(STORE_USERS, JSON.stringify(cloudData.users));
-  }
-  // Documents: merge — ถ้า id ซ้ำให้เอา cloud version; เพิ่มของ local ที่ไม่มีใน cloud
-  if (Array.isArray(cloudData.documents)) {
-    const localDocs  = loadDocs();
-    const cloudIds   = new Set(cloudData.documents.map(d => d.id));
-    const localOnly  = localDocs.filter(d => !cloudIds.has(d.id));
-    const merged     = [...cloudData.documents, ...localOnly];
-    localStorage.setItem(STORE_DOCS, JSON.stringify(merged));
-    // ถ้ามีของ local ที่ไม่อยู่ใน cloud → push ขึ้น cloud ด้วย
-    if (localOnly.length > 0) scheduleSave();
-  }
-  // merge flight profiles: cloud + local, deduplicated, newest first
-  if (Array.isArray(cloudData.flightProfiles)) {
-    const sig=p=>[p.flightNo||'',p.gateway||'',p.destination||'',p.shift||''].join('|');
-    const cloudSigs=new Set(cloudData.flightProfiles.map(sig));
-    const localOnly=loadFlightProfiles().filter(p=>!cloudSigs.has(sig(p)));
-    const merged=[...cloudData.flightProfiles,...localOnly].slice(0,60);
-    localStorage.setItem(LS_FLIGHT_PROFILES, JSON.stringify(merged));
-    if (localOnly.length>0) scheduleSave();
-  }
-  if (typeof cloudData.bgUrl === 'string') {
-    if (cloudData.bgUrl) localStorage.setItem(LS_BG, cloudData.bgUrl);
-    else localStorage.removeItem(LS_BG);
-    applyBg(cloudData.bgUrl);
-  }
+  const merged = mergeSnapshots(cloudData, localSnapshot());
+  applyMergedToLocal(merged);
 }
+// ชื่อเดิมที่โค้ดอื่นอาจเรียก
+function applyCloudData(data) { mergeCloudData(data); }
 
 function initStorage() {
   const users = loadUsers();
@@ -1234,13 +1327,18 @@ let deleteTargetId = null;
 let uploadData   = [], uploadColumns = [];
 let ucBagIdx=-1, ucShipIdx=-1, ucWtIdx=-1, ucFileReady=false;
 
-function getDocById(id) { return documents.find(d => d.id === id); }
+function getDocById(id) { return documents.find(d => String(d.id) === String(id)); }
 function docTotals(doc) {
   let s=0, w=0;
   (doc.entries||[]).forEach(e => { s += Number(e.shipment)||0; w += Number(e.weight)||0; });
   return { shipment: s, weight: w };
 }
 function nextId(arr) { return (!arr||arr.length===0) ? 1 : Math.max(...arr.map(x=>x.id||0))+1; }
+// Collision-proof unique id (timestamp + random) — ปลอดภัยข้ามหลายเครื่อง
+function uid() { return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,10); }
+function nowTs() { return Date.now(); }
+// ประทับเวลาแก้ไขล่าสุดของเอกสาร (ใช้ตัดสิน conflict ตอน merge)
+function touchDoc(doc) { if (doc) doc.updatedAt = nowTs(); return doc; }
 
 // ══════════════════════════════════════════════
 //  AUTH
@@ -1266,7 +1364,10 @@ async function doAuth() {
   if (hasCloud()) {
     cloudGet().then(data => {
       if (data) { mergeCloudData(data); documents = loadDocs(); renderList(); }
+      markCloudReadyAndFlush(); // เปิดให้เขียน cloud ได้เฉพาะเมื่อโหลดสำเร็จ
     }).catch(() => {});
+  } else {
+    cloudReady = true; // ไม่ใช้ cloud → เขียน local ได้เลย
   }
 }
 
@@ -1350,14 +1451,11 @@ async function tryAutoLogin() {
           mergeCloudData(cloudData);
           documents = loadDocs();
           renderList();
-          if (hasCloud() && (!cloudData || (cloudData.documents||[]).length === 0) && documents.length > 0) {
-            const data = { users: loadUsers(), documents: loadDocs(), bgUrl: localStorage.getItem(LS_BG) || '', flightProfiles: loadFlightProfiles() };
-            setSyncBadge('saving', 'กำลัง Push…');
-            cloudPut(data, true).then(ok => setSyncBadge(ok ? 'ok' : 'error', ok ? 'ซิงค์แล้ว' : 'ซิงค์ไม่ได้'));
-          } else {
-            setSyncBadge('ok', 'ซิงค์แล้ว');
-          }
         }
+        // เปิดให้เขียน cloud ได้ก็ต่อเมื่อโหลดสำเร็จ แล้ว push ของ local ที่ยังไม่ได้ sync ขึ้นไป
+        markCloudReadyAndFlush();
+        if (cloudReady) setSyncBadge('ok', 'ซิงค์แล้ว');
+        else            setSyncBadge('error', 'ซิงค์ไม่ได้ ⚠️');
       });
       return;
     }
@@ -1367,6 +1465,7 @@ async function tryAutoLogin() {
   // ไม่มี session หรือ session หมดอายุ → โหลด cloud แล้วรอ login
   const cloudData = await cloudPromise;
   if (cloudData) mergeCloudData(cloudData);
+  markCloudReadyAndFlush(); // เปิดให้เขียน cloud ได้เมื่อโหลดสำเร็จ (ก่อน login ยังไม่มีอะไรให้ push)
 
   // ถ้ามี session แต่ไม่ใช่ recent refresh → เช็ค user แล้ว login
   if (session && !sessionStillValid) {
@@ -1547,9 +1646,9 @@ function closeCreatePopup() { document.getElementById('create-popup').classList.
 function confirmCreateDocument() {
   const g=id=>document.getElementById(id).value.trim(), gd=id=>document.getElementById(id).value;
   const maxWt=parseFloat((document.getElementById('cf-maxWeight')||{}).value)||0;
-  const doc={id:nextId(documents),docCode:genDocCode(),gateway:g('cf-gateway'),exportDate:gd('cf-exportDate'),
+  const doc={id:uid(),docCode:genDocCode(),gateway:g('cf-gateway'),exportDate:gd('cf-exportDate'),
     shift:g('cf-shift'),flightNo:g('cf-flightNo'),flightTime:g('cf-flightTime'),destination:g('cf-destination'),
-    documentDate:gd('cf-documentDate'),carTag:g('cf-carTag'),mawb:g('cf-mawb'),remark:g('cf-remark'),maxWeight:maxWt,createdAt:Date.now(),entries:[]};
+    documentDate:gd('cf-documentDate'),carTag:g('cf-carTag'),mawb:g('cf-mawb'),remark:g('cf-remark'),maxWeight:maxWt,createdAt:Date.now(),updatedAt:nowTs(),entries:[]};
   saveFlightProfile(doc); documents.unshift(doc); saveDocs(documents); closeCreatePopup(); renderList(); openDetailPopup(doc.id); toast('สร้างชีท '+doc.docCode);
 }
 
@@ -1588,7 +1687,7 @@ function refreshDetailPopup(doc) {
     ? '<div style="text-align:center;padding:28px;color:#bbb;font-size:13.5px">ยังไม่มีรายการ — ยิงเลข Bag No เพื่อเริ่มบันทึก</div>'
     : `<div class="tbl-wrap"><table>
         <thead><tr><th style="width:36px;text-align:center">#</th><th>Bag No</th><th style="width:100px;text-align:center">Shipment</th><th style="width:110px;text-align:center">Weight (Kg)</th><th style="width:140px;text-align:center">เวลายิง</th><th style="width:90px"></th></tr></thead>
-        <tbody>${entries.map((e,i)=>`<tr><td style="color:#ccc;font-size:11px;text-align:center">${i+1}</td><td class="mono">${esc(e.bagNo)}</td><td class="td-num">${e.shipment}</td><td class="td-num">${Number(e.weight).toFixed(2)}</td><td style="font-size:11.5px;color:#666;white-space:nowrap;text-align:center">${fmtTime(e.scannedAt)}</td><td style="white-space:nowrap"><button class="btn-edit-row" onclick="openEditEntry(${doc.id},${e.id})">✏️</button><button class="btn-del-row" onclick="deleteEntry(${doc.id},${e.id})" title="ลบ">🗑️</button></td></tr>`).join('')}</tbody>
+        <tbody>${entries.map((e,i)=>`<tr><td style="color:#ccc;font-size:11px;text-align:center">${i+1}</td><td class="mono">${esc(e.bagNo)}</td><td class="td-num">${e.shipment}</td><td class="td-num">${Number(e.weight).toFixed(2)}</td><td style="font-size:11.5px;color:#666;white-space:nowrap;text-align:center">${fmtTime(e.scannedAt)}</td><td style="white-space:nowrap"><button class="btn-edit-row" onclick="openEditEntry('${doc.id}','${e.id}')">✏️</button><button class="btn-del-row" onclick="deleteEntry('${doc.id}','${e.id}')" title="ลบ">🗑️</button></td></tr>`).join('')}</tbody>
         <tfoot><tr><td colspan="2" style="text-align:right;color:#888;font-size:11.5px">รวม</td><td class="td-num">${t.shipment}</td><td class="td-num">${t.weight.toFixed(2)}</td><td></td><td></td></tr></tfoot>
       </table></div>`;
   document.getElementById('inp-bag').value='';
@@ -1609,6 +1708,7 @@ function deleteDocument(id) {
 function closeDeletePopup() { document.getElementById('delete-popup').classList.remove('open'); deleteTargetId=null; }
 function confirmDeleteDocument() {
   if (!deleteTargetId) return;
+  markDeleted(deleteTargetId); // บันทึก tombstone เพื่อให้การลบมีผลข้ามเครื่อง (ไม่กลับมาอีก)
   documents=documents.filter(d=>d.id!==deleteTargetId); saveDocs(documents);
   closeDeletePopup(); closeDetailPopup(); renderList(); toast('ลบเอกสารสำเร็จ', 'warning');
 }
@@ -1637,7 +1737,7 @@ function saveEditModal() {
   if (!editingDocId) return;
   const idx=documents.findIndex(d=>d.id===editingDocId); if (idx===-1) return;
   FIELDS.forEach(([,field,type])=>{ const el=document.getElementById('ef-'+field); if(el) documents[idx][field]=type==='number'?(parseFloat(el.value)||0):el.value; });
-  saveDocs(documents); closeEditModal(); renderList();
+  touchDoc(documents[idx]); saveDocs(documents); closeEditModal(); renderList();
   if (currentDocId===editingDocId) refreshDetailPopup(getDocById(editingDocId));
   toast('บันทึกสำเร็จ', 'success');
 }
@@ -1716,9 +1816,9 @@ function saveEntryPopup() {
       return;
     }
   }
-  const entry={id:nextId(doc.entries||[]),bagNo:entryBagNo,shipment,weight,scannedAt:new Date().toISOString()};
+  const entry={id:uid(),bagNo:entryBagNo,shipment,weight,scannedAt:new Date().toISOString()};
   if (!doc.entries) doc.entries=[];
-  doc.entries.push(entry); saveDocs(documents); refreshDetailPopup(doc); renderList();
+  doc.entries.push(entry); touchDoc(doc); saveDocs(documents); refreshDetailPopup(doc); renderList();
   toast('บันทึก '+entryBagNo+' แล้ว', 'success'); closeEntryPopup(false);
   const inp=document.getElementById('inp-bag'); if(inp){inp.value='';inp.focus();}
 }
@@ -1727,7 +1827,7 @@ function deleteEntry(docId,entryId) {
   const entry=(doc.entries||[]).find(e=>e.id===entryId); if (!entry) return;
   showConfirm('ยืนยันการลบ',`ลบ Bag No ${entry.bagNo} ใช่ไหม?`,'ไม่สามารถกู้คืนได้','🗑 ลบ',()=>{
     doc.entries=(doc.entries||[]).filter(e=>e.id!==entryId);
-    saveDocs(documents); refreshDetailPopup(doc); renderList();
+    touchDoc(doc); saveDocs(documents); refreshDetailPopup(doc); renderList();
     toast('ลบรายการแล้ว','warning');
   });
 }
@@ -1761,7 +1861,7 @@ function saveEditEntry() {
     }
   }
   doc.entries[idx]={...doc.entries[idx],bagNo,shipment,weight};
-  saveDocs(documents); refreshDetailPopup(doc); renderList();
+  touchDoc(doc); saveDocs(documents); refreshDetailPopup(doc); renderList();
   toast('แก้ไข '+bagNo+' แล้ว', 'success');
   closeEditEntry();
 }
@@ -1936,21 +2036,21 @@ function renderList() {
         const dl=[doc.exportDate||'',doc.shift?'Shift '+doc.shift:''].filter(Boolean).join(' \u00B7 ');
         return `<tr class="doc-row">
           <td class="dtr-num">${idx+1}</td>
-          <td onclick="openDetailPopup(${doc.id})" style="cursor:pointer;min-width:140px">
+          <td onclick="openDetailPopup('${doc.id}')" style="cursor:pointer;min-width:140px">
             <div class="dtr-gw">${esc(doc.gateway||'\u2014')}</div>
             ${fl?`<div class="dtr-flight">${esc(fl)}</div>`:''}
             <div class="dtr-code">${esc(doc.docCode)}</div>
           </td>
-          <td class="dtr-date" onclick="openDetailPopup(${doc.id})" style="cursor:pointer">${esc(dl||'\u2014')}${doc.createdAt?` ${String(new Date(doc.createdAt).getHours()).padStart(2,'0')}:${String(new Date(doc.createdAt).getMinutes()).padStart(2,'0')}`:''}</td>
+          <td class="dtr-date" onclick="openDetailPopup('${doc.id}')" style="cursor:pointer">${esc(dl||'\u2014')}${doc.createdAt?` ${String(new Date(doc.createdAt).getHours()).padStart(2,'0')}:${String(new Date(doc.createdAt).getMinutes()).padStart(2,'0')}`:''}</td>
           <td class="dtr-stat"><div class="dtr-sval" style="color:#e67e22">${(doc.entries||[]).length}</div></td>
           <td class="dtr-stat"><div class="dtr-sval" style="color:#27ae60">${t.shipment}</div></td>
           <td class="dtr-stat"><div class="dtr-sval" style="color:#2980b9">${t.weight.toFixed(2)}</div></td>
           <td class="dtr-remark">${doc.remark?'\uD83D\uDCDD '+esc(doc.remark):''}</td>
           <td class="dtr-actions">
-            <button class="btn btn-outline btn-sm" style="font-size:15px;padding:6px 11px" title="แก้ไขเอกสาร" onclick="openEditModal(${doc.id})">✏️</button>
-            <button class="btn btn-teal btn-sm" style="font-size:15px;padding:6px 11px" title="พิมพ์ / บันทึก PDF" onclick="printDocument(${doc.id})">🖨</button>
-            <button class="btn btn-blue btn-sm" style="font-size:15px;padding:6px 11px" title="ส่งออกเป็น Excel" onclick="exportExcel(${doc.id})">📊</button>
-            <button class="btn btn-danger btn-sm" style="font-size:15px;padding:6px 11px" title="ลบเอกสารนี้" onclick="deleteDocument(${doc.id})">🗑️</button>
+            <button class="btn btn-outline btn-sm" style="font-size:15px;padding:6px 11px" title="แก้ไขเอกสาร" onclick="openEditModal('${doc.id}')">✏️</button>
+            <button class="btn btn-teal btn-sm" style="font-size:15px;padding:6px 11px" title="พิมพ์ / บันทึก PDF" onclick="printDocument('${doc.id}')">🖨</button>
+            <button class="btn btn-blue btn-sm" style="font-size:15px;padding:6px 11px" title="ส่งออกเป็น Excel" onclick="exportExcel('${doc.id}')">📊</button>
+            <button class="btn btn-danger btn-sm" style="font-size:15px;padding:6px 11px" title="ลบเอกสารนี้" onclick="deleteDocument('${doc.id}')">🗑️</button>
           </td>
         </tr>`;}).join('')}</tbody>
     </table>
@@ -2052,13 +2152,13 @@ function confirmUploadCreate() {
     uploadData.forEach(row=>{
       const bag=ucBagIdx>=0?String(row[ucBagIdx]||'').trim():''; if (!bag||seen.has(bag)) return;
       const ship=parseFloat(ucShipIdx>=0?row[ucShipIdx]:1)||1, wt=parseFloat(ucWtIdx>=0?row[ucWtIdx]:0)||0;
-      entries.push({id:entries.length+1,bagNo:bag,shipment:ship,weight:wt}); seen.add(bag);
+      entries.push({id:uid(),bagNo:bag,shipment:ship,weight:wt}); seen.add(bag);
     });
   }
   const maxWtUc=parseFloat((document.getElementById('uc-maxWeight')||{}).value)||0;
-  const doc={id:nextId(documents),docCode:genDocCode(),gateway:g('uc-gateway'),exportDate:gd('uc-exportDate'),
+  const doc={id:uid(),docCode:genDocCode(),gateway:g('uc-gateway'),exportDate:gd('uc-exportDate'),
     shift:g('uc-shift'),flightNo:g('uc-flightNo'),flightTime:g('uc-flightTime'),destination:g('uc-destination'),
-    documentDate:gd('uc-documentDate'),carTag:g('uc-carTag'),mawb:g('uc-mawb'),remark:g('uc-remark'),maxWeight:maxWtUc,createdAt:Date.now(),entries};
+    documentDate:gd('uc-documentDate'),carTag:g('uc-carTag'),mawb:g('uc-mawb'),remark:g('uc-remark'),maxWeight:maxWtUc,createdAt:Date.now(),updatedAt:nowTs(),entries};
   saveFlightProfile(doc); documents.unshift(doc); saveDocs(documents); renderList(); closeUploadCreateModal(); openDetailPopup(doc.id);
   toast(entries.length>0?`\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e0a\u0e35\u0e17 ${doc.docCode} \u0e19\u0e33\u0e40\u0e02\u0e49\u0e32 ${entries.length} \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23`:'\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e0a\u0e35\u0e17 '+doc.docCode);
 }
