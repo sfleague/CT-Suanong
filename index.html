@@ -777,19 +777,19 @@
         </div>
         <div class="ep-dim-row">
           <div class="ep-dim-cell">
-            <span class="ep-dim-cap">กว้าง</span>
+            <span class="ep-dim-cap">Length</span>
             <input id="ep-dimL" class="ep-dim-input" type="number" min="0" step="0.1" placeholder="0" inputmode="decimal"
               onkeydown="if(event.key==='Enter')document.getElementById('ep-dimW').focus()">
           </div>
           <span class="ep-dim-x">×</span>
           <div class="ep-dim-cell">
-            <span class="ep-dim-cap">ยาว</span>
+            <span class="ep-dim-cap">Height</span>
             <input id="ep-dimW" class="ep-dim-input" type="number" min="0" step="0.1" placeholder="0" inputmode="decimal"
               onkeydown="if(event.key==='Enter')document.getElementById('ep-dimH').focus()">
           </div>
           <span class="ep-dim-x">×</span>
           <div class="ep-dim-cell">
-            <span class="ep-dim-cap">สูง</span>
+            <span class="ep-dim-cap">Width</span>
             <input id="ep-dimH" class="ep-dim-input" type="number" min="0" step="0.1" placeholder="0" inputmode="decimal"
               onkeydown="if(event.key==='Enter')saveEntryPopup()">
           </div>
@@ -843,19 +843,19 @@
         </div>
         <div class="ep-dim-row">
           <div class="ep-dim-cell">
-            <span class="ep-dim-cap">กว้าง</span>
+            <span class="ep-dim-cap">Length</span>
             <input id="ee-dimL" class="ep-dim-input" type="number" min="0" step="0.1" placeholder="0" inputmode="decimal"
               onkeydown="if(event.key==='Enter')document.getElementById('ee-dimW').focus()">
           </div>
           <span class="ep-dim-x">×</span>
           <div class="ep-dim-cell">
-            <span class="ep-dim-cap">ยาว</span>
+            <span class="ep-dim-cap">Height</span>
             <input id="ee-dimW" class="ep-dim-input" type="number" min="0" step="0.1" placeholder="0" inputmode="decimal"
               onkeydown="if(event.key==='Enter')document.getElementById('ee-dimH').focus()">
           </div>
           <span class="ep-dim-x">×</span>
           <div class="ep-dim-cell">
-            <span class="ep-dim-cap">สูง</span>
+            <span class="ep-dim-cap">Width</span>
             <input id="ee-dimH" class="ep-dim-input" type="number" min="0" step="0.1" placeholder="0" inputmode="decimal"
               onkeydown="if(event.key==='Enter')saveEditEntry()">
           </div>
@@ -1014,7 +1014,7 @@
           <div class="auth-err" id="set-fb-err" style="text-align:left"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button id="set-fb-disconnect" class="btn btn-danger btn-sm" onclick="adminDisconnectCloud()" style="display:none">ยกเลิกการเชื่อมต่อ</button>
-            <button class="btn btn-blue btn-sm" onclick="adminConnectCloud()" style="min-width:140px">☁️ เชื่อมต่อ JSONBin</button>
+            <button class="btn btn-blue btn-sm" onclick="adminConnectCloud()" style="min-width:140px">☁️ เชื่อ  ต่อ JSONBin</button>
           </div>
           <div id="set-fb-bake-box" style="display:none;margin-top:8px;background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:10px 14px;font-size:12px;color:#2e7d32;line-height:1.6">
             ✅ JSONBin เชื่อมต่อแล้ว — กดปุ่มด้านล่างเพื่อสร้างไฟล์ใหม่ที่<b>ฝัง JSONBin ไว้ในตัว</b><br>
@@ -1065,7 +1065,7 @@ function renderProfilesList() {
   const profiles=loadFlightProfiles();
   const body=document.getElementById('profiles-modal-body');
   if (!profiles.length) {
-    body.innerHTML='<div style="text-align:center;padding:48px 20px;color:#ccc"><div style="font-size:44px;margin-bottom:12px">📋</div><div style="font-size:14px">ยังไม่มี Profile<br><span style="font-size:12px;color:#aaa">สร้างชีทแล้วระบบบันทึกให้อัตโนมัติ</span></div></div>';
+    body.innerHTML='<div style="text-align:center;padding:48px 20px;color:#ccc"><div style="font-size:44px;margin-bottom:12px">📋</div><div style="font-size:14px">ยัง  ม่มี Profile<br><span style="font-size:12px;color:#aaa">สร้างชีทแล้วระบบบันทึกให้อัตโนมัติ</span></div></div>';
     return;
   }
   const hdr='<div style="padding:8px 20px;background:#f6f8fa;border-bottom:1px solid #eee;font-size:11px;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:.4px">'+profiles.length+' profiles — เรียงตามล่าสุด</div>';
@@ -1184,7 +1184,7 @@ function localSnapshot() {
 
 // ═══ หัวใจของการกันข้อมูลหาย ═══
 // ทุกครั้งที่ save จะ: ดึง cloud ล่าสุด → merge กับ local (ใครใหม่กว่าใช้อันนั้น + เคารพการลบ) → เขียนกลับ
-// จึงไม่มีทางที่เครื่องหนึ่งจะเขียนทับข้อมูลของอีกเครื่อง
+// จึงไม่มีทางที่เครื่องหนึ่ง  ะเขียนทับข้อมูลของอีกเครื่อง
 async function syncNow(showToast) {
   if (!hasCloud()) { localStorage.setItem(LS_CACHE, JSON.stringify(localSnapshot())); return true; }
   if (!cloudReady) { queuedSave = true; return false; } // ยังโหลด cloud ไม่เสร็จ — ห้ามเขียนทับ
@@ -1324,7 +1324,7 @@ function clearSession(){
 
 // ══════════════════════════════════════════════
 //  IDLE AUTO-LOGOUT
-// ══════════════════════════════════════════════
+// ═════════════   ════════════════════════════════
 let _idleTimer = null;
 
 function _touchActivity() {
@@ -2277,7 +2277,7 @@ tfoot td.r{text-align:right;}
 
 // ══════════════════════════════════════════════
 //  RENDER LIST
-// ══════════════════════════════════════════════
+// ══════════════════════════  ═══════════════════
 function renderList() {
   const docs=documents, el=document.getElementById('app');
   if (docs.length===0) {
@@ -2655,7 +2655,7 @@ function saveBg() {
   applyBg(url);
   scheduleSave(); // sync to Firebase
   closeSettingsModal();
-  toast(url ? 'บันทึกรูปพื้นหลังสำเร็จ' : 'ลบรูปพื้นหลังแล้ว', url ? 'success' : 'info');
+  toast(url ? 'บันทึกรู  พื้นหลังสำเร็จ' : 'ลบรูปพื้นหลังแล้ว', url ? 'success' : 'info');
 }
 
 function clearBg() {
