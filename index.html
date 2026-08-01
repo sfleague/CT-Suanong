@@ -128,9 +128,6 @@
     /* ── ไอคอนแผ่นดิสก์สำหรับปุ่มบันทึกทุกปุ่ม (เหมือนกันทั้งระบบ) ── */
     .ico-save { width: 1.15em; height: 1.15em; flex: none; display: block; }
     .btn-sm .ico-save, .btn-xs .ico-save { width: 1.05em; height: 1.05em; }
-    /* ปุ่มบันทึกทุกแบบต้องจัดไอคอน + ข้อความให้อยู่กลางแนวเดียวกัน */
-    button:has(> .ico-save) { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
-    .dim-profile-btn:has(> .ico-save) { gap: 6px; }
 
     /* ── โลโก้แบรนด์ (Header / หน้า Login / แท็บเบราว์เซอร์) ── */
     .h-logo-img {
@@ -1021,7 +1018,7 @@
         <div class="add-user-form">
           <div><label class="field-label">Username</label><input id="new-username" class="field-input" type="text" placeholder="ชื่อผู้ใช้"></div>
           <div><label class="field-label">Password</label><input id="new-password" class="field-input" type="password" placeholder="รหัสผ่าน"></div>
-          <button class="btn btn-success" onclick="addUser()" style="margin-top:18px"><svg class="ico-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg><span>บันทึกผู้ใช้</span></button>
+          <button class="btn btn-success" onclick="addUser()" style="margin-top:18px"><svg class="ico-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg><span>เพิ่ม</span></button>
         </div>
         <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;cursor:pointer">
           <input type="checkbox" id="new-isadmin"> ให้สิทธิ์ Admin
@@ -1091,7 +1088,7 @@
             ✅ JSONBin เชื่อมต่อแล้ว — กดปุ่มด้านล่างเพื่อสร้างไฟล์ใหม่ที่<b>ฝัง JSONBin ไว้ในตัว</b><br>
             ทุกเบราว์เซอร์ที่เปิดไฟล์นี้จะ<b>เชื่อมต่อ JSONBin อัตโนมัติ</b> โดยไม่ต้องตั้งค่าอีก
             <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
-              <button class="btn btn-primary btn-sm" onclick="forcePushToCloud()" style="width:100%"><svg class="ico-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg><span>Push ข้อมูลขึ้น Cloud ทันที</span></button>
+              <button class="btn btn-primary btn-sm" onclick="forcePushToCloud()" style="width:100%"><svg class="ico-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg><span>Push ข้อมูลในเครื่องนี้ขึ้น Cloud ทันที</span></button>
               <button class="btn btn-success btn-sm" onclick="downloadBakedFile()" style="width:100%"><svg class="ico-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg><span>ดาวน์โหลดไฟล์ฝัง JSONBin (แจกจ่ายได้เลย)</span></button>
             </div>
           </div>
@@ -2068,7 +2065,7 @@ async function tryAutoLogin() {
           documents = loadDocs();
           renderList();
         }
-        // เปิดให้เขียน cloud ได้ก็ต่อเมื่อโหลดสำเร็จ แล้ว push ของ local ที่ยังไม่ได้ sync ขึ้นไป
+        // เปิด  ห้เขียน cloud ได้ก็ต่อเมื่อโหลดสำเร็จ แล้ว push ของ local ที่ยังไม่ได้ sync ขึ้นไป
         markCloudReadyAndFlush();
         if (cloudReady) setSyncBadge('ok', 'ซิงค์แล้ว');
         else            setSyncBadge('error', 'ซิงค์ไม่ได้ ⚠️');
