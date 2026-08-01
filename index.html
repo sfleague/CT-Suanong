@@ -2301,7 +2301,7 @@ function refreshDetailPopup(doc) {
     : `<div class="tbl-wrap"><table>
         <thead><tr><th style="width:36px;text-align:center">#</th><th>Bag No</th><th style="width:100px;text-align:center">Shipment</th><th style="width:110px;text-align:center">Weight (Kg)</th><th class="th-dim" style="width:140px">Dimension (CM)</th><th style="width:140px;text-align:center">เวลายิง</th><th style="width:90px"></th></tr></thead>
         <tbody>${entries.map((e,i)=>`<tr><td style="color:#ccc;font-size:11px;text-align:center">${i+1}</td><td class="mono">${esc(e.bagNo)}</td><td class="td-num">${e.shipment}</td><td class="td-num">${Number(e.weight).toFixed(2)}</td><td class="td-dim">${hasDim(e)?esc(dimText(e)):'<span style="color:#ccc">—</span>'}</td><td style="font-size:11.5px;color:#666;white-space:nowrap;text-align:center">${fmtTime(e.scannedAt)}</td><td style="white-space:nowrap"><button class="btn-edit-row" onclick="openEditEntry('${doc.id}','${e.id}')">✏️</button><button class="btn-del-row" onclick="deleteEntry('${doc.id}','${e.id}')" title="ลบ">🗑️</button></td></tr>`).join('')}</tbody>
-        <tfoot><tr><td colspan="2" style="text-align:right;color:#888;font-size:11.5px">รว   </td><td class="td-num">${t.shipment}</td><td class="td-num">${t.weight.toFixed(2)}</td><td class="td-dim"></td><td></td><td></td></tr></tfoot>
+        <tfoot><tr><td colspan="2" style="text-align:right;color:#888;font-size:11.5px">รวม</td><td class="td-num">${t.shipment}</td><td class="td-num">${t.weight.toFixed(2)}</td><td class="td-dim"></td><td></td><td></td></tr></tfoot>
       </table></div>`;
   document.getElementById('inp-bag').value='';
 }
@@ -2858,7 +2858,7 @@ function handleUCFileUpload(event) {
       ucBagIdx=autoBag?uploadColumns.indexOf(autoBag):0;
       ucShipIdx=autoShip?uploadColumns.indexOf(autoShip):(uploadColumns.length>1?1:-1);
       ucWtIdx=autoWt?uploadColumns.indexOf(autoWt):(uploadColumns.length>2?2:-1);
-      // ตรวจคอ   ัมน์ขนาด Dimension (ถ้าไม่มีจะข้ามไป — ไม่บังคับ)
+      // ตรวจคอลัมน์ขนาด Dimension (ถ้าไม่มีจะข้ามไป — ไม่บังคับ)
       const colDimL=matchColumn(uploadColumns,DIML_ALIASES), colDimW=matchColumn(uploadColumns,DIMW_ALIASES),
             colDimH=matchColumn(uploadColumns,DIMH_ALIASES), colDim=matchColumn(uploadColumns,DIM_ALIASES);
       ucDimLIdx=colDimL?uploadColumns.indexOf(colDimL):-1;
