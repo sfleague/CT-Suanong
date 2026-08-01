@@ -43,7 +43,9 @@
     }
     .auth-logo { margin-bottom: 10px; }
     .auth-logo img { max-height: 48px; width: auto; object-fit: contain; display: block; }
-    .auth-brand { font-size: 13px; font-weight: 700; color: #1b2a4a; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px; }
+    /* โลโก้แบรนด์หน้า Login (แทนข้อความ SF International) */
+    .auth-brand { display: flex; justify-content: center; margin-bottom: 10px; }
+    .auth-brand img { width: 100%; max-width: 230px; height: auto; display: block; }
     .auth-box h1 { font-size: 20px; font-weight: 700; color: #1b2a4a; margin-bottom: 6px; }
     .auth-box p  { font-size: 13px; color: #888; margin-bottom: 22px; }
     .auth-input {
@@ -233,6 +235,7 @@
     #users-modal  .modal-box { max-width: 600px; }
     #cloud-modal  .modal-box { max-width: 480px; }
     #profiles-modal .modal-box { max-width: 700px; }
+    #dim-profile-modal .modal-box { max-width: 560px; }
     #upload-create-popup .modal-box { max-width: 680px; }
     #confirm-popup .modal-box { max-width: 380px; }
 
@@ -310,28 +313,64 @@
     }
     .dim-lock-toggle input { width: 15px; height: 15px; accent-color: #e67e22; cursor: pointer; }
     .dim-lock-toggle.on { background: #fff4e6; border-color: #e67e22; color: #b35c00; }
-    .dim-save-btn {
-      background: #fff; border: 1.5px solid #d0daea; color: #2980b9;
+    /* ปุ่มล็อคขนาด — อยู่นอกโปรไฟล์ขนาด (กดล็อค/ปลดล็อคได้จากหน้ากรอกข้อมูลโดยตรง) */
+    .dim-lock-btn {
+      display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+      font-size: 12.5px; font-weight: 700; color: #555;
+      background: #fff; border: 1.5px solid #e3e9f2; border-radius: 20px; padding: 7px 14px;
+      transition: background .15s, border-color .15s, color .15s;
+    }
+    .dim-lock-btn:hover { border-color: #cbd5e6; background: #f7f9fc; }
+    .dim-lock-btn.on { background: #fff4e6; border-color: #e67e22; color: #b35c00; }
+    .dim-lock-btn.on:hover { background: #ffedd8; }
+    /* ── Dimension Profile (ขนาด + ชื่อ) ── */
+    .dp-list-lbl { font-size: 10px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+    .dim-profile-btn {
+      background: #1b2a4a; border: 1.5px solid #1b2a4a; color: #fff;
       font-size: 12px; font-weight: 700; border-radius: 20px; padding: 5px 12px; cursor: pointer;
     }
-    .dim-save-btn:hover { background: #eaf4fc; }
-    .dim-presets { margin-top: 10px; }
-    .dim-presets-lbl { font-size: 10px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
-    .dim-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-    .dim-chip {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: #fff; border: 1.5px solid #e3e9f2; border-radius: 20px;
-      padding: 5px 6px 5px 11px; font-size: 12.5px; font-weight: 700; color: #1b2a4a;
-      cursor: pointer; transition: background .15s, border-color .15s;
-      font-variant-numeric: tabular-nums;
+    .dim-profile-btn:hover { background: #2c4170; }
+    .dim-lock-row .dim-lock-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .dp-lockbar {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: space-between;
+      background: #f7f9fc; border: 1.5px solid #e3e9f2; border-radius: 10px;
+      padding: 10px 12px; margin-bottom: 12px;
     }
-    .dim-chip:hover { background: #f0f5ff; border-color: #a9c2e8; }
-    .dim-chip .dim-chip-x {
-      border: none; background: none; color: #ccc; font-size: 14px; line-height: 1;
-      cursor: pointer; padding: 0 3px; border-radius: 50%;
+    .dp-lockbar.on { background: #fff4e6; border-color: #e67e22; }
+    .dp-lockbar-txt { font-size: 12.5px; font-weight: 600; color: #555; flex: 1; min-width: 180px; }
+    .dp-lockbar.on .dp-lockbar-txt { color: #b35c00; }
+    .dp-form-title { font-size: 12px; font-weight: 800; color: #1b2a4a; margin-bottom: 10px; }
+    .dp-row.editing { border-color: #2980b9; background: #f2f8fd; }
+    .dp-lock-on { background: #fff4e6 !important; border-color: #e67e22 !important; color: #b35c00 !important; }
+    .dp-badge-edit { background: #e3f0fb; color: #1f6aa5; border-radius: 20px; padding: 2px 8px; font-size: 10px; font-weight: 700; }
+    .dp-form { background: #f7f9fc; border: 1.5px solid #e3e9f2; border-radius: 10px; padding: 14px; margin-bottom: 16px; }
+    .dp-form-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 8px; align-items: end; }
+    @media (max-width: 560px) { .dp-form-grid { grid-template-columns: 1fr 1fr; } }
+    .dp-inp {
+      width: 100%; border: 1.5px solid #e8e8e8; border-radius: 8px; background: #fff;
+      padding: 9px 10px; font-size: 15px; font-weight: 700; color: #1b2a4a; text-align: center;
     }
-    .dim-chip .dim-chip-x:hover { color: #e74c3c; background: #fde8e8; }
-    .dim-empty { font-size: 11.5px; color: #bbb; }
+    .dp-inp.dp-inp-name { text-align: left; font-weight: 600; font-size: 14px; }
+    .dp-inp:focus { outline: none; border-color: #e67e22; }
+    .dp-form-acts { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; flex-wrap: wrap; }
+
+    .dp-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 14px; border: 1.5px solid #eef1f6; border-radius: 10px;
+      background: #fff; margin-bottom: 8px;
+    }
+    .dp-row.locked { border-color: #e67e22; background: #fffaf3; }
+    .dp-row-main { flex: 1; min-width: 0; }
+    .dp-row-name { font-size: 14px; font-weight: 700; color: #1b2a4a; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .dp-row-size { font-size: 12px; color: #888; margin-top: 2px; font-variant-numeric: tabular-nums; }
+    .dp-row-acts { display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
+    .dp-badge-lock { background: #fff0dd; color: #b35c00; border-radius: 20px; padding: 2px 8px; font-size: 10px; font-weight: 700; }
+    .dp-empty { text-align: center; padding: 34px 20px; color: #bbb; }
+    .dp-empty-icon { font-size: 40px; margin-bottom: 10px; }
+    /* ป็อปอัปโปรไฟล์อยู่เหนือป็อปอัปกรอกข้อมูล และ confirm อยู่เหนือสุด */
+    #dim-profile-modal { z-index: 560; }
+    #confirm-popup { z-index: 700; }
 
 
     .dup-existing { background: #fff4f4; border: 1.5px solid #f5c6c6; border-radius: 8px; padding: 12px 16px; margin-top: 14px; display: flex; flex-direction: column; gap: 4px; }
@@ -539,7 +578,7 @@
     <!-- hint: มี key แต่ไม่มี bin (เบราว์เซอร์ใหม่) -->
     <div id="fs-setup-hint" style="display:none;background:#fff8e1;border:1.5px solid #ffe082;border-radius:8px;padding:10px 14px;font-size:12.5px;color:#795548;margin-bottom:16px;line-height:1.7;text-align:left">
       🔑 พบ Key แล้ว — กรุณาใส่ <b>Bin ID</b> จากเครื่องเดิม<br>
-      <span style="color:#aaa">เปิดแอปบนเครื่องเดิม → ⚙️ ตั้งค่า → Cloud Storage → คัดลอก Bin ID</span>
+      <span style="color:#aaa">เปิ  แอปบนเครื่องเดิม → ⚙️ ตั้งค่า → Cloud Storage → คัดลอก Bin ID</span>
     </div>
     <!-- hint: ยังไม่มีอะไรเลย (ครั้งแรก) -->
     <p id="fs-setup-new" class="fs-sub">กรอก Master Key จาก <a href="https://jsonbin.io" target="_blank" style="color:#2980b9">jsonbin.io</a> ครั้งเดียว<br>เว้น Bin ID ว่างไว้เพื่อสร้าง Bin ใหม่อัตโนมัติ</p>
@@ -556,14 +595,14 @@
         autocomplete="off" style="margin-bottom:0">
     </div>
     <div class="auth-err" id="fs-err" style="text-align:left;margin:4px 0 10px"></div>
-    <button class="auth-btn auth-btn-main" onclick="fsConnect()">☁️ บันทึกและเชื่อมต่อ</button>
+    <button class="auth-btn auth-btn-main" onclick="fsConnect()">☁️ บันทึกและเชื่อมต   อ</button>
   </div>
 </div>
 
 <!-- AUTH -->
 <div id="auth" class="auth-wrap">
   <div class="auth-box">
-    <div class="auth-brand">SF International</div>
+    <div class="auth-brand"><img src="/images/sf-international-logo.png" alt="SF International"></div>
     <div class="auth-icon" style="font-size:36px;margin:8px 0 10px">📦</div>
     <h1>CT ซั่วหน่อง</h1>
     <p>เข้าสู่ระบบเพื่อใช้งาน</p>
@@ -595,6 +634,7 @@
       <button class="btn btn-ghost btn-sm" id="btn-users" onclick="openUsersModal()" style="display:none" title="จัดการผู้ใช้งาน"><span>👥</span></button>
       <button class="btn btn-ghost btn-sm" id="btn-site-settings" onclick="openSettingsModal()" style="display:none" title="ตั้งค่าเว็บไซต์ / Firebase"><span>⚙️</span></button>
       <button class="btn btn-ghost btn-sm" onclick="openProfilesModal()" title="จัดการ Flight Profiles"><span>📋</span></button>
+      <button class="btn btn-ghost btn-sm" onclick="openDimProfiles(null)" title="Dimension Profile — บันทึกขนาดพร้อมชื่อ"><span>📐</span></button>
       <button class="btn btn-ghost btn-sm" onclick="openPwModal()" title="เปลี่ยนรหัสผ่าน"><span>🔑</span></button>
       <button class="btn btn-ghost btn-sm" onclick="logout()" title="ออกจากระบบ"><span>ออก</span></button>
     </div>
@@ -626,7 +666,7 @@
         <div class="upload-stats" id="uc-upload-stats"></div>
         <div class="upload-preview-table" style="margin-top:10px">
           <table>
-            <thead><tr><th>#</th><th>Bag No</th><th>Shipment</th><th>Weight (Kg)</th><th>Dimension (ซม.)</th><th>สถานะ</th></tr></thead>
+            <thead><tr><th>#</th><th>Bag No</th><th>Shipment</th><th>Weight (Kg)</th><th>Dimension (CM)</th><th>สถานะ</th></tr></thead>
             <tbody id="uc-preview-body"></tbody>
           </table>
         </div>
@@ -654,8 +694,8 @@
       </div>
     </div>
     <div class="modal-foot">
-      <button class="btn btn-outline" onclick="closeUploadCreateModal()">ยกเลิก</button>
       <button class="btn btn-success" id="btn-uc-create" onclick="confirmUploadCreate()" style="min-width:160px">📂 สร้างชีท</button>
+      <button class="btn btn-outline" onclick="closeUploadCreateModal()">ยกเลิก</button>
     </div>
   </div>
 </div>
@@ -681,8 +721,8 @@
       </div>
     </div>
     <div class="modal-foot">
-      <button class="btn btn-outline" onclick="closeCreatePopup()">ยกเลิก</button>
       <button class="btn btn-primary" onclick="confirmCreateDocument()">📄 สร้างชีท</button>
+      <button class="btn btn-outline" onclick="closeCreatePopup()">ยกเลิก</button>
     </div>
   </div>
 </div>
@@ -772,7 +812,7 @@
       </div>
       <div class="ep-dim-block">
         <div class="ep-dim-head">
-          <label class="field-label">ขนาด Dimension (ซม.)</label>
+          <label class="field-label">ขนาด Dimension (CM)</label>
           <span class="ep-dim-opt">ไม่บังคับ — เว้นว่างได้</span>
         </div>
         <div class="ep-dim-row">
@@ -795,21 +835,18 @@
           </div>
         </div>
         <div class="dim-lock-row">
-          <label class="dim-lock-toggle" id="ep-dim-lock-wrap" for="ep-dim-lock">
-            <input type="checkbox" id="ep-dim-lock" onchange="toggleDimLock()">
-            🔒 ล็อคขนาดนี้ไว้ใช้ทุกครั้ง
-          </label>
-          <button type="button" class="dim-save-btn" onclick="saveCurrentDimPreset('ep')">💾 บันทึกขนาดนี้</button>
-        </div>
-        <div class="dim-presets">
-          <div class="dim-presets-lbl">ขนาดที่บันทึกไว้ — กดเพื่อใช้</div>
-          <div class="dim-chips" id="ep-dim-chips"></div>
+          <button type="button" class="dim-lock-btn" id="ep-dim-lock-wrap" onclick="toggleDimLock('ep')">
+            <span id="ep-dim-lock-text">🔒 Lock Dimension</span>
+          </button>
+          <div class="dim-lock-actions">
+            <button type="button" class="dim-profile-btn" onclick="openDimProfiles('ep')">📐 Dimension</button>
+          </div>
         </div>
       </div>
     </div>
     <div class="modal-foot">
-      <button class="btn btn-outline" onclick="closeEntryPopup(true)">ยกเลิก</button>
       <button class="btn btn-success" onclick="saveEntryPopup()" style="min-width:110px;font-size:15px">✓ บันทึก</button>
+      <button class="btn btn-outline" onclick="closeEntryPopup(true)">ยกเลิก</button>
     </div>
   </div>
 </div>
@@ -838,7 +875,7 @@
       </div>
       <div class="ep-dim-block">
         <div class="ep-dim-head">
-          <label class="field-label">ขนาด Dimension (ซม.)</label>
+          <label class="field-label">ขนาด Dimension (CM)</label>
           <span class="ep-dim-opt">ไม่บังคับ — เว้นว่างได้</span>
         </div>
         <div class="ep-dim-row">
@@ -849,29 +886,30 @@
           </div>
           <span class="ep-dim-x">×</span>
           <div class="ep-dim-cell">
-            <span class="ep-dim-cap">Height</span>
+            <span class="ep-dim-cap">Width</span>
             <input id="ee-dimW" class="ep-dim-input" type="number" min="0" step="0.1" placeholder="0" inputmode="decimal"
               onkeydown="if(event.key==='Enter')document.getElementById('ee-dimH').focus()">
           </div>
           <span class="ep-dim-x">×</span>
           <div class="ep-dim-cell">
-            <span class="ep-dim-cap">Width</span>
+            <span class="ep-dim-cap">Height</span>
             <input id="ee-dimH" class="ep-dim-input" type="number" min="0" step="0.1" placeholder="0" inputmode="decimal"
               onkeydown="if(event.key==='Enter')saveEditEntry()">
           </div>
         </div>
-        <div class="dim-lock-row" style="justify-content:flex-end">
-          <button type="button" class="dim-save-btn" onclick="saveCurrentDimPreset('ee')">💾 บันทึกขนาดนี้</button>
-        </div>
-        <div class="dim-presets">
-          <div class="dim-presets-lbl">ขนาดที่บันทึกไว้ — กดเพื่อใช้</div>
-          <div class="dim-chips" id="ee-dim-chips"></div>
+        <div class="dim-lock-row">
+          <button type="button" class="dim-lock-btn" id="ee-dim-lock-wrap" onclick="toggleDimLock('ee')">
+            <span id="ee-dim-lock-text">🔒 Lock Dimension</span>
+          </button>
+          <div class="dim-lock-actions">
+            <button type="button" class="dim-profile-btn" onclick="openDimProfiles('ee')">📐 Dimension</button>
+          </div>
         </div>
       </div>
     </div>
     <div class="modal-foot">
-      <button class="btn btn-outline" onclick="closeEditEntry()">ยกเลิก</button>
       <button class="btn btn-primary" onclick="saveEditEntry()" style="min-width:110px;font-size:15px">💾 บันทึก</button>
+      <button class="btn btn-outline" onclick="closeEditEntry()">ยกเลิก</button>
     </div>
   </div>
 </div>
@@ -914,8 +952,8 @@
     <div class="modal-head"><h2 id="edit-modal-title">แก้ไขเอกสาร</h2><button class="modal-close" onclick="closeEditModal()">×</button></div>
     <div class="modal-body"><div class="meta-grid" id="edit-fields"></div></div>
     <div class="modal-foot">
-      <button class="btn btn-outline" onclick="closeEditModal()">ยกเลิก</button>
       <button class="btn btn-primary" onclick="saveEditModal()">บันทึก</button>
+      <button class="btn btn-outline" onclick="closeEditModal()">ยกเลิก</button>
     </div>
   </div>
 </div>
@@ -933,8 +971,8 @@
       </div>
     </div>
     <div class="modal-foot">
-      <button class="btn btn-outline" onclick="closePwModal()">ยกเลิก</button>
       <button class="btn btn-primary" onclick="savePw()">บันทึก</button>
+      <button class="btn btn-outline" onclick="closePwModal()">ยกเลิก</button>
     </div>
   </div>
 </div>
@@ -977,7 +1015,7 @@
         <label class="field-label">URL รูปพื้นหลัง (หน้า Login &amp; หน้าหลัก)</label>
         <input id="set-bg-url" class="field-input" type="text" placeholder="https://example.com/background.jpg"
           oninput="previewBg(this.value)" autocomplete="off">
-        <div style="font-size:11px;color:#aaa;margin-top:4px">วางลิงก์รูปภาพ แล้วดูตัวอย่างด้านล่าง · ปล่อยว่างเพื่อใช้สีพื้นหลังเดิม</div>
+        <div style="font-size:11px;color:#aaa;margin-top:4px">วางลิงก์รูปภาพ แล้วด   ตัวอย่างด้านล่าง · ปล่อยว่างเพื่อใช้สีพื้นหลังเดิม</div>
       </div>
       <div>
         <label class="field-label">ตัวอย่างพื้นหลัง</label>
@@ -1003,7 +1041,7 @@
                 placeholder="66xxxxxxxxxxxxxxxxxxxxxx" autocomplete="off" style="flex:1">
               <button class="btn btn-outline btn-sm" title="คัดลอก Bin ID" onclick="copyBinId()" style="flex-shrink:0;white-space:nowrap">📋 คัดลอก</button>
             </div>
-            <div id="set-bin-copy-ok" style="display:none;font-size:11px;color:#2e7d32;margin-top:3px">✅ คัดลอกแล้ว — นำไปใส่บนเครื่องใหม่ได้เลย</div>
+            <div id="set-bin-copy-ok" style="display:none;font-size:11px;color:#2e7d32;margin-top:3px">✅ คัดล   กแล้ว — นำไปใส่บนเครื่องใหม่ได้เลย</div>
           </div>
           <div>
             <label class="field-label">Master Key</label>
@@ -1020,7 +1058,7 @@
             ✅ JSONBin เชื่อมต่อแล้ว — กดปุ่มด้านล่างเพื่อสร้างไฟล์ใหม่ที่<b>ฝัง JSONBin ไว้ในตัว</b><br>
             ทุก   บราว์เซอร์ที่เปิดไฟล์นี้จะ<b>เชื่อมต่อ JSONBin อัตโนมัติ</b> โดยไม่ต้องตั้งค่าอีก
             <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
-              <button class="btn btn-primary btn-sm" onclick="forcePushToCloud()" style="width:100%">🔄 Push    ้อมูลในเครื่องนี้ขึ้น Cloud ทันที</button>
+              <button class="btn btn-primary btn-sm" onclick="forcePushToCloud()" style="width:100%">     Push    ้อมูลในเครื่องนี้ขึ้น Cloud ทันที</button>
               <button class="btn btn-success btn-sm" onclick="downloadBakedFile()" style="width:100%">📥 ดาวน์โหลดไฟล์ฝัง JSONBin (แจกจ่ายได้เลย)</button>
             </div>
           </div>
@@ -1045,6 +1083,53 @@
     <div class="modal-foot" style="justify-content:space-between">
       <button class="btn btn-danger btn-sm" onclick="clearAllProfiles()">🗑 ล้างทั้งหมด</button>
       <button class="btn btn-outline" onclick="closeProfilesModal()">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Dimension Profile Manager ══ -->
+<div id="dim-profile-modal" class="modal-overlay" onclick="if(event.target===this)closeDimProfiles()">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div><h2>📐 โปรไฟล์ขนาด</h2><div class="mh-sub">เก็บขนาดที่ใช้บ่อยพร้อมชื่อ — แก้ไขได้ทั้งชื่อและขนาด กด "ใช้ขนาดนี้" เพื่อเติมลงช่อง Dimension (ปุ่ม 🔒 ล็อคขนาด อยู่ที่หน้ากรอกข้อมูล)</div></div>
+      <button class="modal-close" onclick="closeDimProfiles()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="dp-form">
+        <div class="dp-form-title" id="dp-form-title">➕ เพิ่มโปรไฟล์ใหม่</div>
+        <div class="dp-form-grid">
+          <div class="ep-dim-cell">
+            <span class="ep-dim-cap" style="text-align:left">ชื่อโปรไฟล์</span>
+            <input id="dp-name" class="dp-inp dp-inp-name" type="text" maxlength="40" placeholder="เช่น กล่อง A / ถุงใหญ่"
+              onkeydown="if(event.key==='Enter')document.getElementById('dp-l').focus()">
+          </div>
+          <div class="ep-dim-cell">
+            <span class="ep-dim-cap">Length</span>
+            <input id="dp-l" class="dp-inp" type="number" min="0" step="0.1" placeholder="0" inputmode="decimal"
+              onkeydown="if(event.key==='Enter')document.getElementById('dp-w').focus()">
+          </div>
+          <div class="ep-dim-cell">
+            <span class="ep-dim-cap">Width</span>
+            <input id="dp-w" class="dp-inp" type="number" min="0" step="0.1" placeholder="0" inputmode="decimal"
+              onkeydown="if(event.key==='Enter')document.getElementById('dp-h').focus()">
+          </div>
+          <div class="ep-dim-cell">
+            <span class="ep-dim-cap">Height</span>
+            <input id="dp-h" class="dp-inp" type="number" min="0" step="0.1" placeholder="0" inputmode="decimal"
+              onkeydown="if(event.key==='Enter')saveDimProfileForm()">
+          </div>
+        </div>
+        <div class="dp-form-acts">
+          <button type="button" class="btn btn-outline btn-sm" id="dp-pull-btn" onclick="pullDimFromForm()">⬇ ดึงค่าจากช่องที่กรอก</button>
+          <button type="button" class="btn btn-success btn-sm" id="dp-save-btn" onclick="saveDimProfileForm()">+ บันทึกโปรไฟล์</button>
+          <button type="button" class="btn btn-outline btn-sm" id="dp-cancel-btn" style="display:none" onclick="resetDimProfileForm()">ยกเลิกการแก้ไข</button>
+        </div>
+      </div>
+      <div class="dp-list-lbl" id="dp-list-lbl">โปรไฟล์ที่บันทึกไว้</div>
+      <div id="dp-list" style="max-height:44vh;overflow-y:auto"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeDimProfiles()">ปิด</button>
     </div>
   </div>
 </div>
@@ -1148,7 +1233,7 @@ async function cloudGet() {
     return null;
   }
 }
-// เปิดใช้งานการเขียนขึ้น cloud หลังโหลดครั้งแรกสำเร็จ แล้ว flush งานที่ค้างไว้
+// เปิดใช้งานก   รเขียนขึ้น cloud หลังโหลดครั้งแรกสำเร็จ แล้ว flush งานที่ค้างไว้
 function markCloudReadyAndFlush() {
   if (lastCloudGetOk && !cloudReady) {
     cloudReady = true;
@@ -1178,13 +1263,15 @@ function localSnapshot() {
     documents:      loadDocs(),
     tombstones:     loadTombstones(),
     bgUrl:          localStorage.getItem(LS_BG) || '',
-    flightProfiles: loadFlightProfiles()
+    flightProfiles: loadFlightProfiles(),
+    dimProfiles:    loadDimProfiles(),
+    dimTombstones:  loadDimTomb()
   };
 }
 
 // ═══ หัวใจของการกันข้อมูลหาย ═══
 // ทุกครั้งที่ save จะ: ดึง cloud ล่าสุด → merge กับ local (ใครใหม่กว่าใช้อันนั้น + เคารพการลบ) → เขียนกลับ
-// จึงไม่มีทางที่เครื่องหนึ่ง  ะเขียนทับข้อมูลของอีกเครื่อง
+// จึงไม่มีทางที่เครื่องหนึ่ง  ะเขียนทับข้อมูลของอีกเค   ื่อง
 async function syncNow(showToast) {
   if (!hasCloud()) { localStorage.setItem(LS_CACHE, JSON.stringify(localSnapshot())); return true; }
   if (!cloudReady) { queuedSave = true; return false; } // ยังโหลด cloud ไม่เสร็จ — ห้ามเขียนทับ
@@ -1286,7 +1373,7 @@ function normDoc(doc) {
   if (doc.id != null) doc.id = String(doc.id);
   if (Array.isArray(doc.entries)) doc.entries.forEach(e => {
     if (e && e.id != null) e.id = String(e.id);
-    // ขนาด Dimension (ซม.) — ข้อมูลเก่าที่ไม่มีค่าจะถูกตั้งเป็น 0
+    // ขนาด Dimension (CM) — ข้อมูลเก่าที่ไม่มีค่าจะถูกตั้งเป็น 0
     if (e) { ['dimL','dimW','dimH'].forEach(k => { const n = parseFloat(e[k]); e[k] = (isFinite(n) && n > 0) ? n : 0; }); }
   });
   return doc;
@@ -1406,16 +1493,42 @@ function mergeSnapshots(a, b) {
   const bgUrl = (typeof b.bgUrl === 'string' && b.bgUrl !== '') ? b.bgUrl
               : (typeof a.bgUrl === 'string' ? a.bgUrl : '');
 
-  return { users, documents, tombstones: tomb, bgUrl, flightProfiles: profiles.slice(0, 60) };
+  // dimTombstones: โปรไฟล์ขนาดที่ถูกลบ — รวมทั้งสองฝั่ง เอาเวลาลบล่าสุด
+  const dimTomb = {};
+  [a.dimTombstones, b.dimTombstones].forEach(t => {
+    if (t && typeof t === 'object') {
+      for (const k in t) { const ts = Number(t[k])||0; if (ts > (dimTomb[k]||0)) dimTomb[k] = ts; }
+    }
+  });
+  for (const k in dimTomb) { if (dimTomb[k] < CUTOFF) delete dimTomb[k]; }
+
+  // dimProfiles: รวม dedupe ตามขนาด (ตัวที่แก้ล่าสุดชนะ) + เคารพการลบ
+  const dimSeen = new Map();
+  [...(a.dimProfiles||[]), ...(b.dimProfiles||[])].forEach(p => {
+    if (!p) return;
+    const key = [p.l,p.w,p.h].join('x');
+    const cur = dimSeen.get(key);
+    if (!cur || (Number(p.updatedAt)||0) >= (Number(cur.updatedAt)||0)) dimSeen.set(key, p);
+  });
+  const dimProfiles = [...dimSeen.values()]
+    // ถ้าลบทีหลังการแก้ไขล่าสุด → ไม่เอากลับมา (ลบแล้วต้องหายจริง ไม่เด้งกลับตอนซิงค์)
+    .filter(p => { const delAt = dimTomb[[p.l,p.w,p.h].join('x')]; return !(delAt && delAt >= (Number(p.updatedAt)||0)); })
+    .sort((x,y)=>(Number(y.updatedAt)||0)-(Number(x.updatedAt)||0));
+
+  return { users, documents, tombstones: tomb, bgUrl, flightProfiles: profiles.slice(0, 60),
+           dimProfiles: dimProfiles.slice(0, 60), dimTombstones: dimTomb };
 }
 
-// นำผล merge ไปเขียนลง local ทั้งหมด
+// นำผล merge ไปเขียนลง local ทั้ง   มด
 function applyMergedToLocal(m) {
   if (!m) return;
   if (Array.isArray(m.users) && m.users.length > 0) localStorage.setItem(STORE_USERS, JSON.stringify(m.users));
   localStorage.setItem(STORE_DOCS, JSON.stringify(m.documents || []));
   saveTombstones(m.tombstones || {});
   localStorage.setItem(LS_FLIGHT_PROFILES, JSON.stringify(m.flightProfiles || []));
+  if (Array.isArray(m.dimProfiles)) localStorage.setItem(LS_DIM_PROFILES, JSON.stringify(m.dimProfiles));
+  if (m.dimTombstones && typeof m.dimTombstones === 'object') saveDimTomb(m.dimTombstones);
+  if (document.getElementById('dim-profile-modal')?.classList.contains('open')) renderDimProfileList();
   if (typeof m.bgUrl === 'string') {
     if (m.bgUrl) localStorage.setItem(LS_BG, m.bgUrl); else localStorage.removeItem(LS_BG);
     applyBg(m.bgUrl);
@@ -1427,7 +1540,7 @@ function mergeCloudData(cloudData) {
   const merged = mergeSnapshots(cloudData, localSnapshot());
   applyMergedToLocal(merged);
 }
-// ชื่อเดิมที่โค้ดอื่นอาจเรียก
+// ชื่อเดิมที่โค้ดอื่นอาจเรีย   
 function applyCloudData(data) { mergeCloudData(data); }
 
 function initStorage() {
@@ -1466,43 +1579,127 @@ function fmtDimNum(n) { return Number(n) % 1 === 0 ? String(Number(n)) : Number(
 function dimText(e) { const d = entryDims(e); return hasDim(e) ? fmtDimNum(d.l)+'×'+fmtDimNum(d.w)+'×'+fmtDimNum(d.h) : ''; }
 
 function docTotals(doc) {
-  let s=0, w=0, dimCount=0;
+  let s=0, w=0;
   (doc.entries||[]).forEach(e => {
     s += Number(e.shipment)||0; w += Number(e.weight)||0;
-    if (hasDim(e)) dimCount++;
   });
-  return { shipment: s, weight: w, dimCount };
+  return { shipment: s, weight: w };
 }
 
-// ══ DIMENSION MEMORY: บันทึกขนาดไว้ใช้ซ้ำ + ล็อคค่า ══
-const LS_DIM_PRESETS = 'dim_presets_v1';   // ขนาดที่บันทึกไว้ (กดใช้ซ้ำได้)
-const LS_DIM_LOCK    = 'dim_lock_v1';      // ขนาดที่ล็อคไว้ — เติมอัตโนมัติทุกครั้ง
+// ══ DIMENSION PROFILE: บันทึกขนาดพร้อมชื่อ + ล็อคขนาด ══
+const LS_DIM_PRESETS  = 'dim_presets_v1';    // (เก่า) ขนาดที่บันทึกไว้แบบไม่มีชื่อ — ใช้ย้ายเข้าโปรไฟล์ครั้งแรก
+const LS_DIM_PROFILES = 'dim_profiles_v1';   // โปรไฟล์ขนาด { id, name, l, w, h, updatedAt }
+const LS_DIM_LOCK     = 'dim_lock_v1';       // ขนาดที่ล็อคไว้ — เติมอัตโนมัติทุกครั้ง
+const LS_DIM_TOMB     = 'dim_tomb_v1';       // โปรไฟล์ที่ลบแล้ว { 'lxwxh': เวลาที่ลบ } — กัน Cloud ส่งกลับมาใหม่
 
-function loadDimPresets() {
-  const arr = safeJSON(localStorage.getItem(LS_DIM_PRESETS), []);
-  return Array.isArray(arr) ? arr.filter(p => p && dimNum(p.l)>0 && dimNum(p.w)>0 && dimNum(p.h)>0) : [];
+let dimProfileTarget = null;   // 'ep' | 'ee' | null — ป็อปอัปที่จะรับค่าขนาดที่เลือก
+let dimEditId        = null;   // กำลังแก้ไขโปรไฟล์ไหน (null = เพิ่มใหม่)
+
+// ── ทะเบียนการลบโปรไฟล์ขนาด (tombstone) — ทำให้ "ลบแล้วต้องหายจริง" แม้จะซิงค์กับ Cloud ──
+function dimKey(p)  { return [dimNum(p.l), dimNum(p.w), dimNum(p.h)].join('x'); }
+function loadDimTomb() { const o = safeJSON(localStorage.getItem(LS_DIM_TOMB), {}); return (o && typeof o === 'object') ? o : {}; }
+function saveDimTomb(t) { localStorage.setItem(LS_DIM_TOMB, JSON.stringify(t || {})); }
+function markDimDeleted(p)   { const t = loadDimTomb(); t[dimKey(p)] = nowTs(); saveDimTomb(t); }
+function clearDimDeleted(p)  { const t = loadDimTomb(); delete t[dimKey(p)]; saveDimTomb(t); }
+
+function normDimProfile(p) {
+  if (!p) return null;
+  const l = dimNum(p.l), w = dimNum(p.w), h = dimNum(p.h);
+  if (!(l>0 && w>0 && h>0)) return null;
+  return { id: p.id || uid(), name: String(p.name||'').trim().slice(0,40), l, w, h, updatedAt: Number(p.updatedAt)||0 };
 }
-function storeDimPresets(list) { localStorage.setItem(LS_DIM_PRESETS, JSON.stringify(list.slice(0,12))); }
-function addDimPreset(l, w, h) {
-  if (!(l>0 && w>0 && h>0)) return false;
-  const list = loadDimPresets().filter(p => !(p.l===l && p.w===w && p.h===h));
-  list.unshift({ l, w, h });
-  storeDimPresets(list);
-  return true;
+function loadDimProfiles() {
+  const arr = safeJSON(localStorage.getItem(LS_DIM_PROFILES), null);
+  if (!Array.isArray(arr)) {
+    // ครั้งแรก: ย้ายขนาดเก่า (ไม่มีชื่อ) มาเป็นโปรไฟล์ให้อัตโนมัติ
+    const old = safeJSON(localStorage.getItem(LS_DIM_PRESETS), []);
+    const migrated = (Array.isArray(old) ? old : []).map(normDimProfile).filter(Boolean);
+    localStorage.setItem(LS_DIM_PROFILES, JSON.stringify(migrated));
+    return migrated;
+  }
+  const tomb = loadDimTomb();
+  return arr.map(normDimProfile).filter(Boolean)
+    // ตัวที่ลบไปแล้วต้องไม่โผล่กลับมา (เช่นถูกดึงลงมาจาก Cloud ก่อนหน้านี้)
+    .filter(p => { const delAt = tomb[dimKey(p)]; return !(delAt && delAt >= (Number(p.updatedAt)||0)); });
 }
-function removeDimPreset(idx, prefix) {
-  const list = loadDimPresets();
-  list.splice(idx, 1); storeDimPresets(list);
-  renderDimChips('ep'); renderDimChips('ee');
-  toast('ลบขนาดที่บันทึกไว้แล้ว', 'warning');
+function storeDimProfiles(list) {
+  localStorage.setItem(LS_DIM_PROFILES, JSON.stringify(list.slice(0,60)));
+  if (typeof scheduleSave === 'function') scheduleSave();
 }
+function dimSizeText(p)     { return fmtDimNum(p.l)+'×'+fmtDimNum(p.w)+'×'+fmtDimNum(p.h); }
+function dimProfileLabel(p) { return p.name || dimSizeText(p); }
+function findDimProfile(id) { return loadDimProfiles().find(p => p.id === id) || null; }
+// เพิ่ม/อัปเดตโปรไฟล์ — ขนาดซ้ำจะรวมเป็นตัวเดียว (ชื่อใหม่ทับชื่อเดิมถ้ากรอกมา)
+function addDimProfile(l, w, h, name) {
+  const p = normDimProfile({ l, w, h, name, updatedAt: nowTs() });
+  if (!p) return null;
+  const list = loadDimProfiles();
+  const same = list.findIndex(x => x.l===p.l && x.w===p.w && x.h===p.h);
+  if (same > -1) {
+    p.id = list[same].id;
+    if (!p.name) p.name = list[same].name;
+    list.splice(same, 1);
+  }
+  clearDimDeleted(p);   // ขนาดนี้ถูกใช้อีกครั้ง — ยกเลิกทะเบียนการลบเดิม
+  list.unshift(p); storeDimProfiles(list);
+  return p;
+}
+// แก้ไขโปรไฟล์ได้ทั้งชื่อและขนาด (คง id เดิมไว้)
+function updateDimProfile(id, l, w, h, name) {
+  const list = loadDimProfiles();
+  const i = list.findIndex(x => x.id === id); if (i < 0) return null;
+  const old = list[i];
+  const p = normDimProfile({ id, l, w, h, name, updatedAt: nowTs() });
+  if (!p) { toast('กรอกขนาดให้ครบ 3 ช่อง (L × H × W)','error'); return null; }
+  const wasLocked = isDimLocked(old);
+  // ถ้าขนาดใหม่ไปซ้ำกับโปรไฟล์อื่น → รวมเป็นตัวเดียว
+  const dup = list.findIndex(x => x.id !== id && x.l===p.l && x.w===p.w && x.h===p.h);
+  if (dup > -1) list.splice(dup, 1);
+  const at = list.findIndex(x => x.id === id);
+  list.splice(at, 1); list.unshift(p);
+  if (dimKey(old) !== dimKey(p)) markDimDeleted(old);   // ขนาดเดิมถือว่าถูกลบ
+  clearDimDeleted(p);
+  storeDimProfiles(list);
+  if (wasLocked) setDimLock(p);   // ถ้าขนาดนี้กำลังล็อคอยู่ ให้ล็อคตามขนาดใหม่
+  return p;
+}
+function deleteDimProfile(id) {
+  const p = findDimProfile(id); if (!p) return;
+  showConfirm('ยืนยันการลบ','ลบโปรไฟล์ '+dimProfileLabel(p)+' ใช่ไหม?','ไม่สามารถกู้คืนได้','🗑 ลบ',()=>{
+    markDimDeleted(p);                                    // จำไว้ว่าลบแล้ว — Cloud จะไม่ส่งกลับมาอีก
+    if (isDimLocked(p)) setDimLock(null);                  // ถ้าล็อคขนาดนี้อยู่ ให้ปลดล็อคด้วย
+    if (dimEditId === id) resetDimProfileForm();
+    storeDimProfiles(loadDimProfiles().filter(x => x.id !== id));
+    renderDimProfileList();
+    toast('ลบโปรไฟล์ขนาดแล้ว','warning');
+  });
+}
+// ล็อค/ปลดล็อคขนาดจากในหน้าจัดการโปรไฟล์ได้เลย
+function toggleLockDimProfile(id) {
+  const p = findDimProfile(id); if (!p) return;
+  if (isDimLocked(p)) { setDimLock(null); toast('ปลดล็อคขนาดแล้ว','warning'); }
+  else { setDimLock(p); toast('🔒 ล็อคขนาด '+dimSizeText(p)+' ซม. ไว้แล้ว','success'); }
+  renderDimProfileList();
+}
+// ── ล็อคขนาด: เก็บแค่ตัวเลข l/w/h ไม่ผูกกับโปรไฟล์ (คุมจากหน้ากรอกข้อมูลที่เดียว) ──
 function loadDimLock() {
   const o = safeJSON(localStorage.getItem(LS_DIM_LOCK), null);
-  return (o && dimNum(o.l)>0 && dimNum(o.w)>0 && dimNum(o.h)>0) ? o : null;
+  if (!o) return null;
+  const l = dimNum(o.l), w = dimNum(o.w), h = dimNum(o.h);
+  return (l>0 && w>0 && h>0) ? { l, w, h } : null;
 }
-function storeDimLock(o) {
-  if (o) localStorage.setItem(LS_DIM_LOCK, JSON.stringify(o));
-  else localStorage.removeItem(LS_DIM_LOCK);
+// ตั้ง/ยกเลิกขนาดที่ล็อค แล้วอัปเดตหน้าจอ
+function setDimLock(d) {
+  if (d && dimNum(d.l)>0 && dimNum(d.w)>0 && dimNum(d.h)>0) {
+    localStorage.setItem(LS_DIM_LOCK, JSON.stringify({ l: dimNum(d.l), w: dimNum(d.w), h: dimNum(d.h) }));
+  } else {
+    localStorage.removeItem(LS_DIM_LOCK);
+  }
+  syncDimLockUI(); renderDimChips('ep'); renderDimChips('ee');
+}
+function isDimLocked(d) {
+  const lock = loadDimLock();
+  return !!(lock && d && lock.l===dimNum(d.l) && lock.w===dimNum(d.w) && lock.h===dimNum(d.h));
 }
 // อ่านค่าขนาดจากช่องกรอกในป็อปอัป (prefix = 'ep' หรือ 'ee')
 function readDimInputs(prefix) {
@@ -1516,49 +1713,159 @@ function setDimInputs(prefix, l, w, h) {
   const set=(id,v)=>{const el=document.getElementById(id); if(el) el.value=(v>0?v:'');};
   set(prefix+'-dimL', l); set(prefix+'-dimW', w); set(prefix+'-dimH', h);
 }
-function renderDimChips(prefix) {
-  const box = document.getElementById(prefix+'-dim-chips'); if (!box) return;
-  const list = loadDimPresets();
-  if (list.length === 0) { box.innerHTML = '<span class="dim-empty">ยังไม่มี — กรอกขนาดแล้วกด "บันทึกขนาดนี้"</span>'; return; }
-  box.innerHTML = list.map((p,i)=>
-    `<span class="dim-chip" onclick="applyDimPreset('${prefix}',${p.l},${p.w},${p.h})" title="ใช้ขนาดนี้">`+
-    `${fmtDimNum(p.l)}×${fmtDimNum(p.w)}×${fmtDimNum(p.h)}`+
-    `<button type="button" class="dim-chip-x" title="ลบ" onclick="event.stopPropagation();removeDimPreset(${i},'${prefix}')">×</button></span>`
-  ).join('');
-}
-function applyDimPreset(prefix, l, w, h) {
-  setDimInputs(prefix, l, w, h);
-  toast('ใช้ขนาด '+fmtDimNum(l)+'×'+fmtDimNum(w)+'×'+fmtDimNum(h)+' ซม.', 'success');
-}
-function saveCurrentDimPreset(prefix) {
-  const d = readDimInputs(prefix);
-  if (!(d.l>0 && d.w>0 && d.h>0)) { toast('กรอกขนาดให้ครบ 3 ช่องก่อนบันทึก', 'error'); return; }
-  addDimPreset(d.l, d.w, d.h);
+// เลิกใช้แถบชิปโปรไฟล์ในป็อปอัปแล้ว (ซ้ำซ้อนกับ "จัดการโปรไฟล์ขนาด") — คงฟังก์ชันเปล่าไว้กันโค้ดเดิมเรียกใช้
+function renderDimChips() { /* removed: ใช้โปรไฟล์ผ่านปุ่ม 📐 จัดการโปรไฟล์ขนาด ที่เดียว */ }
+// เลือกโปรไฟล์ → เติมค่าลงช่อง Dimension ของป็อปอัปเป้าหมายอัตโนมัติ
+function useDimProfile(id, prefix) {
+  const p = findDimProfile(id); if (!p) return;
+  const target = prefix || dimProfileTarget;
+  if (!target) { toast('เปิดจากหน้ากรอกข้อมูลเพื่อใช้ขนาดนี้','error'); return; }
+  setDimInputs(target, p.l, p.w, p.h);
+  // ถ้ากำลังล็อคอยู่ ให้ล็อคเปลี่ยนตามขนาดที่เพิ่งเลือก
+  if (loadDimLock()) setDimLock(p);
+  // เลื่อนโปรไฟล์ที่ใช้ล่าสุดขึ้นบนสุด
+  const list = loadDimProfiles(); const i = list.findIndex(x => x.id === id);
+  if (i > 0) { const [it] = list.splice(i,1); list.unshift(it); storeDimProfiles(list); }
   renderDimChips('ep'); renderDimChips('ee');
-  toast('บันทึกขนาด '+fmtDimNum(d.l)+'×'+fmtDimNum(d.w)+'×'+fmtDimNum(d.h)+' ซม. แล้ว', 'success');
+  closeDimProfiles();
+  toast('ใช้ขนาด '+dimProfileLabel(p)+' ('+dimSizeText(p)+' ซม.)','success');
 }
-// ล็อค/ปลดล็อคขนาด — เมื่อล็อค ระบบจะเติมค่านี้ให้ทุกครั้งที่ยิงเลขใหม่
-function toggleDimLock() {
-  const cb = document.getElementById('ep-dim-lock'); if (!cb) return;
-  if (cb.checked) {
-    const d = readDimInputs('ep');
-    if (!(d.l>0 && d.w>0 && d.h>0)) {
-      cb.checked = false; syncDimLockUI();
-      toast('กรอกขนาดให้ครบ 3 ช่องก่อนล็อค', 'error'); return;
-    }
-    storeDimLock(d); addDimPreset(d.l, d.w, d.h);
-    renderDimChips('ep'); renderDimChips('ee');
-    toast('🔒 ล็อคขนาด '+fmtDimNum(d.l)+'×'+fmtDimNum(d.w)+'×'+fmtDimNum(d.h)+' ซม. ไว้แล้ว', 'success');
-  } else {
-    storeDimLock(null);
+// ล็อคขนาด — ปุ่มอยู่ข้างนอก (ในหน้ากรอกข้อมูล/แก้ไขรายการ) ไม่ได้อยู่ในโปรไฟล์ขนาด
+function toggleDimLock(prefix) {
+  const target = prefix || 'ep';
+  if (loadDimLock()) {          // กำลังล็อคอยู่ → กดเพื่อปลดล็อค
+    setDimLock(null);
     toast('ปลดล็อคขนาดแล้ว', 'warning');
+    return;
   }
-  syncDimLockUI();
+  const d = readDimInputs(target);
+  if (!(d.l>0 && d.w>0 && d.h>0)) {
+    syncDimLockUI();
+    toast('กรอกขนาดให้ครบ 3 ช่องก่อนล็อค', 'error'); return;
+  }
+  setDimLock(d);
+  toast('🔒 ล็อคขนาด '+dimSizeText(d)+' ซม. ไว้แล้ว — ยิงบิลถัดไปไม่ต้องกรอกซ้ำ', 'success');
 }
+// อัปเดตหน้าตาปุ่มล็อคทุกจุด (ep = เพิ่มรายการ, ee = แก้ไขรายการ)
 function syncDimLockUI() {
-  const cb = document.getElementById('ep-dim-lock'), wrap = document.getElementById('ep-dim-lock-wrap');
-  if (!cb || !wrap) return;
-  wrap.classList.toggle('on', cb.checked);
+  const lock = loadDimLock();
+  ['ep','ee'].forEach(prefix => {
+    const wrap = document.getElementById(prefix+'-dim-lock-wrap');
+    if (!wrap) return;
+    wrap.classList.toggle('on', !!lock);
+    const txt = document.getElementById(prefix+'-dim-lock-text');
+    if (txt) txt.textContent = lock
+      ? '🔒 Lock Dimension: '+dimSizeText(lock)
+      : '🔒 Lock Dimension';
+    if (wrap) wrap.title = lock ? 'ล็อคขนาดไว้ '+dimSizeText(lock)+' ซม. — กดเพื่อปลดล็อค' : 'กดเพื่อล็อคขนาดที่กรอกไว้ใช้ทุกครั้ง';
+  });
+}
+
+// ══ Dimension Profile Manager ══
+function openDimProfiles(prefix) {
+  dimProfileTarget = prefix || null;
+  dimEditId = null;
+  const d = dimProfileTarget ? readDimInputs(dimProfileTarget) : { l:0, w:0, h:0 };
+  const set = (id,v) => { const el = document.getElementById(id); if (el) el.value = (v>0 ? v : ''); };
+  const nameEl = document.getElementById('dp-name'); if (nameEl) nameEl.value = '';
+  set('dp-l', d.l); set('dp-w', d.w); set('dp-h', d.h);
+  const pull = document.getElementById('dp-pull-btn');
+  if (pull) pull.style.display = dimProfileTarget ? '' : 'none';
+  syncDimFormMode();
+  renderDimProfileList();
+  document.getElementById('dim-profile-modal').classList.add('open');
+  setTimeout(()=>{ const n = document.getElementById('dp-name'); if (n) n.focus(); }, 80);
+}
+function closeDimProfiles() {
+  const m = document.getElementById('dim-profile-modal'); if (m) m.classList.remove('open');
+}
+function pullDimFromForm() {
+  if (!dimProfileTarget) return;
+  const d = readDimInputs(dimProfileTarget);
+  if (!(d.l>0 && d.w>0 && d.h>0)) { toast('ยังไม่ได้กรอกขนาดในหน้าข้อมูล','error'); return; }
+  const set = (id,v) => { const el = document.getElementById(id); if (el) el.value = v; };
+  set('dp-l', d.l); set('dp-w', d.w); set('dp-h', d.h);
+  const n = document.getElementById('dp-name'); if (n) n.focus();
+}
+// ── ฟอร์มเดียวใช้ทั้ง "เพิ่มใหม่" และ "แก้ไข" (ชื่อ + ขนาด) ──
+function syncDimFormMode() {
+  const btn   = document.getElementById('dp-save-btn');
+  const cancel= document.getElementById('dp-cancel-btn');
+  const title = document.getElementById('dp-form-title');
+  const editing = !!dimEditId;
+  if (btn)    btn.textContent = editing ? '💾 บันทึกการแก้ไข' : '+ บันทึกโปรไฟล์';
+  if (cancel) cancel.style.display = editing ? '' : 'none';
+  if (title)  title.textContent = editing ? '✏️ แก้ไขโปรไฟล์ (ชื่อ + ขนาด)' : '➕ เพิ่มโปรไฟล์ใหม่';
+}
+function resetDimProfileForm() {
+  dimEditId = null;
+  ['dp-name','dp-l','dp-w','dp-h'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  syncDimFormMode(); renderDimProfileList();
+}
+function editDimProfile(id) {
+  const p = findDimProfile(id); if (!p) return;
+  dimEditId = id;
+  const set = (i,v) => { const el = document.getElementById(i); if (el) el.value = v; };
+  set('dp-name', p.name||''); set('dp-l', p.l); set('dp-w', p.w); set('dp-h', p.h);
+  syncDimFormMode(); renderDimProfileList();
+  const n = document.getElementById('dp-name'); if (n) { n.focus(); n.select(); }
+  const box = document.getElementById('dim-profile-modal'); if (box) box.scrollTop = 0;
+}
+function saveDimProfileForm() {
+  const name = (document.getElementById('dp-name').value||'').trim();
+  const l = dimNum(document.getElementById('dp-l').value);
+  const w = dimNum(document.getElementById('dp-w').value);
+  const h = dimNum(document.getElementById('dp-h').value);
+  if (!(l>0 && w>0 && h>0)) { toast('กรอกขนาดให้ครบ 3 ช่อง (L × H × W)','error'); return; }
+  if (dimEditId) {
+    const p = updateDimProfile(dimEditId, l, w, h, name);
+    if (!p) return;
+    resetDimProfileForm();
+    toast('แก้ไขโปรไฟล์เป็น '+dimProfileLabel(p)+' ('+dimSizeText(p)+' ซม.) แล้ว','success');
+    return;
+  }
+  const p = addDimProfile(l, w, h, name);
+  document.getElementById('dp-name').value = '';
+  renderDimProfileList();
+  toast('บันทึกโปรไฟล์ '+dimProfileLabel(p)+' แล้ว','success');
+}
+// แถบสถานะการล็อคขนาด — เห็นชัดว่าตอนนี้ล็อคขนาดไหนอยู่ และปลดล็อคได้จากที่นี่
+function renderDimLockBar() {
+  const bar = document.getElementById('dp-lockbar'); if (!bar) return;
+  const lock = loadDimLock();
+  bar.className = 'dp-lockbar' + (lock ? ' on' : '');
+  bar.innerHTML = lock
+    ? `<div class="dp-lockbar-txt">🔒 กำลังล็อคขนาด <b>${dimSizeText(lock)}</b> ซม. — ทุกครั้งที่ยิงเลขใหม่ ระบบเติมขนาดนี้ให้อัตโนมัติ</div>`+
+      `<button class="btn btn-outline btn-xs" onclick="setDimLock(null);renderDimProfileList();toast('ปลดล็อคขนาดแล้ว','warning')">🔓 ปลดล็อค</button>`
+    : `<div class="dp-lockbar-txt">🔓 ยังไม่ได้ล็อคขนาด — กด "🔒 ล็อค" ที่โปรไฟล์ไหนก็ได้ เพื่อให้ระบบเติมขนาดนั้นทุกครั้งที่ยิงเลขใหม่</div>`;
+}
+function renderDimProfileList() {
+  renderDimLockBar();
+  const box = document.getElementById('dp-list'); if (!box) return;
+  const list = loadDimProfiles();
+  const lbl = document.getElementById('dp-list-lbl');
+  if (lbl) lbl.textContent = 'โปรไฟล์ที่บันทึกไว้ ('+list.length+')';
+  if (list.length === 0) {
+    box.innerHTML = '<div class="dp-empty"><div class="dp-empty-icon">📐</div><div style="font-size:14px">ยังไม่มีโปรไฟล์ขนาด<br><span style="font-size:12px;color:#aaa">กรอกชื่อ + ขนาดด้านบน แล้วกด "บันทึกโปรไฟล์"</span></div></div>';
+    return;
+  }
+  box.innerHTML = list.map(p => {
+    const locked  = isDimLocked(p);
+    const editing = dimEditId === p.id;
+    const useBtn = dimProfileTarget
+      ? `<button class="btn btn-success btn-xs" onclick="useDimProfile('${p.id}')">✓ ใช้ขนาดนี้</button>` : '';
+    return `<div class="dp-row${locked?' locked':''}${editing?' editing':''}">`+
+      `<div class="dp-row-main">`+
+        `<div class="dp-row-name">${esc(p.name || 'ไม่มีชื่อ')}`+
+          `${locked?'<span class="dp-badge-lock">🔒 ล็อคอยู่</span>':''}`+
+          `${editing?'<span class="dp-badge-edit">กำลังแก้ไข</span>':''}</div>`+
+        `<div class="dp-row-size">${dimSizeText(p)} ซม. (L × H × W)</div>`+
+      `</div>`+
+      `<div class="dp-row-acts">${useBtn}`+
+        `<button class="btn btn-outline btn-xs" onclick="editDimProfile('${p.id}')">✏️ แก้ไข</button>`+
+        `<button class="btn btn-danger btn-xs" onclick="deleteDimProfile('${p.id}')">ลบ</button>`+
+      `</div></div>`;
+  }).join('');
 }
 function nextId(arr) { return (!arr||arr.length===0) ? 1 : Math.max(...arr.map(x=>x.id||0))+1; }
 // Collision-proof unique id (timestamp + random) — ปลอดภัยข้ามหลายเครื่อง
@@ -1621,8 +1928,8 @@ function logout() {
   document.getElementById('auth-inp').value  = '';
   document.getElementById('auth-err').textContent = '';
   ['create-popup','detail-popup','entry-popup','edit-entry-popup','dup-popup','delete-popup',
-   'edit-modal','pw-modal','users-modal','upload-create-popup','profiles-modal']
-    .forEach(id => document.getElementById(id).classList.remove('open'));
+   'edit-modal','pw-modal','users-modal','upload-create-popup','profiles-modal','dim-profile-modal']
+    .forEach(id => { const el=document.getElementById(id); if (el) el.classList.remove('open'); });
 }
 
 async function tryAutoLogin() {
@@ -1682,7 +1989,7 @@ async function tryAutoLogin() {
         // เปิดให้เขียน cloud ได้ก็ต่อเมื่อโหลดสำเร็จ แล้ว push ของ local ที่ยังไม่ได้ sync ขึ้นไป
         markCloudReadyAndFlush();
         if (cloudReady) setSyncBadge('ok', 'ซิงค์แล้ว');
-        else            setSyncBadge('error', 'ซิงค์ไม่ได้ ⚠️');
+        else            setSyncBadge('error', 'ซ   งค์ไม่ได้   ️');
       });
       return;
     }
@@ -1692,7 +1999,7 @@ async function tryAutoLogin() {
   // ไม่มี session หรือ session หมดอายุ → โหลด cloud แล้วรอ login
   const cloudData = await cloudPromise;
   if (cloudData) mergeCloudData(cloudData);
-  markCloudReadyAndFlush(); // เปิดให้เขียน cloud ได้เมื่อโหลดสำเร็จ (ก่อน login ยังไม่มีอะไรให้ push)
+  markCloudReadyAndFlush(); // เปิดให้เขียน cloud ได้เมื่อโหลดสำเร็   (ก่อน login ยังไม่มีอะไรให้ push)
 
   // ถ้ามี session แต่ไม่ใช่ recent refresh → เช็ค user แล้ว login
   if (session && !sessionStillValid) {
@@ -1913,9 +2220,9 @@ function refreshDetailPopup(doc) {
   document.getElementById('entries-body').innerHTML=entries.length===0
     ? '<div style="text-align:center;padding:28px;color:#bbb;font-size:13.5px">ยังไม่มีรายการ — ยิงเลข Bag No เพื่อเริ่มบันทึก</div>'
     : `<div class="tbl-wrap"><table>
-        <thead><tr><th style="width:36px;text-align:center">#</th><th>Bag No</th><th style="width:100px;text-align:center">Shipment</th><th style="width:110px;text-align:center">Weight (Kg)</th><th class="th-dim" style="width:140px">Dimension (ซม.)</th><th style="width:140px;text-align:center">เวลายิง</th><th style="width:90px"></th></tr></thead>
+        <thead><tr><th style="width:36px;text-align:center">#</th><th>Bag No</th><th style="width:100px;text-align:center">Shipment</th><th style="width:110px;text-align:center">Weight (Kg)</th><th class="th-dim" style="width:140px">Dimension (CM)</th><th style="width:140px;text-align:center">เวลายิง</th><th style="width:90px"></th></tr></thead>
         <tbody>${entries.map((e,i)=>`<tr><td style="color:#ccc;font-size:11px;text-align:center">${i+1}</td><td class="mono">${esc(e.bagNo)}</td><td class="td-num">${e.shipment}</td><td class="td-num">${Number(e.weight).toFixed(2)}</td><td class="td-dim">${hasDim(e)?esc(dimText(e)):'<span style="color:#ccc">—</span>'}</td><td style="font-size:11.5px;color:#666;white-space:nowrap;text-align:center">${fmtTime(e.scannedAt)}</td><td style="white-space:nowrap"><button class="btn-edit-row" onclick="openEditEntry('${doc.id}','${e.id}')">✏️</button><button class="btn-del-row" onclick="deleteEntry('${doc.id}','${e.id}')" title="ลบ">🗑️</button></td></tr>`).join('')}</tbody>
-        <tfoot><tr><td colspan="2" style="text-align:right;color:#888;font-size:11.5px">รวม</td><td class="td-num">${t.shipment}</td><td class="td-num">${t.weight.toFixed(2)}</td><td class="td-dim" style="color:#aaa;font-size:11px">${t.dimCount}/${entries.length} ใส่ขนาด</td><td></td><td></td></tr></tfoot>
+        <tfoot><tr><td colspan="2" style="text-align:right;color:#888;font-size:11.5px">รวม</td><td class="td-num">${t.shipment}</td><td class="td-num">${t.weight.toFixed(2)}</td><td class="td-dim"></td><td></td><td></td></tr></tfoot>
       </table></div>`;
   document.getElementById('inp-bag').value='';
 }
@@ -2004,7 +2311,7 @@ function openEntryPopup() {
       document.getElementById('dup-existing-info').innerHTML=
         `<div class="dup-row"><span class="dup-lbl">Shipment</span><span class="dup-val">${dup.shipment}</span></div>
          <div class="dup-row"><span class="dup-lbl">Weight (Kg)</span><span class="dup-val">${Number(dup.weight).toFixed(2)}</span></div>
-         <div class="dup-row"><span class="dup-lbl">Dimension (ซม.)</span><span class="dup-val">${hasDim(dup)?esc(dimText(dup)):'—'}</span></div>`;
+         <div class="dup-row"><span class="dup-lbl">Dimension (CM)</span><span class="dup-val">${hasDim(dup)?esc(dimText(dup)):'—'}</span></div>`;
       document.getElementById('dup-popup').classList.add('open'); return;
     }
   }
@@ -2012,8 +2319,6 @@ function openEntryPopup() {
   document.getElementById('ep-ship').value='1'; document.getElementById('ep-wt').value='';
   // ── ขนาด Dimension: ถ้าล็อคไว้จะเติมค่าให้อัตโนมัติ (ไม่ต้องกรอกใหม่ทุกครั้ง) ──
   const lock=loadDimLock();
-  const lockCb=document.getElementById('ep-dim-lock');
-  if (lockCb) lockCb.checked=!!lock;
   syncDimLockUI();
   if (lock) setDimInputs('ep',lock.l,lock.w,lock.h); else setDimInputs('ep',0,0,0);
   renderDimChips('ep');
@@ -2052,12 +2357,8 @@ function saveEntryPopup() {
     }
   }
   const {l:dimL,w:dimW,h:dimH}=readDimInputs('ep');
-  // จำขนาดล่าสุดไว้ให้เลือกใช้ซ้ำ + อัปเดตค่าที่ล็อคถ้าเปิดล็อคอยู่
-  if (dimL>0&&dimW>0&&dimH>0) {
-    addDimPreset(dimL,dimW,dimH);
-    const lockCb=document.getElementById('ep-dim-lock');
-    if (lockCb&&lockCb.checked) storeDimLock({l:dimL,w:dimW,h:dimH});
-  }
+  // ถ้าเปิดล็อคอยู่ → อัปเดตค่าที่ล็อคเป็นขนาดที่กรอกล่าสุด (ไม่สร้างโปรไฟล์อัตโนมัติ)
+  if (loadDimLock()) setDimLock(dimL>0&&dimW>0&&dimH>0?{l:dimL,w:dimW,h:dimH}:null);
   const entry={id:uid(),bagNo:entryBagNo,shipment,weight,dimL,dimW,dimH,scannedAt:new Date().toISOString()};
   if (!doc.entries) doc.entries=[];
   doc.entries.push(entry); touchDoc(doc); saveDocs(documents); refreshDetailPopup(doc); renderList();
@@ -2083,6 +2384,7 @@ function openEditEntry(docId,entryId) {
   document.getElementById('ee-wt').value=Number(entry.weight).toFixed(2);
   const d=entryDims(entry);
   setDimInputs('ee',d.l,d.w,d.h);
+  syncDimLockUI();
   renderDimChips('ee');
   document.getElementById('edit-entry-popup').classList.add('open');
   setTimeout(()=>document.getElementById('ee-bagno').focus(),80);
@@ -2106,7 +2408,6 @@ function saveEditEntry() {
     }
   }
   const {l:dimL,w:dimW,h:dimH}=readDimInputs('ee');
-  if (dimL>0&&dimW>0&&dimH>0) addDimPreset(dimL,dimW,dimH);
   doc.entries[idx]={...doc.entries[idx],bagNo,shipment,weight,dimL,dimW,dimH};
   touchDoc(doc); saveDocs(documents); refreshDetailPopup(doc); renderList();
   toast('แก้ไข '+bagNo+' แล้ว', 'success');
@@ -2119,7 +2420,7 @@ function saveEditEntry() {
 function exportExcel(docId) {
   const doc=getDocById(docId); if (!doc) return;
   const t=docTotals(doc);
-  const H=['Doc Code','Gateway','Export Date','Shift','Flight No','Flight Time','Destination','Document Date','Car Tag','MAWB','Remark','Bag No','Shipment','Weight (Kg)','Length (cm)','Height (cm)','Width (cm)'];
+  const H=['Doc Code','Gateway','Export Date','Shift','Flight No','Flight Time','Destination','Document Date','Car Tag','MAWB','Remark','Bag No','Shipment','Weight (Kg)','Length (cm)','Width (cm)','Height (cm)'];
   const cell=(v,type,sid)=>`<Cell${sid?` ss:StyleID="${sid}"`:''}><Data ss:Type="${type||'String'}">${escXml(v)}</Data></Cell>`;
   const row=cells=>'<Row>'+cells.join('')+'</Row>';
   const meta=[doc.docCode,doc.gateway,doc.exportDate,doc.shift,doc.flightNo,doc.flightTime,doc.destination,doc.documentDate,doc.carTag,doc.mawb,doc.remark||''];
@@ -2168,7 +2469,7 @@ function printDocument(docId) {
   const t=docTotals(doc);
   const entries=doc.entries||[];
   const rows=entries.length>0
-    ? entries.map((e,i)=>`<tr><td class="c-no">${i+1}</td><td class="c-bag mono">${esc(e.bagNo)}</td><td class="c-num">${e.shipment}</td><td class="c-num">${Number(e.weight).toFixed(2)}</td><td class="c-dim">${hasDim(e)?esc(dimText(e).replace(/×/g,' x ')):'\u2014'}</td></tr>`).join('')
+    ? entries.map((e,i)=>`<tr><td class="c-no">${i+1}</td><td class="c-bag mono">${esc(e.bagNo)}</td><td class="c-ship">${e.shipment}</td><td class="c-wt">${Number(e.weight).toFixed(2)}</td><td class="c-dim">${hasDim(e)?esc(dimText(e).replace(/×/g,' x ')):'\u2014'}</td></tr>`).join('')
     : '<tr><td colspan="5" class="empty">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23</td></tr>';
   const mv=(v)=>esc(v)||'\u2014';
   const printDate=new Date().toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'});
@@ -2205,24 +2506,28 @@ body{font-family:'Segoe UI','Helvetica Neue',Arial,sans-serif;background:#fff;co
 
 /* ── Table ── */
 table{width:100%;border-collapse:collapse;font-size:11.5px;}
-colgroup col.c-no  {width:44px;}
-colgroup col.c-bag {width:auto;}
-colgroup col.c-num {width:90px;}
-colgroup col.c-dim {width:130px;}
+colgroup col.c-no   {width:44px;}
+colgroup col.c-bag  {width:auto;}
+colgroup col.c-ship {width:92px;}
+colgroup col.c-wt   {width:104px;}
+colgroup col.c-dim  {width:132px;}
 /* ฟอนต์ในชีทใช้ชุดเดียวกันทั้งหมด */
 td.c-dim{font-family:inherit;font-size:11.5px;text-align:center;color:#555;font-variant-numeric:tabular-nums;}
 thead tr{background:#1b2a4a;color:#fff;}
 thead th{padding:9px 12px;font-weight:700;text-align:left;font-size:11.5px;letter-spacing:.3px;}
+thead th.c{text-align:center;}
 thead th.r{text-align:right;}
 tbody tr:nth-child(even){background:#f5f7fa;}
 tbody tr:hover{background:#eef2f8;}
 tbody td{padding:8px 12px;border-bottom:1px solid #e8eaef;vertical-align:middle;}
 td.c-no{color:#bbb;font-size:11.5px;text-align:center;}
 td.c-bag{font-family:inherit;font-size:11.5px;font-weight:600;letter-spacing:.3px;font-variant-numeric:tabular-nums;}
-td.c-num{text-align:right;font-variant-numeric:tabular-nums;}
+td.c-ship{text-align:center;font-weight:600;color:#1b2a4a;font-variant-numeric:tabular-nums;}
+td.c-wt{text-align:center;font-weight:600;color:#1b2a4a;font-variant-numeric:tabular-nums;}
 td.empty{text-align:center;color:#bbb;padding:24px;}
 tfoot tr{background:#eef2f8;}
 tfoot td{padding:9px 12px;font-weight:700;font-size:11.5px;border-top:2px solid #1b2a4a;}
+tfoot td.c{text-align:center;}
 tfoot td.r{text-align:right;}
 
 @media print{
@@ -2259,14 +2564,14 @@ tfoot td.r{text-align:right;}
 </div>
 
 <table>
-  <colgroup><col class="c-no"><col class="c-bag"><col class="c-num"><col class="c-num"><col class="c-dim"></colgroup>
-  <thead><tr><th style="text-align:center">#</th><th>Bag No</th><th class="r">Shipment</th><th class="r">Weight (Kg)</th><th style="text-align:center">Dimension (\u0e0b\u0e21.)</th></tr></thead>
+  <colgroup><col class="c-no"><col class="c-bag"><col class="c-ship"><col class="c-wt"><col class="c-dim"></colgroup>
+  <thead><tr><th class="c">#</th><th>Bag No</th><th class="c">Shipment</th><th class="c">Weight (Kg)</th><th class="c">Dimension (\u0e0b\u0e21.)</th></tr></thead>
   <tbody>${rows}</tbody>
   <tfoot><tr>
     <td colspan="2" style="text-align:right;color:#555">\u0e23\u0e27\u0e21\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14 ${entries.length} \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23</td>
-    <td class="r">${t.shipment}</td>
-    <td class="r">${t.weight.toFixed(2)}</td>
-    <td style="text-align:center;font-weight:400;color:#888">${t.dimCount}/${entries.length} \u0e43\u0e2a\u0e48\u0e02\u0e19\u0e32\u0e14</td>
+    <td class="c">${t.shipment}</td>
+    <td class="c">${t.weight.toFixed(2)}</td>
+    <td class="c"></td>
   </tr></tfoot>
 </table>
 
@@ -2338,8 +2643,8 @@ const CAR_ALIASES=['car tag','cartag','ทะเบียนรถ','vehicle','p
 // ── ขนาด Dimension ──
 const DIML_ALIASES=['width','width (cm)','w','กว้าง','ความกว้าง','กว้าง (cm)','กว้าง (ซม.)','dim w','w (cm)'];
 const DIMW_ALIASES=['length','length (cm)','l','ยาว','ความยาว','ยาว (cm)','ยาว (ซม.)','dim l','l (cm)'];
-const DIMH_ALIASES=['height','height (cm)','h','สูง','ความสูง','สูง (cm)','สูง (ซม.)','dim h','h (cm)'];
-const DIM_ALIASES=['dimension','dimension (cm)','dimension (ซม.)','dim','size','ขนาด','ขนาด (ซม.)','กว้างxยาวxสูง','wxlxh','lxwxh'];
+const DIMH_ALIASES=['height','height (cm)','h','สูง','ความสูง','สูง (cm)','สู    (ซม.)','dim h','h (cm)'];
+const DIM_ALIASES=['dimension','dimension (cm)','dimension (CM)','dim','size','ขนาด','ขนาด (ซม.)','กว้างxยาวxสูง','wxlxh','lxwxh'];
 
 function matchColumn(headers,aliases) { for (const h of headers) if (aliases.some(a=>(h||'').toLowerCase().trim()===a)) return h; return ''; }
 // แยกข้อความขนาดรวม เช่น "40x30x20", "40 × 30 × 20 cm", "40*30*20"
@@ -2552,7 +2857,7 @@ async function adminConnectCloud() {
   try {
     if (!bin) {
       // สร้าง Bin ใหม่อัตโนมัต  
-      const initData = { users: loadUsers(), documents: loadDocs(), bgUrl: localStorage.getItem(LS_BG) || '', flightProfiles: loadFlightProfiles() };
+      const initData = localSnapshot();
       const cr = await fetch('https://api.jsonbin.io/v3/b', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Master-Key': key, 'X-Bin-Name': 'ct-sournong' },
@@ -2587,7 +2892,7 @@ async function forcePushToCloud() {
   const btn = document.querySelector('#settings-modal .btn-primary');
   const origText = btn ? btn.textContent : '';
   if (btn) { btn.textContent = '⏳ กำลัง Push…'; btn.disabled = true; }
-  const data = { users: loadUsers(), documents: loadDocs(), bgUrl: localStorage.getItem(LS_BG) || '', flightProfiles: loadFlightProfiles() };
+  const data = localSnapshot();
   const ok = await cloudPut(data, true);
   if (btn) { btn.textContent = origText; btn.disabled = false; }
   if (ok) {
@@ -2695,7 +3000,7 @@ async function fsConnect() {
     const r = await fetch('https://api.jsonbin.io/v3/b/' + bin + '/latest', {
       headers: { 'X-Master-Key': key }
     });
-    if (!r.ok) throw new Error('HTTP ' + r.status + ' — ตรวจสอบ Bin ID และ Master Key อีกครั้ง');
+    if (!r.ok) throw new Error('HTTP ' + r.status + ' — ตรวจสอบ Bin ID และ Master Key อีกครั้   ');
 
     // บันทึกลง localStorage — ครั้งต่อไปจะเชื่อมต่ออัตโนมัติ
     cloudBin = bin; cloudKey = key;
@@ -2728,7 +3033,7 @@ async function fsConnect() {
     }
     setTimeout(() => { const el = document.getElementById('auth-user'); if (el) el.focus(); }, 80);
   } catch(e) {
-    err.textContent = 'เชื่อมต่อไม่ได้: ' + (e.message || String(e));
+    err.textContent = '  ชื่อมต่อไม่ได้: ' + (e.message || String(e));
   } finally {
     btn.textContent = '🔥 บันทึกและเชื่อมต่อ'; btn.disabled = false;
   }
@@ -2736,7 +3041,7 @@ async function fsConnect() {
 
 // ══════════════════════════════════════════════
 //  BOOT
-// ══════════════════════════════════════════════
+// ════════════════  ═   ═══════════════════════════
 initStorage();
 loadBgSetting();
 tryAutoLogin();
