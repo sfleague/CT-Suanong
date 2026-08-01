@@ -2115,7 +2115,7 @@ function saveEditEntry() {
 function exportExcel(docId) {
   const doc=getDocById(docId); if (!doc) return;
   const t=docTotals(doc);
-  const H=['Doc Code','Gateway','Export Date','Shift','Flight No','Flight Time','Destination','Document Date','Car Tag','MAWB','Remark','Bag No','Shipment','Weight (Kg)','Width (cm)','Length (cm)','Height (cm)'];
+  const H=['Doc Code','Gateway','Export Date','Shift','Flight No','Flight Time','Destination','Document Date','Car Tag','MAWB','Remark','Bag No','Shipment','Weight (Kg)','Length (cm)','Height (cm)','Width (cm)'];
   const cell=(v,type,sid)=>`<Cell${sid?` ss:StyleID="${sid}"`:''}><Data ss:Type="${type||'String'}">${escXml(v)}</Data></Cell>`;
   const row=cells=>'<Row>'+cells.join('')+'</Row>';
   const meta=[doc.docCode,doc.gateway,doc.exportDate,doc.shift,doc.flightNo,doc.flightTime,doc.destination,doc.documentDate,doc.carTag,doc.mawb,doc.remark||''];
