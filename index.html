@@ -125,7 +125,7 @@
     .btn-outline { background: #fff; color: #555; border: 1.5px solid #ddd; }
     .btn-sm  { padding: 5px 10px; font-size: 12px; }
     .btn-xs  { padding: 4px 8px;  font-size: 11px; }
-    /* ── ไอคอนแผ่นดิสก์สำหรับปุ่มบันทึกทุกปุ่ม (เหมือนกันทั้งระบบ) ── */
+    /* ── ไอคอนแผ่นดิสก์  ำหรับปุ่มบันทึกทุกปุ่ม (เหมือนกันทั้งระบบ) ── */
     .ico-save { width: 1.15em; height: 1.15em; flex: none; display: block; }
     .btn-sm .ico-save, .btn-xs .ico-save { width: 1.05em; height: 1.05em; }
 
@@ -1623,7 +1623,7 @@ const LS_DIM_LOCK     = 'dim_lock_v1';       // ขนาดที่ล็อ�
 const LS_DIM_TOMB     = 'dim_tomb_v1';       // โปรไฟล์ที่ลบแล้ว { 'lxwxh': เวลาที่ลบ } — กัน Cloud ส่งกลับมาใหม่
 
 let dimProfileTarget = null;   // 'ep' | 'ee' | null — ป็อปอัปที่จะรับค่าขนาดที่เลือก
-let dimEditId        = null;   // กำลังแก้ไขโปรไฟล์ไหน (null = เพิ่มใหม่)
+let dimEditId        = null;   // กำลังแก้ไขโปรไฟล์ไห    (null = เพิ่มใหม่)
 
 // ── ทะเบียนการลบโปรไฟล์ขนาด (tombstone) — ทำให้ "ลบแล้วต้องหายจริง" แม้จะซิงค์กับ Cloud ──
 function dimKey(p)  { return [dimNum(p.l), dimNum(p.w), dimNum(p.h)].join('x'); }
@@ -2301,7 +2301,7 @@ function refreshDetailPopup(doc) {
     : `<div class="tbl-wrap"><table>
         <thead><tr><th style="width:36px;text-align:center">#</th><th>Bag No</th><th style="width:100px;text-align:center">Shipment</th><th style="width:110px;text-align:center">Weight (Kg)</th><th class="th-dim" style="width:140px">Dimension (CM)</th><th style="width:140px;text-align:center">เวลายิง</th><th style="width:90px"></th></tr></thead>
         <tbody>${entries.map((e,i)=>`<tr><td style="color:#ccc;font-size:11px;text-align:center">${i+1}</td><td class="mono">${esc(e.bagNo)}</td><td class="td-num">${e.shipment}</td><td class="td-num">${Number(e.weight).toFixed(2)}</td><td class="td-dim">${hasDim(e)?esc(dimText(e)):'<span style="color:#ccc">—</span>'}</td><td style="font-size:11.5px;color:#666;white-space:nowrap;text-align:center">${fmtTime(e.scannedAt)}</td><td style="white-space:nowrap"><button class="btn-edit-row" onclick="openEditEntry('${doc.id}','${e.id}')">✏️</button><button class="btn-del-row" onclick="deleteEntry('${doc.id}','${e.id}')" title="ลบ">🗑️</button></td></tr>`).join('')}</tbody>
-        <tfoot><tr><td colspan="2" style="text-align:right;color:#888;font-size:11.5px">รวม</td><td class="td-num">${t.shipment}</td><td class="td-num">${t.weight.toFixed(2)}</td><td class="td-dim"></td><td></td><td></td></tr></tfoot>
+        <tfoot><tr><td colspan="2" style="text-align:right;color:#888;font-size:11.5px">รว   </td><td class="td-num">${t.shipment}</td><td class="td-num">${t.weight.toFixed(2)}</td><td class="td-dim"></td><td></td><td></td></tr></tfoot>
       </table></div>`;
   document.getElementById('inp-bag').value='';
 }
@@ -2520,6 +2520,69 @@ function exportExcel(docId) {
   const dataRows=entries.length>0
     ? entries.map(e=>row(meta.map(v=>cell(v)).concat([cell(e.bagNo),cell(String(e.shipment),'Number'),cell(String(Number(e.weight).toFixed(2)),'Number')],dimCells(e)))).join('\n')
     : row(meta.map(v=>cell(v)).concat([cell(''),cell('0','Number'),cell('0','Number')],dimCells({})));
+
+  // ── สรุปจำนวน Box แยกตาม Dimension (เฉพาะไฟล์ Excel) ──
+  // นับว่าแต่ละขนาดมีกี่ Box เช่น 70x40x32 = 7 Box
+  const dimMap=new Map();
+  let noDimBox=0, noDimShip=0, noDimWt=0;
+  entries.forEach(e=>{
+    const box=1;                                  // 1 รายการ = 1 Box
+    const ship=Number(e.shipment)||0;
+    const wt=Number(e.weight)||0;
+    if (!hasDim(e)) { noDimBox+=box; noDimShip+=ship; noDimWt+=wt; return; }
+    const d=entryDims(e);
+    const key=fmtDimNum(d.l)+'x'+fmtDimNum(d.w)+'x'+fmtDimNum(d.h);
+    const cur=dimMap.get(key)||{l:d.l,w:d.w,h:d.h,box:0,ship:0,wt:0};
+    cur.box+=box; cur.ship+=ship; cur.wt+=wt;
+    dimMap.set(key,cur);
+  });
+  // เรียงจากจำนวน Box มาก→น้อย แล้วค่อยเรียงตามชื่อขนาด
+  const dimSummary=[...dimMap.entries()].sort((a,b)=>b[1].box-a[1].box || a[0].localeCompare(b[0]));
+  const totalDimBox=dimSummary.reduce((s,[,v])=>s+v.box,0)+noDimBox;
+  const SH=['ข้อความสรุป (ส่งไลน์)','Dimension (L x W x H)','จำนวน Box','Shipment','Weight (Kg)'];
+  // ข้อความรูปแบบที่ใช้ส่งไลน์ได้เลย เช่น "70x40x32 = 7 Box"
+  const lineText=(key,box)=>key+' = '+box+' Box';
+  const sumRows=(dimSummary.length>0 || noDimBox>0)
+    ? [
+        ...dimSummary.map(([key,v])=>row([
+          cell(lineText(key,v.box)),
+          cell(key),
+          cell(String(v.box),'Number'),
+          cell(String(v.ship),'Number'),
+          cell(v.wt.toFixed(2),'Number')
+        ])),
+        ...(noDimBox>0?[row([
+          cell(lineText('ไม่ระบุขนาด',noDimBox)),
+          cell('ไม่ระบุขนาด'),
+          cell(String(noDimBox),'Number'),
+          cell(String(noDimShip),'Number'),
+          cell(noDimWt.toFixed(2),'Number')
+        ])]:[])
+      ].join('\n')
+    : row([cell('ไม่มีรายการ'),cell('ไม่มีรายการ'),cell('0','Number'),cell('0','Number'),cell('0.00','Number')]);
+  const sumTotalRow=row([
+    cell('รวมทั้งหมด '+totalDimBox+' Box','String','S'),
+    cell('รวมทั้งหมด','String','S'),
+    cell(String(totalDimBox),'Number','S'),
+    cell(String(t.shipment),'Number','S'),
+    cell(t.weight.toFixed(2),'Number','S')
+  ]);
+
+  // ── บล็อกข้อความพร้อมคัดลอกไปวางในไลน์ (บรรทัดละ 1 เซลล์) ──
+  const msgLines=[];
+  msgLines.push(doc.docCode+(doc.gateway?' / '+doc.gateway:''));
+  if (doc.exportDate) msgLines.push('วันที่ '+doc.exportDate+(doc.shift?' ('+doc.shift+')':''));
+  if (doc.flightNo || doc.destination) msgLines.push([doc.flightNo,doc.destination].filter(Boolean).join(' → '));
+  msgLines.push('สรุปจำนวน Box แยกตามขนาด');
+  dimSummary.forEach(([key,v])=>msgLines.push(lineText(key,v.box)));
+  if (noDimBox>0) msgLines.push(lineText('ไม่ระบุขนาด',noDimBox));
+  msgLines.push('รวม '+totalDimBox+' Box / '+t.shipment+' Shipment / '+t.weight.toFixed(2)+' Kg');
+  const msgBlock=[
+    row([cell('','String','S')]),
+    row([cell('ข้อความพร้อมคัดลอกส่งไลน์','String','H')]),
+    ...msgLines.map(l=>row([cell(l)]))
+  ].join('\n');
+
   const xml=`<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?>
 <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
 <Styles>
@@ -2531,6 +2594,13 @@ function exportExcel(docId) {
 ${row(H.map(h=>cell(h,'String','H')))}
 ${dataRows}
 ${row([cell('รวม','String','S'),...Array(10).fill(cell('')),cell(''),cell(String(t.shipment),'Number','S'),cell(String(t.weight.toFixed(2)),'Number','S'),cell(''),cell(''),cell('')])}
+</Table></Worksheet>
+<Worksheet ss:Name="Dimension Summary"><Table>
+<Column ss:Width="200"/><Column ss:Width="150"/><Column ss:Width="70"/><Column ss:Width="70"/><Column ss:Width="80"/>
+${row(SH.map(h=>cell(h,'String','H')))}
+${sumRows}
+${sumTotalRow}
+${msgBlock}
 </Table></Worksheet></Workbook>`;
   const _months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const _ed=doc.exportDate?new Date(doc.exportDate+' 00:00:00'):new Date();
