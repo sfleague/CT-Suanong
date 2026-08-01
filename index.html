@@ -146,8 +146,10 @@
     .dtr-date   { font-size: 12px; color: #666; text-align: center; }
     .dtr-stat   { text-align: center; }
     .dtr-sval   { font-size: 15px; font-weight: 700; }
-    .dtr-remark { font-size: 11.5px; color: #888; max-width: 160px; }
-    .dtr-actions { white-space: nowrap; }
+    .dtr-remark { font-size: 11.5px; color: #888; max-width: 160px; text-align: center; }
+    /* ปุ่มไอคอน 4 อัน ชิดขวาสุดของแถว */
+    .dtr-actions { white-space: nowrap; text-align: right; padding-right: 18px !important; }
+    .dtr-actions .btn { margin-left: 4px; }
 
     /* ── field ── */
     .field-label { font-size: 10.5px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .5px; display: block; margin-bottom: 5px; }
@@ -169,6 +171,8 @@
     .tbl-wrap tfoot td { font-weight: 700; background: #f6f8fa; font-size: 12px; }
     .td-num { font-variant-numeric: tabular-nums; text-align: center; }
     .tbl-wrap td.td-num { text-align: center; }
+    /* คอลัมน์ Dimension ต้องกึ่งกลางให้ตรงกับหัวคอลัมน์ (ต้อง override .tbl-wrap td ที่เป็น text-align:left) */
+    .tbl-wrap td.td-dim, .tbl-wrap th.th-dim { text-align: center; vertical-align: middle; }
     .btn-del-row  { background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 13px; padding: 3px 8px; border-radius: 4px; }
     .btn-del-row:hover  { background: #fde8e8; }
     .btn-edit-row { background: none; border: none; color: #2980b9; cursor: pointer; font-size: 13px; padding: 3px 8px; border-radius: 4px; }
@@ -1014,7 +1018,7 @@
           </div>
           <div id="set-fb-bake-box" style="display:none;margin-top:8px;background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:10px 14px;font-size:12px;color:#2e7d32;line-height:1.6">
             ✅ JSONBin เชื่อมต่อแล้ว — กดปุ่มด้านล่างเพื่อสร้างไฟล์ใหม่ที่<b>ฝัง JSONBin ไว้ในตัว</b><br>
-            ทุกเบราว์เซอร์ที่เปิดไฟล์นี้จะ<b>เชื่อมต่อ JSONBin อัตโนมัติ</b> โดยไม่ต้องตั้งค่าอีก
+            ทุก   บราว์เซอร์ที่เปิดไฟล์นี้จะ<b>เชื่อมต่อ JSONBin อัตโนมัติ</b> โดยไม่ต้องตั้งค่าอีก
             <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
               <button class="btn btn-primary btn-sm" onclick="forcePushToCloud()" style="width:100%">🔄 Push    ้อมูลในเครื่องนี้ขึ้น Cloud ทันที</button>
               <button class="btn btn-success btn-sm" onclick="downloadBakedFile()" style="width:100%">📥 ดาวน์โหลดไฟล์ฝัง JSONBin (แจกจ่ายได้เลย)</button>
@@ -1195,7 +1199,7 @@ async function syncNow(showToast) {
     await cloudPutRaw(merged);                  // เขียนผลรวมกลับขึ้น cloud
     setSyncBadge('ok', 'ซิงค์แล้ว');
     if (showToast) toast('บันทึกขึ้น Cloud สำเร็จ ☁️', 'success');
-    // ถ้าระหว่างนั้นมีการแก้ไขเข้ามาอีก → sync ซ้ำอีกรอบ
+    // ถ   าระหว่างนั้นมีการแก้ไขเข้ามาอีก → sync ซ้ำอีกรอบ
     if (queuedSave) { queuedSave = false; syncing = false; return syncNow(false); }
     syncing = false;
     return true;
@@ -1331,7 +1335,7 @@ function _touchActivity() {
 
 function _idleLogout() {
   if (!currentUser) return; // ออกจากระบบแล้ว
-  toast('ออกจากระบบอัตโนมัติ เนื่องจากไม่ได้ใช้งาน 30 นาที', 'warning');
+  toast('ออกจากระบบอัตโนม   ติ เนื่องจากไม่ได้ใช้งาน 30 นาที', 'warning');
   setTimeout(logout, 1800); // รอ toast แสดงก่อน
 }
 
@@ -1909,7 +1913,7 @@ function refreshDetailPopup(doc) {
   document.getElementById('entries-body').innerHTML=entries.length===0
     ? '<div style="text-align:center;padding:28px;color:#bbb;font-size:13.5px">ยังไม่มีรายการ — ยิงเลข Bag No เพื่อเริ่มบันทึก</div>'
     : `<div class="tbl-wrap"><table>
-        <thead><tr><th style="width:36px;text-align:center">#</th><th>Bag No</th><th style="width:100px;text-align:center">Shipment</th><th style="width:110px;text-align:center">Weight (Kg)</th><th style="width:140px;text-align:center">Dimension (ซม.)</th><th style="width:140px;text-align:center">เวลายิง</th><th style="width:90px"></th></tr></thead>
+        <thead><tr><th style="width:36px;text-align:center">#</th><th>Bag No</th><th style="width:100px;text-align:center">Shipment</th><th style="width:110px;text-align:center">Weight (Kg)</th><th class="th-dim" style="width:140px">Dimension (ซม.)</th><th style="width:140px;text-align:center">เวลายิง</th><th style="width:90px"></th></tr></thead>
         <tbody>${entries.map((e,i)=>`<tr><td style="color:#ccc;font-size:11px;text-align:center">${i+1}</td><td class="mono">${esc(e.bagNo)}</td><td class="td-num">${e.shipment}</td><td class="td-num">${Number(e.weight).toFixed(2)}</td><td class="td-dim">${hasDim(e)?esc(dimText(e)):'<span style="color:#ccc">—</span>'}</td><td style="font-size:11.5px;color:#666;white-space:nowrap;text-align:center">${fmtTime(e.scannedAt)}</td><td style="white-space:nowrap"><button class="btn-edit-row" onclick="openEditEntry('${doc.id}','${e.id}')">✏️</button><button class="btn-del-row" onclick="deleteEntry('${doc.id}','${e.id}')" title="ลบ">🗑️</button></td></tr>`).join('')}</tbody>
         <tfoot><tr><td colspan="2" style="text-align:right;color:#888;font-size:11.5px">รวม</td><td class="td-num">${t.shipment}</td><td class="td-num">${t.weight.toFixed(2)}</td><td class="td-dim" style="color:#aaa;font-size:11px">${t.dimCount}/${entries.length} ใส่ขนาด</td><td></td><td></td></tr></tfoot>
       </table></div>`;
@@ -1936,7 +1940,7 @@ function confirmDeleteDocument() {
   closeDeletePopup(); closeDetailPopup(); renderList(); toast('ลบเอกสารสำเร็จ', 'warning');
 }
 
-// ══════════════════════════════════════════════
+// ════════════════   ═════════════════════════════
 //  EDIT
 // ══════════════════════════════════════════════
 const FIELDS=[['Gateway','gateway','text'],['Export Date','exportDate','date'],['Destination','destination','text'],
@@ -2126,8 +2130,7 @@ function exportExcel(docId) {
     return [
       ok?cell(String(d.l),'Number'):cell(''),
       ok?cell(String(d.w),'Number'):cell(''),
-      ok?cell(String(d.h),'Number'):cell(''),
-      cell(ok?dimText(e).replace(/×/g,'x'):'')
+      ok?cell(String(d.h),'Number'):cell('')
     ];
   };
   const dataRows=entries.length>0
@@ -2143,7 +2146,7 @@ function exportExcel(docId) {
 <Worksheet ss:Name="${escXml(doc.docCode)}"><Table>
 ${row(H.map(h=>cell(h,'String','H')))}
 ${dataRows}
-${row([cell('รวม','String','S'),...Array(10).fill(cell('')),cell(''),cell(String(t.shipment),'Number','S'),cell(String(t.weight.toFixed(2)),'Number','S'),cell(''),cell(''),cell(''),cell('')])}
+${row([cell('รวม','String','S'),...Array(10).fill(cell('')),cell(''),cell(String(t.shipment),'Number','S'),cell(String(t.weight.toFixed(2)),'Number','S'),cell(''),cell(''),cell('')])}
 </Table></Worksheet></Workbook>`;
   const _months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const _ed=doc.exportDate?new Date(doc.exportDate+' 00:00:00'):new Date();
@@ -2157,7 +2160,7 @@ ${row([cell('รวม','String','S'),...Array(10).fill(cell('')),cell(''),cell(
   toast('Export Excel สำเร็จ', 'success');
 }
 
-// ══════════════════════════════════════════════
+// ══════════════════════════════════════  ═══════
 //  PRINT
 // ══════════════════════════════════════════════
 function printDocument(docId) {
@@ -2290,7 +2293,7 @@ function renderList() {
     <table class="doc-table">
       <thead><tr><th>#</th><th>Gateway / \u0e44\u0e1f\u0e25\u0e17\u0e4c</th><th style="text-align:center">\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48</th>
         <th style="text-align:center">Bag</th><th style="text-align:center">Shipment</th>
-        <th style="text-align:center">Weight (Kg)</th><th>Remark</th><th></th></tr></thead>
+        <th style="text-align:center">Weight (Kg)</th><th style="text-align:center">Remark</th><th></th></tr></thead>
       <tbody>${docs.map((doc,idx)=>{
         const t=docTotals(doc);
         const fl=[doc.flightNo?'\u2708 '+doc.flightNo:'',doc.destination].filter(Boolean).join(' \u00B7 ');
@@ -2468,7 +2471,7 @@ function downloadBlob(content,type,filename) {
 
 // ══════════════════════════════════════════════
 //  SITE SETTINGS (admin)
-// ══════════════════════════════════════════════
+// ════════════════════  ═════════════════════════
 const LS_BG = 'site_bg_url_v1';
 
 function applyBg(url) {
