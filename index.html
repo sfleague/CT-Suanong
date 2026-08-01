@@ -1282,7 +1282,7 @@ function normDoc(doc) {
   if (doc.id != null) doc.id = String(doc.id);
   if (Array.isArray(doc.entries)) doc.entries.forEach(e => {
     if (e && e.id != null) e.id = String(e.id);
-    // ขนาด Dimension (ซม.) — ข้อมูลเก่าที่ไม่มีค่าจะ  ูกตั้งเป็น 0
+    // ขนาด Dimension (ซม.) — ข้อมูลเก่าที่ไม่มีค่าจะถูกตั้งเป็น 0
     if (e) { ['dimL','dimW','dimH'].forEach(k => { const n = parseFloat(e[k]); e[k] = (isFinite(n) && n > 0) ? n : 0; }); }
   });
   return doc;
@@ -2115,7 +2115,7 @@ function saveEditEntry() {
 function exportExcel(docId) {
   const doc=getDocById(docId); if (!doc) return;
   const t=docTotals(doc);
-  const H=['Doc Code','Gateway','Export Date','Shift','Flight No','Flight Time','Destination','Document Date','Car Tag','MAWB','Remark','Bag No','Shipment','Weight (Kg)','Width (cm)','Length (cm)','Height (cm)','Dimension (cm)'];
+  const H=['Doc Code','Gateway','Export Date','Shift','Flight No','Flight Time','Destination','Document Date','Car Tag','MAWB','Remark','Bag No','Shipment','Weight (Kg)','Width (cm)','Length (cm)','Height (cm)'];
   const cell=(v,type,sid)=>`<Cell${sid?` ss:StyleID="${sid}"`:''}><Data ss:Type="${type||'String'}">${escXml(v)}</Data></Cell>`;
   const row=cells=>'<Row>'+cells.join('')+'</Row>';
   const meta=[doc.docCode,doc.gateway,doc.exportDate,doc.shift,doc.flightNo,doc.flightTime,doc.destination,doc.documentDate,doc.carTag,doc.mawb,doc.remark||''];
