@@ -675,7 +675,7 @@
   <div class="modal-box">
     <div class="modal-head">
       <div><h2>📂 สร้างชีทจากไฟล์</h2></div>
-      <button class="modal-close" onclick="closeUploadCreateModal()">×</button>
+      <button class="modal-close" onclick="closeUploadCreateModal()">  </button>
     </div>
     <div class="modal-body">
       <div class="upload-zone" onclick="document.getElementById('uc-file-input').click()">
@@ -991,7 +991,7 @@
 <!-- ══ PW ══ -->
 <div id="pw-modal" class="modal-overlay" onclick="if(event.target===this)closePwModal()">
   <div class="modal-box">
-    <div class="modal-head"><h2>เปลี่ยนรหัสผ่าน</h2><button class="modal-close" onclick="closePwModal()">×</button></div>
+    <div class="modal-head"><h2>เปลี่  นรหัสผ่าน</h2><button class="modal-close" onclick="closePwModal()">×</button></div>
     <div class="modal-body">
       <div style="display:flex;flex-direction:column;gap:14px">
         <div><label class="field-label">รหัสปัจจุบัน</label><input id="pw-old" type="password" class="field-input" placeholder="รหัสเดิม"></div>
@@ -1082,7 +1082,7 @@
           <div class="auth-err" id="set-fb-err" style="text-align:left"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button id="set-fb-disconnect" class="btn btn-danger btn-sm" onclick="adminDisconnectCloud()" style="display:none">ยกเลิกการเชื่อมต่อ</button>
-            <button class="btn btn-blue btn-sm" onclick="adminConnectCloud()" style="min-width:140px">☁️ เชื่อมต่อ JSONBin</button>
+            <button class="btn btn-blue btn-sm" onclick="adminConnectCloud()" style="min-width:140px">☁️   ชื่อมต่อ JSONBin</button>
           </div>
           <div id="set-fb-bake-box" style="display:none;margin-top:8px;background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:10px 14px;font-size:12px;color:#2e7d32;line-height:1.6">
             ✅ JSONBin เชื่อมต่อแล้ว — กดปุ่มด้านล่างเพื่อสร้างไฟล์ใหม่ที่<b>ฝัง JSONBin ไว้ในตัว</b><br>
@@ -1333,7 +1333,7 @@ async function syncNow(showToast) {
   }
 }
 
-// ให้เข้ากันได้กับโค้ดเดิมที่เรียก cloudPut(...)
+// ให้เข้ากั  ได้กับโค้ดเดิมที่เรียก cloudPut(...)
 async function cloudPut(_data, showToast) { return syncNow(showToast); }
 
 function scheduleSave() {
@@ -1401,6 +1401,8 @@ function saveUsers(u)  { localStorage.setItem(STORE_USERS, JSON.stringify(u)); s
 function normDoc(doc) {
   if (!doc) return doc;
   if (doc.id != null) doc.id = String(doc.id);
+  // ประทับ createdAt ให้ข้อมูลเก่า เพื่อใช้เป็นลำดับคงที่ (ไม่ผูกกับเวลาที่แก้ไข)
+  if (!doc.createdAt) doc.createdAt = Number(doc.updatedAt) || Date.now();
   if (Array.isArray(doc.entries)) doc.entries.forEach(e => {
     if (e && e.id != null) e.id = String(e.id);
     // ขนาด Dimension (CM) — ข้อมูลเก่าที่ไม่มีค่าจะถูกตั้งเป็น 0
@@ -1500,8 +1502,19 @@ function mergeSnapshots(a, b) {
     if (delAt && delAt >= (doc.updatedAt || 0)) return; // ถูกลบทีหลัง → ไม่เอา
     documents.push(doc);
   });
-  // เรียงใหม่สุดขึ้นก่อน
-  documents.sort((x, y) => (y.updatedAt || 0) - (x.updatedAt || 0));
+  // ล็อกลำดับเดิมไว้ — การแก้ไข/เพิ่มข้อมูลในชีทไหนก็ไม่ทำให้ชีทนั้นเลื่อนขึ้นบน
+  // อ้างอิงลำดับจากฝั่ง local (b) ก่อน แล้วต่อด้วยชีทที่มีแค่บน cloud (a)
+  const orderRef = new Map();
+  [ ...(Array.isArray(b.documents) ? b.documents : []),
+    ...(Array.isArray(a.documents) ? a.documents : []) ].forEach(d => {
+    if (d && d.id != null) { const k = String(d.id); if (!orderRef.has(k)) orderRef.set(k, orderRef.size); }
+  });
+  documents.sort((x, y) => {
+    const kx = orderRef.has(String(x.id)) ? orderRef.get(String(x.id)) : Number.MAX_SAFE_INTEGER;
+    const ky = orderRef.has(String(y.id)) ? orderRef.get(String(y.id)) : Number.MAX_SAFE_INTEGER;
+    if (kx !== ky) return kx - ky;
+    return (Number(y.createdAt) || 0) - (Number(x.createdAt) || 0);
+  });
 
   // ล้าง tombstone เก่าเกิน 30 วัน กันบวม
   const CUTOFF = nowTs() - 30 * 24 * 60 * 60 * 1000;
@@ -1622,7 +1635,7 @@ const LS_DIM_PROFILES = 'dim_profiles_v1';   // โปรไฟล์ขนา�
 const LS_DIM_LOCK     = 'dim_lock_v1';       // ขนาดที่ล็อคไว้ — เติมอัตโนมัติทุกครั้ง
 const LS_DIM_TOMB     = 'dim_tomb_v1';       // โปรไฟล์ที่ลบแล้ว { 'lxwxh': เวลาที่ลบ } — กัน Cloud ส่งกลับมาใหม่
 
-let dimProfileTarget = null;   // 'ep' | 'ee' | null — ป็อปอัปที่จะรับค่าขนาดที่เลือก
+let dimProfileTarget = null;   // 'ep' | 'ee' | null — ป็อปอัปที่จะรับค่าขนาดที่เ  ือก
 let dimEditId        = null;   // กำลังแก้ไขโปรไฟล์ไห    (null = เพิ่มใหม่)
 
 // ── ทะเบียนการลบโปรไฟล์ขนาด (tombstone) — ทำให้ "ลบแล้วต้องหายจริง" แม้จะซิงค์กับ Cloud ──
@@ -1745,7 +1758,7 @@ function toggleDimUse(prefix) {
   }
   if (on) setTimeout(()=>{ const el=document.getElementById(prefix+'-dimL'); if(el){el.focus();el.select&&el.select();} }, 30);
 }
-// กด Enter ที่ช่องน้ำหนัก: ถ้าไม่ใส่ขนาด → บันทึกเลย, ถ้าใส่ขนาด → ไปช่อง Length
+// กด Enter ที่ช่องน้ำหนัก: ถ้าไม่ใส่ขนาด → บันทึกเลย, ถ้าใส่ขนา    → ไปช่อง Length
 function onWeightEnter(prefix) {
   if (dimUseOn(prefix)) { const el=document.getElementById(prefix+'-dimL'); if(el) el.focus(); return; }
   if (prefix === 'ee') saveEditEntry(); else saveEntryPopup();
@@ -2539,7 +2552,7 @@ function exportExcel(docId) {
   // เรียงจากจำนวน Box มาก→น้อย แล้วค่อยเรียงตามชื่อขนาด
   const dimSummary=[...dimMap.entries()].sort((a,b)=>b[1].box-a[1].box || a[0].localeCompare(b[0]));
   const totalDimBox=dimSummary.reduce((s,[,v])=>s+v.box,0)+noDimBox;
-  const SH=['ข้อความสรุป (ส่งไลน์)','Dimension (L x W x H)','จำนวน Box','Shipment','Weight (Kg)'];
+  const SH=['ข้อความสรุ    (ส่งไลน์)','Dimension (L x W x H)','จำนวน Box','Shipment','Weight (Kg)'];
   // ข้อความรูปแบบที่ใช้ส่งไลน์ได้เลย เช่น "70x40x32 = 7 Box"
   const lineText=(key,box)=>key+' '+box+' Box';
   const sumRows=(dimSummary.length>0 || noDimBox>0)
@@ -2782,7 +2795,7 @@ function renderList() {
 
 // ══════════════════════════════════════════════
 //  UPLOAD + CREATE
-// ══════════════════════════════════════════════
+//    ═════════════════════════════════════════════
 const BAG_ALIASES=['bag no','bagno','bag_no','bag number','เลขถุง','หมายเลขถุง','bag'];
 const SHIP_ALIASES=['shipment','ship','จำนวนชิ้น','จำนวน','pieces','pcs','qty'];
 const WT_ALIASES=['weight','weight (kg)','น้ำหนัก','น้ำหนัก (kg)','kg','wt','weight_kg'];
@@ -3003,7 +3016,7 @@ async function adminConnectCloud() {
   let key      = (keyEl.value || '').trim();
   if (key === '••••••••') key = cloudKey;
   errEl.textContent = '';
-  if (!key) { errEl.textContent = 'กรุณาใส่ Master Key'; return; }
+  if (!key) { errEl.textContent = '   รุณาใส่ Master Key'; return; }
 
   const btn = document.querySelector('#settings-modal .btn-blue');
   btn.textContent = '⏳ กำลังเชื่อมต่อ…'; btn.disabled = true;
