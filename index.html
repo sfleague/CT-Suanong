@@ -2541,7 +2541,7 @@ function exportExcel(docId) {
   const totalDimBox=dimSummary.reduce((s,[,v])=>s+v.box,0)+noDimBox;
   const SH=['ข้อความสรุป (ส่งไลน์)','Dimension (L x W x H)','จำนวน Box','Shipment','Weight (Kg)'];
   // ข้อความรูปแบบที่ใช้ส่งไลน์ได้เลย เช่น "70x40x32 = 7 Box"
-  const lineText=(key,box)=>key+' = '+box+' Box';
+  const lineText=(key,box)=>key+' '+box+' Box';
   const sumRows=(dimSummary.length>0 || noDimBox>0)
     ? [
         ...dimSummary.map(([key,v])=>row([
