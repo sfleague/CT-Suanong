@@ -1402,7 +1402,12 @@ function normDoc(doc) {
   if (!doc) return doc;
   if (doc.id != null) doc.id = String(doc.id);
   // ประทับ createdAt ให้ข้อมูลเก่า เพื่อใช้เป็นลำดับคงที่ (ไม่ผูกกับเวลาที่แก้ไข)
-  if (!doc.createdAt) doc.createdAt = Number(doc.updatedAt) || Date.now();
+  // ห้ามใช้ Date.now() เป็นค่าสำรอง เพราะจะได้ค่าไม่เท่ากันในแต่ละเครื่อง → ลำดับเพี้ยน
+  // ถอดเวลาจาก id (base36 ของเวลาที่สร้าง) ก่อน แล้วค่อยใช้ updatedAt
+  if (!doc.createdAt) {
+    const fromId = parseInt(String(doc.id || '').split('-')[0], 36);
+    doc.createdAt = (isFinite(fromId) && fromId > 0) ? fromId : (Number(doc.updatedAt) || 0);
+  }
   if (Array.isArray(doc.entries)) doc.entries.forEach(e => {
     if (e && e.id != null) e.id = String(e.id);
     // ขนาด Dimension (CM) — ข้อมูลเก่าที่ไม่มีค่าจะถูกตั้งเป็น 0
@@ -1410,11 +1415,24 @@ function normDoc(doc) {
   });
   return doc;
 }
-function loadDocs()    { return safeJSON(localStorage.getItem(STORE_DOCS),  []).map(normDoc); }
+// ── ลำดับมาตรฐานของชีท: ใหม่สุดอยู่บนสุด (เหมือนกันทุกเครื่อง) ──
+// ใช้ createdAt เป็นหลัก ถ้าเท่ากันใช้ id เป็นตัวตัดสิน เพื่อให้ผลลัพธ์คงที่เสมอ
+function sortDocsNewestFirst(list) {
+  return (Array.isArray(list) ? list.slice() : []).sort((x, y) => {
+    const cy = Number(y && y.createdAt) || 0;
+    const cx = Number(x && x.createdAt) || 0;
+    if (cy !== cx) return cy - cx;
+    return String((y && y.id) || '').localeCompare(String((x && x.id) || ''));
+  });
+}
+function loadDocs()    { return sortDocsNewestFirst(safeJSON(localStorage.getItem(STORE_DOCS),  []).map(normDoc)); }
 function saveDocs(d)   {
   // ประทับ updatedAt ให้เอกสารที่ยังไม่มี เพื่อให้ merge ทำงานถูกต้อง
   (d||[]).forEach(doc => { if (doc && !doc.updatedAt) doc.updatedAt = nowTs(); });
-  localStorage.setItem(STORE_DOCS,  JSON.stringify(d)); scheduleSave();
+  // เก็บลงเครื่องแบบเรียงแล้ว (ใหม่สุดอยู่บนสุด) เพื่อให้ทุกเครื่องเห็นลำดับเดียวกัน
+  const sorted = sortDocsNewestFirst(d);
+  if (Array.isArray(d)) d.length = 0, sorted.forEach(x => d.push(x));
+  localStorage.setItem(STORE_DOCS,  JSON.stringify(sorted)); scheduleSave();
 }
 // ── Tombstones (บันทึกการลบ) ──
 function loadTombstones()  { return safeJSON(localStorage.getItem(STORE_TOMB), {}) || {}; }
@@ -1502,19 +1520,9 @@ function mergeSnapshots(a, b) {
     if (delAt && delAt >= (doc.updatedAt || 0)) return; // ถูกลบทีหลัง → ไม่เอา
     documents.push(doc);
   });
-  // ล็อกลำดับเดิมไว้ — การแก้ไข/เพิ่มข้อมูลในชีทไหนก็ไม่ทำให้ชีทนั้นเลื่อนขึ้นบน
-  // อ้างอิงลำดับจากฝั่ง local (b) ก่อน แล้วต่อด้วยชีทที่มีแค่บน cloud (a)
-  const orderRef = new Map();
-  [ ...(Array.isArray(b.documents) ? b.documents : []),
-    ...(Array.isArray(a.documents) ? a.documents : []) ].forEach(d => {
-    if (d && d.id != null) { const k = String(d.id); if (!orderRef.has(k)) orderRef.set(k, orderRef.size); }
-  });
-  documents.sort((x, y) => {
-    const kx = orderRef.has(String(x.id)) ? orderRef.get(String(x.id)) : Number.MAX_SAFE_INTEGER;
-    const ky = orderRef.has(String(y.id)) ? orderRef.get(String(y.id)) : Number.MAX_SAFE_INTEGER;
-    if (kx !== ky) return kx - ky;
-    return (Number(y.createdAt) || 0) - (Number(x.createdAt) || 0);
-  });
+  // ลำดับต้องเหมือนกันทุกเครื่อง → เรียงตาม createdAt ใหม่สุดอยู่บนสุดเสมอ
+  // (ไม่อ้างอิงลำดับใน array ของแต่ละเครื่องอีก เพราะทำให้แต่ละเครื่องแสดงไม่เหมือนกัน)
+  documents = sortDocsNewestFirst(documents);
 
   // ล้าง tombstone เก่าเกิน 30 วัน กันบวม
   const CUTOFF = nowTs() - 30 * 24 * 60 * 60 * 1000;
@@ -2750,7 +2758,8 @@ tfoot td.r{text-align:right;}
 //  RENDER LIST
 // ══════════════════════════  ═══════════════════
 function renderList() {
-  const docs=documents, el=document.getElementById('app');
+  // เรียงตอนแสดงผลด้วย เพื่อกันกรณีข้อมูลใน memory ยังไม่ได้เรียง (ล่าสุดอยู่บนสุดเสมอ)
+  const docs=sortDocsNewestFirst(documents), el=document.getElementById('app');
   if (docs.length===0) {
     el.innerHTML=`<div class="page"><div style="text-align:center;padding:60px 20px;color:#bbb">
       <div style="font-size:64px;margin-bottom:16px">📋</div>
