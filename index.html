@@ -1038,7 +1038,27 @@
         <div style="display:flex;flex-direction:column;gap:10px">
           <div style="background:#f6f8fa;border:1.5px solid #e8e8e8;border-radius:8px;padding:10px 14px;font-size:12px;color:#5a6472;line-height:1.7">
             ข้อมูลถูกเก็บในฐานข้อมูล Neon Postgres ผ่าน API ของเว็บนี้ (<code>/api/snapshot</code>)<br>
-            ไม่ต้องกรอก Key ในเบราว์เซอร์อีก — รหัสเชื่อมต่อฐานข้อมูลอยู่ที่เซิร์ฟเวอร์เท่านั้น
+            รหัสเชื่อมต่อฐานข้อมูลถูกเก็บเป็นคุกกี้ฝั่งเซิร์ฟเวอร์ (httpOnly) — JavaScript ในหน้าเว็บอ่านค่าไม่ได้
+          </div>
+
+          <!-- ── กรอก Neon Database URL ── -->
+          <div style="border:1.5px solid #e8e8e8;border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+            <label class="field-label" for="set-db-url" style="margin:0">Neon Database URL</label>
+            <div id="db-config-status" style="font-size:12px;line-height:1.7;color:#5a6472">กำลังตรวจสอบ…</div>
+            <input id="set-db-url" class="field-input" type="password" autocomplete="off" spellcheck="false"
+              placeholder="postgresql://user:password@ep-xxx.aws.neon.tech/neondb?sslmode=require">
+            <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#5a6472">
+              <input type="checkbox" id="set-db-show" onchange="toggleDbUrlVisible(this.checked)"> แสดงข้อความที่พิมพ์
+            </label>
+            <div style="font-size:11px;color:#aaa;line-height:1.6">
+              คัดลอกจาก Neon Console → Connection string (เลือก <b>Pooled connection</b>) แล้ววางที่ช่องนี้<br>
+              ระบบจะทดสอบเชื่อมต่อและสร้างตาราง <code>app_snapshot</code> ให้อัตโนมัติก่อนบันทึก
+            </div>
+            <div class="auth-err" id="set-db-err" style="text-align:left"></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-primary btn-sm" onclick="saveDbUrl()" style="flex:1;min-width:160px">💾 บันทึก Database URL</button>
+              <button class="btn btn-danger btn-sm" onclick="clearDbUrl()">🗑 ลบค่าที่เก็บไว้</button>
+            </div>
           </div>
           <div style="background:#f6f8fa;border:1.5px solid #e8e8e8;border-radius:8px;padding:10px 14px;font-size:12px;color:#5a6472;line-height:1.7">
             <b style="color:#1b2a4a">โหมดประหยัดโควต้า</b><br>
@@ -3425,7 +3445,85 @@ function openSettingsModalRefreshFb() {
     : '<div style="background:#fde8e8;border:1.5px solid #f5b5b5;border-radius:8px;padding:8px 12px;font-size:12px;color:#c62828;font-weight:600">⚠️ ยังติดต่อฐานข้อมูลไม่ได้ — กด “ตรวจสอบระบบ Cloud” ด้านล่างเพื่อดูสาเหตุ</div>';
   // ตรวจสุขภาพให้เลยทันทีที่เปิดหน้าตั้งค่า
   checkCloudHealth();
-}
+  loadDbConfigStatus();
+  }
+
+  // ══════════════════════════════════════════════
+  //  ตั้งค่า Neon Database URL (เก็บเป็น httpOnly cookie ฝั่งเซิร์ฟเวอร์)
+  // ══════════════════════════════════════════════
+  function toggleDbUrlVisible(on) {
+  const el = document.getElementById('set-db-url');
+  if (el) el.type = on ? 'text' : 'password';
+  }
+
+  async function loadDbConfigStatus() {
+  const box = document.getElementById('db-config-status');
+  if (!box) return;
+  box.textContent = 'กำลังตรวจสอบ…';
+  try {
+  const r = await fetch('/api/db-config?_=' + Date.now(), { cache: 'no-store' });
+  const j = await r.json();
+  if (j.configured && j.source === 'env') {
+  box.innerHTML = '<span style="color:#2e7d32;font-weight:700">✅ ใช้ค่าจาก Environment Variable ของโปรเจกต์</span><br>'
+    + '<code>' + j.masked + '</code><br>ถ้ากรอกค่าใหม่ด้านล่าง เครื่องนี้จะใช้ค่าที่กรอกแทน';
+  } else if (j.configured) {
+  box.innerHTML = '<span style="color:#2e7d32;font-weight:700">✅ บันทึก Database URL ไว้แล้ว</span><br><code>' + j.masked + '</code>';
+  } else {
+  box.innerHTML = '<span style="color:#c62828;font-weight:700">⚠️ ยังไม่ได้ตั้งค่า Database URL</span><br>วาง Connection string ของ Neon ที่ช่องด้านล่าง แล้วกดบันทึก';
+  }
+  } catch (e) {
+  box.innerHTML = '<span style="color:#c62828;font-weight:700">❌ อ่านสถานะไม่สำเร็จ</span> ' + String(e);
+  }
+  }
+
+  async function saveDbUrl() {
+  const input = document.getElementById('set-db-url');
+  const err   = document.getElementById('set-db-err');
+  if (err) err.textContent = '';
+  const url = (input && input.value || '').trim();
+  if (!url) { if (err) err.textContent = 'กรุณากรอก Database URL'; return; }
+  if (!/^postgres(ql)?:\/\//i.test(url)) {
+  if (err) err.textContent = 'URL ต้องเริ่มด้วย postgresql:// หรือ postgres://';
+  return;
+  }
+  toast('กำลังทดสอบการเชื่อมต่อ…', 'info');
+  try {
+  const r = await fetch('/api/db-config', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  cache: 'no-store',
+  body: JSON.stringify({ url: url })
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.ok) {
+  if (err) err.textContent = j.message || ('บันทึกไม่สำเร็จ (status ' + r.status + ')');
+  toast('บันทึก Database URL ไม่สำเร็จ', 'error');
+  return;
+  }
+  input.value = '';
+  toast('เชื่อมต่อฐานข้อมูลสำเร็จ — บันทึกแล้ว', 'success');
+  await loadDbConfigStatus();
+  await checkCloudHealth();
+  cloudReady = false; lastSeenRev = -1;
+  await pullFromCloud(true);
+  openSettingsModalRefreshFb();
+  } catch (e) {
+  if (err) err.textContent = String(e);
+  toast('บันทึก Database URL ไม่สำเร็จ', 'error');
+  }
+  }
+
+  async function clearDbUrl() {
+  if (!confirm('ลบ Database URL ที่เก็บไว้ในเครื่องนี้?\n(ข้อมูลในฐานข้อมูลไม่ถูกลบ)')) return;
+  try {
+  await fetch('/api/db-config', { method: 'DELETE', cache: 'no-store' });
+  toast('ลบค่าที่เก็บไว้แล้ว', 'warning');
+  await loadDbConfigStatus();
+  await checkCloudHealth();
+  } catch (e) {
+  toast('ลบไม่สำเร็จ: ' + e, 'error');
+  }
+  }
 
 
 async function forcePushToCloud() {
