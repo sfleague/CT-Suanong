@@ -596,11 +596,48 @@
 </head>
 <body>
 
-<!-- FIRST-TIME SETUP (auto-shows when no JSONBin credentials saved) -->
+<!-- FIRST-TIME SETUP (auto-shows when no cloud credentials saved) -->
 <div id="first-setup">
   <div class="fs-box">
     <div class="fs-icon">☁️</div>
-    <h2>ตั้งค่า JSONBin</h2>
+    <h2>ตั้งค่า Cloud</h2>
+
+    <!-- ── Supabase (แนะนำ) ── -->
+    <div id="fs-sb-block">
+      <p class="fs-sub" style="text-align:left">
+        ใช้ <b>Supabase</b> — ฟรี และใช้ <b>Realtime</b> แทนการดึงข้อมูลวนซ้ำ
+        จึงไม่มีปัญหาโควต้าหมด และข้อมูลเด้งเข้าทุกเครื่องทันที
+      </p>
+      <div class="fs-field">
+        <label>Project URL <span style="font-weight:700;color:#e74c3c">*</span></label>
+        <input id="fs-sb-url" class="auth-input" type="text"
+          placeholder="https://xxxxxxxx.supabase.co" autocomplete="off" style="margin-bottom:0">
+      </div>
+      <div class="fs-field">
+        <label>anon public key <span style="font-weight:700;color:#e74c3c">*</span></label>
+        <input id="fs-sb-key" class="auth-input" type="password"
+          placeholder="eyJhbGciOi…" autocomplete="off" style="margin-bottom:0">
+      </div>
+      <div style="font-size:11.5px;color:#aaa;text-align:left;margin:2px 0 10px;line-height:1.7">
+        หาได้ที่ Supabase → Project Settings → API<br>
+        <b style="color:#e74c3c">ต้องรัน SQL ตั้งตารางก่อน 1 ครั้ง</b> —
+        <a href="#" onclick="event.preventDefault();document.getElementById('fs-sql-box').style.display='block';this.style.display='none'" style="color:#2980b9;font-weight:700">ดู SQL</a>
+      </div>
+      <div id="fs-sql-box" style="display:none;text-align:left;margin-bottom:10px">
+        <textarea id="fs-sql" readonly rows="7"
+          style="width:100%;font-family:ui-monospace,monospace;font-size:10.5px;line-height:1.55;border:1.5px solid #e8e8e8;border-radius:8px;padding:8px;background:#fafafa;color:#444;resize:vertical"></textarea>
+        <button class="btn btn-outline btn-sm" onclick="copySetupSql()" style="margin-top:6px">📋 คัดลอก SQL</button>
+        <div style="font-size:11px;color:#aaa;margin-top:4px">วางใน Supabase → SQL Editor → Run</div>
+      </div>
+      <div class="auth-err" id="fs-sb-err" style="text-align:left;margin:4px 0 10px"></div>
+      <button id="fs-sb-btn" class="auth-btn auth-btn-main" onclick="fsConnectSupabase()"><svg class="ico-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg><span>เชื่อมต่อ Supabase</span></button>
+      <div style="margin-top:12px;font-size:11.5px;color:#bbb">
+        <a href="#" onclick="event.preventDefault();fsShowLegacy()" style="color:#bbb">ใช้ JSONBin แบบเดิม (ไม่แนะนำ — โควต้าหมดเร็ว)</a>
+      </div>
+    </div>
+
+    <!-- ── JSONBin (ของเดิม) ── -->
+    <div id="fs-jb-block" style="display:none">
     <!-- hint: มี key แต่ไม่มี bin (เบราว์เซอร์ใหม่) -->
     <div id="fs-setup-hint" style="display:none;background:#fff8e1;border:1.5px solid #ffe082;border-radius:8px;padding:10px 14px;font-size:12.5px;color:#795548;margin-bottom:16px;line-height:1.7;text-align:left">
       🔑 พบ Key แล้ว — กรุณาใส่ <b>Bin ID</b> จากเครื่องเดิม<br>
@@ -621,7 +658,11 @@
         autocomplete="off" style="margin-bottom:0">
     </div>
     <div class="auth-err" id="fs-err" style="text-align:left;margin:4px 0 10px"></div>
-    <button class="auth-btn auth-btn-main" onclick="fsConnect()"><svg class="ico-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg><span>บันทึกและเชื่อมต่อ</span></button>
+    <button id="fs-jb-btn" class="auth-btn auth-btn-main" onclick="fsConnect()"><svg class="ico-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg><span>บันทึกและเชื่อมต่อ</span></button>
+      <div style="margin-top:12px;font-size:11.5px">
+        <a href="#" onclick="event.preventDefault();fsShowSupabase()" style="color:#2980b9;font-weight:700">← กลับไปใช้ Supabase (แนะนำ)</a>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1059,10 +1100,48 @@
         <button class="btn btn-primary btn-sm" onclick="saveBg()"><svg class="ico-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg><span>บันทึกพื้นหลัง</span></button>
       </div>
 
-      <!-- ── JSONBin ── -->
+      <!-- ── Supabase (แนะนำ) ── -->
       <hr style="border:none;border-top:1.5px dashed #e8e8e8;margin:0">
       <div>
-        <div style="font-size:13px;font-weight:700;color:#1b2a4a;margin-bottom:10px">☁️ Cloud Storage — JSONBin</div>
+        <div style="font-size:13px;font-weight:700;color:#1b2a4a;margin-bottom:10px">⚡ Cloud Storage — Supabase <span style="font-size:10.5px;font-weight:600;color:#2e7d32;background:#e8f5e9;border-radius:99px;padding:2px 8px;margin-left:4px">แนะนำ</span></div>
+        <div id="set-sb-status" style="margin-bottom:10px"></div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div>
+            <label class="field-label">Project URL</label>
+            <input id="set-sb-url" class="field-input" type="text"
+              placeholder="https://xxxxxxxx.supabase.co" autocomplete="off">
+          </div>
+          <div>
+            <label class="field-label">anon public key</label>
+            <input id="set-sb-key" class="field-input key-input" type="password"
+              placeholder="eyJhbGciOi…" autocomplete="off">
+            <div style="font-size:11px;color:#aaa;margin-top:4px">Supabase → Project Settings → API (ใช้ anon key เท่านั้น ห้ามใช้ service_role)</div>
+          </div>
+          <details style="border:1.5px solid #e8e8e8;border-radius:8px;padding:8px 10px">
+            <summary style="font-size:12px;font-weight:700;color:#1b2a4a;cursor:pointer">SQL ตั้งตาราง (รันครั้งเดียว)</summary>
+            <textarea id="set-sb-sql" readonly rows="8"
+              style="width:100%;margin-top:8px;font-family:ui-monospace,monospace;font-size:10.5px;line-height:1.55;border:1.5px solid #e8e8e8;border-radius:8px;padding:8px;background:#fafafa;color:#444;resize:vertical"></textarea>
+            <button class="btn btn-outline btn-sm" onclick="copySetupSql()" style="margin-top:6px">📋 คัดลอก SQL</button>
+          </details>
+          <div class="auth-err" id="set-sb-err" style="text-align:left"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button id="set-sb-disconnect" class="btn btn-danger btn-sm" onclick="adminDisconnectSupabase()" style="display:none">ยกเลิกการเชื่อมต่อ</button>
+            <button id="set-sb-btn" class="btn btn-blue btn-sm" onclick="adminConnectSupabase()" style="min-width:150px">⚡ เชื่อมต่อ Supabase</button>
+          </div>
+          <div id="set-sb-tools" style="display:none;background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:10px 14px;font-size:12px;color:#2e7d32;line-height:1.6">
+            ✅ Supabase เชื่อมต่อแล้ว — ระบบใช้ Realtime แทนการดึงข้อมูลวนซ้ำ จึงไม่กินโควต้า
+            <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
+              <button class="btn btn-primary btn-sm" onclick="migrateFromJsonbin()" style="width:100%">⬇️ ย้ายข้อมูลเดิมจาก JSONBin เข้า Supabase</button>
+              <button class="btn btn-success btn-sm" onclick="downloadBakedFile()" style="width:100%">💾 ดาวน์โหลดไฟล์ฝังค่า Supabase (แจกจ่ายได้เลย)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── JSONBin (ของเดิม) ── -->
+      <hr style="border:none;border-top:1.5px dashed #e8e8e8;margin:0">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#8a8a8a;margin-bottom:10px">☁️ Cloud Storage — JSONBin <span style="font-size:10.5px;font-weight:600;color:#b26a00;background:#fff8e1;border-radius:99px;padding:2px 8px;margin-left:4px">ของเดิม</span></div>
         <div id="set-fb-status" style="margin-bottom:10px"></div>
         <div style="display:flex;flex-direction:column;gap:10px">
           <div>
@@ -1083,7 +1162,7 @@
           <div class="auth-err" id="set-fb-err" style="text-align:left"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button id="set-fb-disconnect" class="btn btn-danger btn-sm" onclick="adminDisconnectCloud()" style="display:none">ยกเลิกการเชื่อมต่อ</button>
-            <button class="btn btn-blue btn-sm" onclick="adminConnectCloud()" style="min-width:140px">☁️      ื่อมต่อ JSONBin</button>
+            <button id="set-jb-btn" class="btn btn-blue btn-sm" onclick="adminConnectCloud()" style="min-width:140px">☁️      ื่อมต่อ JSONBin</button>
           </div>
           <div id="set-fb-bake-box" style="display:none;margin-top:8px;background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:10px 14px;font-size:12px;color:#2e7d32;line-height:1.6">
             ✅ JSONBin เชื่อมต่อแล้ว — กดปุ่มด้านล่างเพื่อสร้างไฟล์ใหม่ที่<b>ฝัง JSONBin ไว้ในตัว</b><br>
@@ -1208,23 +1287,42 @@ function clearAllProfiles() {
   renderProfilesList(); toast('ล้าง Profiles ทั้งหมดแล้ว','warning');
 }
 
-//  CLOUD — JSONBin REST API
+//  CLOUD — Supabase (หลัก) + JSONBin (สำรอง/ของเดิม)
 // ══════════════════════════════════════════════
 const LS_JBBIN  = 'jb_bin_v1';
 const LS_JBKEY  = 'jb_key_v1';
+const LS_SBURL  = 'sb_url_v1';
+const LS_SBKEY  = 'sb_key_v1';
 const LS_CACHE  = 'parcel_cache_v2';
 const TTL_MS    = 7 * 24 * 60 * 60 * 1000; // 7 วัน
 
+// ชื่อแถวที่เก็บข้อมูลทั้งก้อนใน Supabase (1 แถว = 1 snapshot)
+const SB_ROW_ID = 'main';
+const SB_TABLE  = 'app_state';
+
 // ╔═══════════════════════════════════════════════════════════════════
-// ║  ⚡ ใส่ค่า JSONBin ด้านล่าง แล้ว push ขึ้น GitHub ได้เลย        ║
-// ║  ทุกคนที่เปิด URL จะเชื่อมต่อ JSONBin อัตโนมัติทันที            ║
+// ║  ⚡ Supabase — ใส่ค่าด้านล่างแล้วแจกไฟล์นี้ได้เลย                ║
+// ║  ทุกเครื่องที่เปิดไฟล์จะเชื่อมต่ออัตโนมัติ + ได้ Realtime ทันที  ║
 // ╠══════════════════════════════════════════════════════════════════╣
+const EMBED_SB_URL = '';  // เช่น https://abcdefgh.supabase.co
+const EMBED_SB_KEY = '';  // anon public key (ไม่ใช่ service_role)
+// ╚══════════════════════════════════════════════════════════════════╝
+
+// ── ของเดิม (JSONBin) เก็บไว้เพื่อย้ายข้อมูลเท่านั้น ──
 const EMBED_JB_BIN = '6a6b3941f5f4af5e29d56663';  // JSONBin Bin ID
 const EMBED_JB_KEY = '$2a$10$9CiVVjDORSuDvaiIwvp3NOYGtNLcS/kwI5BIHDYm8SSQyAqY7lb/i';  // JSONBin Master Key
-// ╚══════════════════════════════════════════════════════════════════╝
 
 let cloudBin = localStorage.getItem(LS_JBBIN) || EMBED_JB_BIN;
 let cloudKey = localStorage.getItem(LS_JBKEY) || EMBED_JB_KEY;
+let sbUrl = (localStorage.getItem(LS_SBURL) || EMBED_SB_URL || '').replace(/\/+$/, '');
+let sbKey = localStorage.getItem(LS_SBKEY) || EMBED_SB_KEY || '';
+if (sbUrl) localStorage.setItem(LS_SBURL, sbUrl);
+if (sbKey) localStorage.setItem(LS_SBKEY, sbKey);
+
+// Supabase คือ provider หลัก — ถ้าตั้งค่าไว้จะไม่แตะ JSONBin เลย
+function hasSupabase() { return !!(sbUrl && sbKey); }
+// เลข rev ที่อ่านได้จาก cloud ครั้งล่าสุด (ใช้ทำ conditional write กันเขียนทับ)
+let sbRev = 0;
 
 // ถ้ามี embedded credentials ให้บันทึกลง localStorage ด้วยเพื่อให้ใช้ได้ต่อเนื่อง
 if (EMBED_JB_BIN && cloudBin) localStorage.setItem(LS_JBBIN, cloudBin);
@@ -1236,7 +1334,7 @@ let cloudReady = false;
 let syncing    = false;   // ล็อกไม่ให้ save ซ้อนกัน (กัน race)
 let queuedSave = false;   // มีคำขอ save เข้ามาระหว่างกำลัง sync อยู่
 
-function hasCloud() { return !!(cloudBin && cloudKey); }
+function hasCloud() { return hasSupabase() || !!(cloudBin && cloudKey); }
 // ── กัน cache ของเบราว์เซอร์/มือถือ/พร็อกซี ──
 // สาเหตุใหญ่ที่ "บางเครื่องเห็นข้อมูลเก่า" คือ GET ถูกตอบจาก cache ไม่ได้ยิงถึงเซิร์ฟเวอร์จริง
 // จึงต้องต่อ query กันซ้ำ + no-store + no-cache header ทุกครั้ง
@@ -1244,6 +1342,172 @@ function jbGetUrl()  { return 'https://api.jsonbin.io/v3/b/' + cloudBin + '/late
 function jbPutUrl()  { return 'https://api.jsonbin.io/v3/b/' + cloudBin; }
 function jbHeaders() { return { 'Content-Type': 'application/json', 'X-Master-Key': cloudKey, 'X-Bin-Versioning': 'false' }; }
 function jbGetHeaders() { return { 'X-Master-Key': cloudKey, 'X-Bin-Meta': 'false', 'Cache-Control': 'no-cache, no-store, max-age=0', 'Pragma': 'no-cache' }; }
+
+// ══════════════════════════════════════════════
+//  SUPABASE REST (PostgREST)
+// ══════════════════════════════════════════════
+function sbHeaders(extra) {
+  return Object.assign({
+    'apikey': sbKey,
+    'Authorization': 'Bearer ' + sbKey,
+    'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache'
+  }, extra || {});
+}
+function sbRestUrl(qs) {
+  return sbUrl + '/rest/v1/' + SB_TABLE + (qs ? '?' + qs : '');
+}
+
+// อ่าน snapshot จาก Supabase — 1 request
+async function sbGet() {
+  const r = await fetch(sbRestUrl('id=eq.' + SB_ROW_ID + '&select=data,rev'), {
+    headers: sbHeaders(), cache: 'no-store'
+  });
+  if (!r.ok) throw new Error('HTTP ' + r.status + (r.status === 404 ? ' — ยังไม่ได้สร้างตาราง app_state' : ''));
+  const rows = await r.json();
+  if (!Array.isArray(rows) || !rows.length) { sbRev = 0; return null; }
+  const row = rows[0];
+  sbRev = Number(row.rev) || 0;
+  const data = row.data && typeof row.data === 'object' ? row.data : {};
+  return Object.assign({}, data, { rev: sbRev });
+}
+
+// เขียนแบบ conditional write — Postgres ตรวจ rev ให้เอง
+// สำเร็จ = 1 request  (ไม่ต้องอ่านกลับมาตรวจเหมือน JSONBin)
+// คืน false เมื่อมีเครื่องอื่นเขียนแซง → ให้ผู้เรียก merge ใหม่แล้วลองอีกครั้ง
+async function sbPut(data, expectedRev) {
+  const payload = Object.assign({}, data);
+  delete payload.rev;
+  const body = {
+    data:     payload,
+    rev:      (Number(expectedRev) || 0) + 1,
+    saved_at: data.savedAt,
+    saved_by: data.savedBy
+  };
+
+  // แถวยังไม่มี → insert
+  if (!expectedRev && sbRev === 0) {
+    const ins = await fetch(sbRestUrl(), {
+      method: 'POST',
+      headers: sbHeaders({ 'Prefer': 'return=minimal,resolution=merge-duplicates' }),
+      body: JSON.stringify(Object.assign({ id: SB_ROW_ID }, body))
+    });
+    if (ins.ok) { sbRev = body.rev; return true; }
+    if (ins.status !== 409) throw new Error('HTTP ' + ins.status);
+    return false; // ชนกัน → ให้ merge ใหม่
+  }
+
+  const r = await fetch(sbRestUrl('id=eq.' + SB_ROW_ID + '&rev=eq.' + expectedRev), {
+    method: 'PATCH',
+    headers: sbHeaders({ 'Prefer': 'return=representation' }),
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const rows = await r.json();
+  if (Array.isArray(rows) && rows.length) { sbRev = body.rev; return true; }
+  return false; // rev ไม่ตรง = มีเครื่องอื่นเขียนแซง
+}
+
+// ══════════════════════════════════════════════
+//  SUPABASE REALTIME — แทนการ polling ทุก 5 วินาที
+//  ใช้ WebSocket เดียวค้างไว้ ไม่กินโควต้า request
+// ══════════════════════════════════════════════
+let rtWs = null, rtHeartbeat = null, rtRef = 0, rtJoined = false, rtRetry = 0, rtRetryTimer = null;
+
+function rtConnected() { return !!(rtWs && rtWs.readyState === 1 && rtJoined); }
+
+function rtSend(msg) {
+  if (rtWs && rtWs.readyState === 1) { try { rtWs.send(JSON.stringify(msg)); } catch {} }
+}
+
+function rtConnect() {
+  if (!hasSupabase()) return;
+  if (rtWs && (rtWs.readyState === 0 || rtWs.readyState === 1)) return;
+  const host = sbUrl.replace(/^https?:\/\//, '');
+  try {
+    rtWs = new WebSocket('wss://' + host + '/realtime/v1/websocket?apikey=' + encodeURIComponent(sbKey) + '&vsn=1.0.0');
+  } catch (e) { rtScheduleRetry(); return; }
+
+  rtWs.onopen = () => {
+    rtRef = 0; rtJoined = false;
+    rtSend({
+      topic: 'realtime:' + SB_TABLE,
+      event: 'phx_join',
+      ref: String(++rtRef),
+      payload: {
+        config: {
+          postgres_changes: [{ event: '*', schema: 'public', table: SB_TABLE }]
+        }
+      }
+    });
+    clearInterval(rtHeartbeat);
+    rtHeartbeat = setInterval(() => {
+      rtSend({ topic: 'phoenix', event: 'heartbeat', payload: {}, ref: String(++rtRef) });
+    }, 25000);
+  };
+
+  rtWs.onmessage = (ev) => {
+    let m; try { m = JSON.parse(ev.data); } catch { return; }
+    if (m.event === 'phx_reply' && m.payload && m.payload.status === 'ok' && !rtJoined) {
+      rtJoined = true; rtRetry = 0;
+      startAutoPull();                 // ปรับรอบ polling ให้ห่างขึ้น เพราะมี realtime แล้ว
+      setSyncBadge('ok', 'เรียลไทม์');
+      return;
+    }
+    if (m.event === 'postgres_changes') {
+      const rec = m.payload && m.payload.data && m.payload.data.record;
+      if (!rec) { pullFromCloud(false); return; }
+      if (rec.saved_by && rec.saved_by === deviceId()) { sbRev = Number(rec.rev) || sbRev; return; }
+      sbRev = Number(rec.rev) || sbRev;
+      const snap = rec.data && typeof rec.data === 'object'
+        ? Object.assign({}, rec.data, { rev: sbRev })
+        : null;
+      if (!snap) { pullFromCloud(false); return; }
+      applyRealtimeSnapshot(snap);
+    }
+  };
+
+  rtWs.onclose = () => {
+    rtJoined = false;
+    clearInterval(rtHeartbeat);
+    startAutoPull();                   // ไม่มี realtime → กลับไป polling ถี่ขึ้นชั่วคราว
+    rtScheduleRetry();
+  };
+  rtWs.onerror = () => { try { rtWs.close(); } catch {} };
+}
+
+function rtScheduleRetry() {
+  if (!hasSupabase() || !currentUser) return;
+  clearTimeout(rtRetryTimer);
+  const wait = Math.min(30000, 2000 * Math.pow(2, rtRetry++));
+  rtRetryTimer = setTimeout(rtConnect, wait);
+}
+
+function rtDisconnect() {
+  clearTimeout(rtRetryTimer);
+  clearInterval(rtHeartbeat);
+  rtJoined = false; rtRetry = 0;
+  if (rtWs) { try { rtWs.close(); } catch {} rtWs = null; }
+}
+
+// ได้ snapshot จาก realtime แล้ว — merge เข้าเครื่องโดยไม่ต้องยิง request เพิ่ม
+function applyRealtimeSnapshot(snap) {
+  if (!currentUser || syncing) return;
+  lastSyncAt = Date.now();
+  lastCloudGetOk = true;
+  if (typeof observeSnapshotTs === 'function') observeSnapshotTs(snap);
+  const before = docsFingerprint();
+  mergeCloudData(snap);
+  const after = docsFingerprint();
+  if (before !== after) {
+    refreshUIFromLocal();
+    notifyOtherTabs();
+    // ถ้าเครื่องนี้มีของที่ cloud ยังไม่มี ให้ส่งขึ้นด้วย
+    if (snapFingerprint(snap) !== after) scheduleSave();
+  }
+  markCloudReadyAndFlush();
+  setSyncBadge('ok', 'เรียลไทม์');
+}
 
 let lastSyncAt = 0;   // เวลาที่ติดต่อ Cloud ได้สำเร็จครั้งล่าสุด
 function setSyncBadge(state, text) {
@@ -1264,6 +1528,22 @@ function setSyncBadge(state, text) {
 let lastCloudGetOk = false; // GET ล่าสุดสำเร็จหรือไม่ (แยกกรณี "เชื่อมต่อไม่ได้" ออกจาก "bin ว่าง")
 async function cloudGet() {
   if (!hasCloud()) { lastCloudGetOk = false; return null; }
+
+  // ── Supabase (provider หลัก) ──
+  if (hasSupabase()) {
+    try {
+      const rec = await sbGet();
+      lastCloudGetOk = true;
+      lastSyncAt = Date.now();
+      if (typeof observeSnapshotTs === 'function') observeSnapshotTs(rec);
+      return rec;
+    } catch (e) {
+      console.warn('supabase get error', e);
+      lastCloudGetOk = false;
+      return null;
+    }
+  }
+
   try {
     const r = await fetch(jbGetUrl(), { headers: jbGetHeaders(), cache: 'no-store' });
     if (!r.ok) throw new Error('status ' + r.status);
@@ -1305,6 +1585,15 @@ async function cloudPutRaw(data) {
   data.rev      = (Number(data.rev) || 0) + 1;   // เลขรุ่นข้อมูล เพิ่มขึ้นทุกครั้งที่เขียน
   data.savedAt  = nowTs();
   data.savedBy  = deviceId();
+
+  // ── Supabase: conditional write จริง ไม่ต้องอ่านกลับมาตรวจ ──
+  if (hasSupabase()) {
+    const ok = await sbPut(data, data.rev - 1);
+    if (!ok) throw new Error('conflict');   // มีเครื่องอื่นเขียนแซง → syncNow จะ merge แล้วลองใหม่
+    localStorage.setItem(LS_CACHE, JSON.stringify(data));
+    return true;
+  }
+
   const r = await fetch(jbPutUrl(), {
     method: 'PUT',
     headers: jbHeaders(),
@@ -1413,13 +1702,36 @@ async function syncNow(showToast) {
   try {
     const remote = await cloudGet();            // ดึงของล่าสุดบน cloud ก่อนเสมอ
     if (!lastCloudGetOk) throw new Error('cloud get failed'); // อ่านไม่ได้ → ห้ามเขียนทับ
-    const merged = mergeSnapshots(remote, localSnapshot()); // รวมแบบ newest-wins + tombstones
+    let merged = mergeSnapshots(remote, localSnapshot());     // รวมแบบ newest-wins + tombstones
+    if (hasSupabase()) merged.rev = sbRev;      // ใช้ rev จริงจากฐานข้อมูลเป็นตัวตรวจการชนกัน
     applyMergedToLocal(merged);                 // อัปเดต local ให้ตรงกับผลรวม
-    await cloudPutRaw(merged);                  // เขียนผลรวมกลับขึ้น cloud
+
+    if (hasSupabase()) {
+      // Postgres ตรวจการชนกันให้เอง — ถ้าชนก็ merge ใหม่แล้วลองอีก ไม่ต้องอ่านย้อนตรวจ
+      let done = false;
+      for (let i = 0; i < 4 && !done; i++) {
+        try {
+          await cloudPutRaw(merged);
+          done = true;
+        } catch (err) {
+          if (String(err && err.message) !== 'conflict') throw err;
+          await sleep(200 + Math.floor(Math.random() * 400));
+          const fresh = await cloudGet();
+          if (!lastCloudGetOk) throw new Error('cloud get failed');
+          merged = mergeSnapshots(fresh, localSnapshot());
+          merged.rev = sbRev;
+          applyMergedToLocal(merged);
+        }
+      }
+      if (!done) throw new Error('เขียนชนกันหลายครั้ง');
+    } else {
+      await cloudPutRaw(merged);                // เขียนผลรวมกลับขึ้น cloud
+      verifyWrite(merged).catch(() => {});      // JSONBin ไม่มี conditional write จึงต้องอ่านย้อนตรวจ
+    }
+
     refreshUIFromLocal();                       // วาดจอใหม่ให้ตรงกับผลรวมทันที
     notifyOtherTabs();                          // บอกแท็บ/หน้าต่างอื่นในเครื่องเดียวกัน
-    verifyWrite(merged).catch(() => {});        // ตรวจย้อนหลังว่าไม่มีใครเขียนทับ (ไม่บล็อก UI)
-    setSyncBadge('ok', 'ซิงค์แล้ว');
+    setSyncBadge('ok', rtConnected() ? 'เรียลไทม์' : 'ซิงค์แล้ว');
     if (showToast) toast('บันทึกขึ้น Cloud สำเร็จ ☁️', 'success');
     // ถ้าระหว่างนั้นมีการแก้ไขเข้ามาอีก → sync ซ้ำอีกรอบ
     if (queuedSave) { queuedSave = false; syncing = false; return syncNow(false); }
@@ -1459,8 +1771,22 @@ function scheduleSave() {
 // ═══ AUTO-PULL — ดึงข้อมูลล่าสุดจาก Cloud อัตโนมัติ ═══
 // เดิม: ดึงแค่ตอน login / รีเฟรชหน้า → แต่ละเครื่องจึงเห็นยอดไม่เท่ากันจนกว่าจะรีเฟรช
 // ใหม่: ดึงทุก 10 วินาที + ตอนกลับมาที่แท็บ + ตอนเน็ตกลับมา แล้ววาดหน้าจอใหม่ให้ตรงกันทุกเครื่อง
-const PULL_MS = 5000;   // ดึงข้อมูลถี่ขึ้น ทุกเครื่องจึงเห็นยอดตรงกันเร็วขึ้น
-let pullTimer = null, pulling = false;
+// ── ประหยัดโควต้า ──
+// มี Realtime = ข้อมูลวิ่งเข้าเองทาง WebSocket จึง polling แค่เป็นตัวสำรองห่าง ๆ
+// ไม่มี Realtime (หรือ JSONBin) = ต้อง polling แต่ใช้รอบ 20 วิ ไม่ใช่ 5 วิ
+const PULL_MS_REALTIME = 300000;  // 5 นาที — ตัวสำรองเผื่อ WebSocket หลุดเงียบ ๆ
+const PULL_MS_FALLBACK = 20000;   // 20 วินาที — เมื่อไม่มี realtime
+function currentPullMs() { return rtConnected() ? PULL_MS_REALTIME : PULL_MS_FALLBACK; }
+
+let pullTimer = null, pulling = false, pullTimerMs = 0;
+// กันการยิงซ้ำถี่ ๆ เวลาสลับแท็บไปมา (เดิมสลับแท็บ 1 ครั้ง = ยิง 2 request)
+let lastPullAt = 0;
+const PULL_THROTTLE_MS = 8000;
+function pullThrottled() {
+  if (Date.now() - lastPullAt < PULL_THROTTLE_MS) return;
+  lastPullAt = Date.now();
+  pullFromCloud(false);
+}
 
 // ลายนิ้วมือของข้อมูลในเครื่อง — ใช้เช็คว่าหลัง merge มีอะไรเปลี่ยนจริงไหม
 function docsFingerprint() { return snapFingerprint(localSnapshot()); }
@@ -1487,7 +1813,7 @@ async function pullFromCloud(showToast) {
       if (!showToast) toast('อัปเดตข้อมูลล่าสุดจาก Cloud แล้ว', 'success');
     }
     markCloudReadyAndFlush();
-    setSyncBadge('ok', 'ซิงค์แล้ว');
+    setSyncBadge('ok', rtConnected() ? 'เรียลไทม์' : 'ซิงค์แล้ว');
     if (showToast) toast('ข้อมูลตรงกับ Cloud แล้ว ☁️', 'success');
     return true;
   } finally {
@@ -1496,15 +1822,25 @@ async function pullFromCloud(showToast) {
 }
 
 function startAutoPull() {
+  if (!hasCloud()) { stopAutoPull(); return; }
+  const ms = currentPullMs();
+  if (pullTimer && pullTimerMs === ms) return;   // รอบเดิมอยู่แล้ว ไม่ต้องตั้งใหม่
   stopAutoPull();
-  if (!hasCloud()) return;
-  pullTimer = setInterval(() => { if (document.visibilityState !== 'hidden') pullFromCloud(false); }, PULL_MS);
+  pullTimerMs = ms;
+  pullTimer = setInterval(() => {
+    if (document.visibilityState !== 'hidden') { lastPullAt = Date.now(); pullFromCloud(false); }
+  }, ms);
+  if (hasSupabase()) rtConnect();                // เปิด WebSocket ไว้ตลอด
 }
-function stopAutoPull() { if (pullTimer) { clearInterval(pullTimer); pullTimer = null; } }
+function stopAutoPull() { if (pullTimer) { clearInterval(pullTimer); pullTimer = null; pullTimerMs = 0; } }
 
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pullFromCloud(false); });
-window.addEventListener('focus',  () => pullFromCloud(false));
-window.addEventListener('online', () => pullFromCloud(false));
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  if (hasSupabase() && !rtConnected()) rtConnect();
+  pullThrottled();
+});
+window.addEventListener('focus',  () => pullThrottled());
+window.addEventListener('online', () => { rtRetry = 0; if (hasSupabase()) rtConnect(); pullThrottled(); });
 
 // ── ซิงค์ข้ามแท็บ/หน้าต่างในเครื่องเดียวกัน (ไม่ต้องรอรอบ 5 วิ) ──
 let _bc = null;
@@ -2386,6 +2722,7 @@ function enterMain() {
 function logout() {
   stopIdleTimer();
   stopAutoPull();
+  rtDisconnect();
   clearSession(); currentUser=null; documents=[]; currentDocId=null;
   document.getElementById('main').style.display = 'none';
   document.getElementById('auth').style.display = 'flex';
@@ -2406,9 +2743,16 @@ async function tryAutoLogin() {
   if (!hasCloud()) {
     document.getElementById('first-setup').style.display = 'flex';
     document.getElementById('auth').style.display = 'none';
+    fillSetupSql();
     // pre-fill ค่าที่ embed ไว้
+    if (EMBED_SB_URL) document.getElementById('fs-sb-url').value = EMBED_SB_URL;
+    if (EMBED_SB_KEY) document.getElementById('fs-sb-key').value = EMBED_SB_KEY;
     if (EMBED_JB_BIN) document.getElementById('fs-url').value = EMBED_JB_BIN;
     if (EMBED_JB_KEY) document.getElementById('fs-key').value = EMBED_JB_KEY;
+    setTimeout(() => {
+      const el = document.getElementById(EMBED_SB_URL ? 'fs-sb-key' : 'fs-sb-url');
+      if (el) el.focus();
+    }, 80);
     if (!cloudBin && cloudKey) {
       document.getElementById('fs-setup-hint').style.display = '';
       document.getElementById('fs-setup-new').style.display  = 'none';
@@ -3365,23 +3709,137 @@ function openSettingsModalRefreshFb() {
     : '';
 }
 
+// ── สถานะ Supabase ในหน้าตั้งค่า ──
+function refreshSupabasePanel() {
+  const urlEl = document.getElementById('set-sb-url');
+  const keyEl = document.getElementById('set-sb-key');
+  const disc  = document.getElementById('set-sb-disconnect');
+  const tools = document.getElementById('set-sb-tools');
+  const stat  = document.getElementById('set-sb-status');
+  const on    = hasSupabase();
+  fillSetupSql();
+  if (urlEl) urlEl.value = sbUrl || '';
+  if (keyEl) keyEl.value = sbKey ? '••••••••' : '';
+  if (disc)  disc.style.display  = on ? '' : 'none';
+  if (tools) tools.style.display = on ? '' : 'none';
+  if (stat) {
+    if (!on) { stat.innerHTML = ''; return; }
+    const live = rtConnected();
+    const c = live ? { bg:'#e8f5e9', bd:'#a5d6a7', fg:'#2e7d32' } : { bg:'#fff8e1', bd:'#ffe082', fg:'#b26a00' };
+    stat.innerHTML = '<div style="background:' + c.bg + ';border:1.5px solid ' + c.bd + ';border-radius:8px;padding:8px 12px;font-size:12px;color:' + c.fg + ';font-weight:600">'
+      + (live ? '⚡ Realtime ทำงานอยู่ — ไม่ต้อง polling' : '⏳ เชื่อมต่อแล้ว แต่ Realtime ยังไม่ติด (ใช้การดึงข้อมูลรอบ 20 วิ ชั่วคราว)')
+      + '</div>';
+  }
+}
+
+async function adminConnectSupabase() {
+  const urlEl = document.getElementById('set-sb-url');
+  const keyEl = document.getElementById('set-sb-key');
+  const errEl = document.getElementById('set-sb-err');
+  const url = normalizeSbUrl(urlEl.value);
+  let key = (keyEl.value || '').trim();
+  if (key === '••••••••') key = sbKey;
+  errEl.textContent = '';
+  if (!url || !key) { errEl.textContent = 'กรุณาใส่ Project URL และ anon key'; return; }
+
+  const btn = document.getElementById('set-sb-btn');
+  const orig = btn ? btn.textContent : '';
+  if (btn) { btn.textContent = '⏳ กำลังเชื่อมต่อ…'; btn.disabled = true; }
+  try {
+    const data = await sbTryConnect(url, key);
+    // ถ้าฐานข้อมูลยังว่าง ให้ส่งข้อมูลในเครื่องขึ้นไปตั้งต้น
+    const empty = !data || !Array.isArray(data.documents) || data.documents.length === 0;
+    cloudReady = true;
+    if (data) mergeCloudData(data);
+    if (empty) await syncNow(false);
+
+    rtDisconnect(); rtConnect();
+    startAutoPull();
+    refreshSupabasePanel();
+    updateCloudAuthBadge();
+    setSyncBadge('ok', 'ซิงค์แล้ว');
+    refreshUIFromLocal();
+    toast('เชื่อมต่อ Supabase สำเร็จ ⚡ — เลิกใช้ JSONBin แล้ว ไม่กินโควต้าอีก', 'success');
+    setTimeout(refreshSupabasePanel, 1500);   // อัปเดตสถานะ Realtime หลัง WebSocket ติด
+  } catch (e) {
+    const m = (e.message || String(e));
+    errEl.innerHTML = 'เชื่อมต่อไม่ได้: ' + m
+      + (/app_state|404|42P01/.test(m) ? '<br>ยังไม่ได้สร้างตาราง — เปิด "SQL ตั้งตาราง" ด้านบนแล้วรันใน Supabase ก่อน' : '');
+  } finally {
+    if (btn) { btn.textContent = orig; btn.disabled = false; }
+  }
+}
+
+function adminDisconnectSupabase() {
+  if (!confirm('ยกเลิกการเชื่อมต่อ Supabase ใช่ไหม? (ข้อมูลในเครื่องยังอยู่ครบ)')) return;
+  rtDisconnect();
+  sbUrl = ''; sbKey = ''; sbRev = 0;
+  localStorage.removeItem(LS_SBURL); localStorage.removeItem(LS_SBKEY);
+  startAutoPull();
+  refreshSupabasePanel();
+  updateCloudAuthBadge();
+  toast('ยกเลิกการเชื่อมต่อ Supabase แล้ว', 'info');
+}
+
+// ── ย้ายข้อมูลจาก JSONBin เข้า Supabase ครั้งเดียว ──
+async function migrateFromJsonbin() {
+  if (!hasSupabase()) { toast('ต้องเชื่อมต่อ Supabase ก่อน', 'error'); return; }
+  if (!cloudBin || !cloudKey) { toast('ไม่พบค่า JSONBin เดิมในเครื่องนี้', 'error'); return; }
+  if (!confirm('ดึงข้อมูลทั้งหมดจาก JSONBin แล้วรวมเข้า Supabase ใช่ไหม?\n(เป็นการรวมข้อมูล ไม่ลบของเดิม)')) return;
+
+  const btn = document.querySelector('#set-sb-tools .btn-primary');
+  const orig = btn ? btn.textContent : '';
+  if (btn) { btn.textContent = '⏳ กำลังย้ายข้อมูล…'; btn.disabled = true; }
+  try {
+    const r = await fetch('https://api.jsonbin.io/v3/b/' + cloudBin + '/latest?meta=false', {
+      headers: jbGetHeaders(), cache: 'no-store'
+    });
+    if (!r.ok) throw new Error('อ่าน JSONBin ไม่ได้: HTTP ' + r.status);
+    const json = await r.json();
+    const old = (json && typeof json === 'object' && 'record' in json) ? json.record : json;
+    if (!old) throw new Error('ไม่มีข้อมูลใน JSONBin');
+
+    mergeCloudData(old);                 // รวมเข้าเครื่องก่อน
+    cloudReady = true;
+    const ok = await syncNow(false);      // แล้วดันขึ้น Supabase
+    refreshUIFromLocal();
+    if (ok) {
+      const n = Array.isArray(old.documents) ? old.documents.length : 0;
+      toast('ย้ายข้อมูลสำเร็จ — ' + n + ' รายการจาก JSONBin อยู่บน Supabase แล้ว', 'success');
+    } else {
+      toast('ย้ายข้อมูลแล้วแต่ยังบันทึกขึ้น Supabase ไม่สำเร็จ — ลองกดบันทึกอีกครั้ง', 'warning');
+    }
+  } catch (e) {
+    toast('ย้ายข้อมูลไม่สำเร็จ: ' + (e.message || String(e)), 'error');
+  } finally {
+    if (btn) { btn.textContent = orig; btn.disabled = false; }
+  }
+}
+
 function downloadBakedFile() {
-  if (!cloudBin || !cloudKey) { toast('ยังไม่ได้เชื่อมต่อ Cloud', 'error'); return; }
+  if (!hasCloud()) { toast('ยังไม่ได้เชื่อมต่อ Cloud', 'error'); return; }
   // อ่าน HTML ต้นฉบับแล้วแทนที่ค่า embedded credentials
   let html = document.documentElement.outerHTML;
-  // แทนที่บรรทัด EMBED_JB_BIN และ EMBED_JB_KEY
+  html = html.replace(
+    /const EMBED_SB_URL\s*=\s*'[^']*';/,
+    "const EMBED_SB_URL = " + JSON.stringify(sbUrl || '') + ";"
+  );
+  html = html.replace(
+    /const EMBED_SB_KEY\s*=\s*'[^']*';/,
+    "const EMBED_SB_KEY = " + JSON.stringify(sbKey || '') + ";"
+  );
   html = html.replace(
     /const EMBED_JB_BIN\s*=\s*'[^']*';/,
-    "const EMBED_JB_BIN = " + JSON.stringify(cloudBin) + ";"
+    "const EMBED_JB_BIN = " + JSON.stringify(cloudBin || '') + ";"
   );
   html = html.replace(
     /const EMBED_JB_KEY\s*=\s*'[^']*';/,
-    "const EMBED_JB_KEY = " + JSON.stringify(cloudKey) + ";"
+    "const EMBED_JB_KEY = " + JSON.stringify(cloudKey || '') + ";"
   );
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'ct-sournong-jsonbin.html';
+  a.download = hasSupabase() ? 'ct-sournong-supabase.html' : 'ct-sournong-jsonbin.html';
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   toast('ดาวน์โหลดไฟล์สำเร็จ', 'success');
@@ -3397,7 +3855,7 @@ async function adminConnectCloud() {
   errEl.textContent = '';
   if (!key) { errEl.textContent = '   รุณาใส่ Master Key'; return; }
 
-  const btn = document.querySelector('#settings-modal .btn-blue');
+  const btn = document.getElementById('set-jb-btn');
   btn.textContent = '⏳ กำลังเชื่อมต่อ…'; btn.disabled = true;
   try {
     if (!bin) {
@@ -3434,7 +3892,7 @@ async function adminConnectCloud() {
 
 async function forcePushToCloud() {
   if (!hasCloud()) { toast('ยังไม่ได้เชื่อมต่อ Cloud', 'error'); return; }
-  const btn = document.querySelector('#settings-modal .btn-primary');
+  const btn = document.querySelector('#set-fb-bake-box .btn-primary');
   const origText = btn ? btn.textContent : '';
   if (btn) { btn.textContent = '⏳ กำลัง Push…'; btn.disabled = true; }
   const data = localSnapshot();
@@ -3474,6 +3932,7 @@ function openSettingsModal() {
   const url = localStorage.getItem(LS_BG) || '';
   document.getElementById('set-bg-url').value = url;
   previewBg(url);
+  refreshSupabasePanel();
   openSettingsModalRefreshFb();
   document.getElementById('settings-modal').classList.add('open');
 }
@@ -3518,6 +3977,120 @@ function clearBg() {
 // ══════════════════════════════════════════════
 //  FIRST-TIME SETUP
 // ══════════════════════════════════════════════
+// SQL ที่ต้องรันครั้งเดียวใน Supabase → SQL Editor
+const SETUP_SQL = [
+  'create table if not exists public.app_state (',
+  '  id text primary key,',
+  '  data jsonb not null default \'{}\'::jsonb,',
+  '  rev bigint not null default 0,',
+  '  saved_at bigint,',
+  '  saved_by text,',
+  '  updated_at timestamptz not null default now()',
+  ');',
+  '',
+  'insert into public.app_state (id, data, rev)',
+  'values (\'main\', \'{}\'::jsonb, 0)',
+  'on conflict (id) do nothing;',
+  '',
+  '-- เปิดสิทธิ์ให้ anon key อ่าน/เขียนได้ (แอปนี้จัดการ login เอง)',
+  'alter table public.app_state enable row level security;',
+  'drop policy if exists app_state_read on public.app_state;',
+  'drop policy if exists app_state_insert on public.app_state;',
+  'drop policy if exists app_state_update on public.app_state;',
+  'create policy app_state_read   on public.app_state for select to anon using (true);',
+  'create policy app_state_insert on public.app_state for insert to anon with check (true);',
+  'create policy app_state_update on public.app_state for update to anon using (true) with check (true);',
+  '',
+  '-- เปิด Realtime เพื่อไม่ต้อง polling',
+  'alter table public.app_state replica identity full;',
+  'alter publication supabase_realtime add table public.app_state;'
+].join('\n');
+
+function fillSetupSql() {
+  ['fs-sql', 'set-sb-sql'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = SETUP_SQL;
+  });
+}
+function copySetupSql() {
+  navigator.clipboard.writeText(SETUP_SQL)
+    .then(() => toast('คัดลอก SQL แล้ว — วางใน Supabase SQL Editor', 'success'))
+    .catch(() => toast('คัดลอกไม่สำเร็จ — เลือกข้อความแล้วกด Ctrl+C', 'warning'));
+}
+
+function fsShowLegacy() {
+  document.getElementById('fs-sb-block').style.display = 'none';
+  document.getElementById('fs-jb-block').style.display = '';
+}
+function fsShowSupabase() {
+  document.getElementById('fs-jb-block').style.display = 'none';
+  document.getElementById('fs-sb-block').style.display = '';
+}
+
+// ทำให้ URL ถูกรูปแบบ — ผู้ใช้มักวางมาแบบมี / ต่อท้าย หรือลืม https://
+function normalizeSbUrl(v) {
+  let u = (v || '').trim().replace(/\/+$/, '');
+  if (!u) return '';
+  if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+  return u;
+}
+
+// ทดสอบการเชื่อมต่อ Supabase แล้วบันทึกค่า ถ้าไม่ผ่านจะคืนค่าเดิม
+async function sbTryConnect(url, key) {
+  const prevUrl = sbUrl, prevKey = sbKey, prevRev = sbRev;
+  sbUrl = url; sbKey = key;
+  try {
+    const data = await sbGet();
+    localStorage.setItem(LS_SBURL, sbUrl);
+    localStorage.setItem(LS_SBKEY, sbKey);
+    return data;
+  } catch (e) {
+    sbUrl = prevUrl; sbKey = prevKey; sbRev = prevRev;
+    throw e;
+  }
+}
+
+async function fsConnectSupabase() {
+  const url = normalizeSbUrl(document.getElementById('fs-sb-url').value);
+  const key = (document.getElementById('fs-sb-key').value || '').trim();
+  const err = document.getElementById('fs-sb-err');
+  err.textContent = '';
+  if (!url || !key) { err.textContent = 'กรุณาใส่ Project URL และ anon key'; return; }
+
+  const btn = document.getElementById('fs-sb-btn');
+  const lbl = btn.querySelector('span');
+  const orig = lbl ? lbl.textContent : '';
+  if (lbl) lbl.textContent = 'กำลังเชื่อมต่อ…';
+  btn.disabled = true;
+
+  try {
+    const data = await sbTryConnect(url, key);
+    if (data) mergeCloudData(data);
+
+    updateCloudAuthBadge();
+    setSyncBadge('ok', 'Cloud ✓');
+    document.getElementById('first-setup').style.display = 'none';
+    document.getElementById('auth').style.display = 'flex';
+
+    const session = loadSession();
+    if (session) {
+      const user = loadUsers().find(u => u.id === session.id);
+      if (user) {
+        currentUser = { id:user.id, username:user.username, isAdmin:!!user.isAdmin };
+        documents = loadDocs();
+        enterMain();
+        return;
+      }
+    }
+    setTimeout(() => { const el = document.getElementById('auth-user'); if (el) el.focus(); }, 80);
+  } catch (e) {
+    err.textContent = 'เชื่อมต่อไม่ได้: ' + (e.message || String(e));
+  } finally {
+    if (lbl) lbl.textContent = orig;
+    btn.disabled = false;
+  }
+}
+
 async function fsConnect() {
   let bin = (document.getElementById('fs-url').value || '').trim();
   const key = (document.getElementById('fs-key').value || '').trim();
@@ -3525,7 +4098,7 @@ async function fsConnect() {
   if (!key) { err.textContent = 'กรุณาใส่ Master Key'; return; }
   err.textContent = '';
 
-  const btn = document.querySelector('#first-setup .auth-btn-main');
+  const btn = document.getElementById('fs-jb-btn');
   const btnLbl = btn.querySelector('span');   // เปลี่ยนแค่ข้อความ คงไอคอนแผ่นดิสก์ไว้
   if (btnLbl) btnLbl.textContent = 'กำลังเชื่อมต่อ…';
   btn.disabled = true;
