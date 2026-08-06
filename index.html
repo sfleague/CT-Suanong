@@ -596,6 +596,35 @@
 </head>
 <body>
 
+<!-- FIRST-TIME SETUP (auto-shows when no JSONBin credentials saved) -->
+<div id="first-setup">
+  <div class="fs-box">
+    <div class="fs-icon">☁️</div>
+    <h2>ตั้งค่า JSONBin</h2>
+    <!-- hint: มี key แต่ไม่มี bin (เบราว์เซอร์ใหม่) -->
+    <div id="fs-setup-hint" style="display:none;background:#fff8e1;border:1.5px solid #ffe082;border-radius:8px;padding:10px 14px;font-size:12.5px;color:#795548;margin-bottom:16px;line-height:1.7;text-align:left">
+      🔑 พบ Key แล้ว — กรุณาใส่ <b>Bin ID</b> จากเครื่องเดิม<br>
+      <span style="color:#aaa">เปิดแอปบนเครื่องเดิม → ⚙️ ตั้งค่า → Cloud Storage → คัดลอก Bin ID</span>
+    </div>
+    <!-- hint: ยังไม่มีอะไรเลย (ครั้งแรก) -->
+    <p id="fs-setup-new" class="fs-sub">กรอก Master Key จาก <a href="https://jsonbin.io" target="_blank" style="color:#2980b9">jsonbin.io</a> ครั้งเดียว<br>เว้น Bin ID ว่างไว้เพื่อสร้าง Bin ใหม่อัตโนมัติ</p>
+    <div class="fs-field">
+      <label>Bin ID <span style="font-weight:400;color:#aaa">(เว้นว่างเพื่อสร้างใหม่)</span></label>
+      <input id="fs-url" class="auth-input" type="text"
+        placeholder="66xxxxxxxxxxxxxxxxxxxxxx"
+        autocomplete="off" style="margin-bottom:0">
+    </div>
+    <div class="fs-field">
+      <label>Master Key <span style="font-weight:700;color:#e74c3c">*</span></label>
+      <input id="fs-key" class="auth-input" type="password"
+        placeholder="$2a$10$…"
+        autocomplete="off" style="margin-bottom:0">
+    </div>
+    <div class="auth-err" id="fs-err" style="text-align:left;margin:4px 0 10px"></div>
+    <button class="auth-btn auth-btn-main" onclick="fsConnect()"><svg class="ico-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg><span>บันทึกและเชื่อมต่อ</span></button>
+  </div>
+</div>
+
 <!-- AUTH -->
 <div id="auth" class="auth-wrap">
   <div class="auth-box">
@@ -672,7 +701,7 @@
       </div>
       <hr class="uc-section-divider">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;cursor:pointer" onclick="toggleUCFlight()">
-        <div style="font-size:11px;font-weight:700;color:#e67e22;text-transform:uppercase;letter-spacing:.5px">✈ ข้อ  ูลไฟลท์ (ไม่บังคับ)</div>
+        <div style="font-size:11px;font-weight:700;color:#e67e22;text-transform:uppercase;letter-spacing:.5px">✈ ข้อมูลไฟลท์ (ไม่บังคับ)</div>
         <span id="uc-flight-toggle" style="font-size:12px;color:#e67e22;font-weight:700">▼ ขยาย</span>
       </div>
       <div id="uc-flight-section" style="display:none">
@@ -1030,24 +1059,42 @@
         <button class="btn btn-primary btn-sm" onclick="saveBg()"><svg class="ico-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg><span>บันทึกพื้นหลัง</span></button>
       </div>
 
-      <!-- ── Neon Postgres ── -->
+      <!-- ── JSONBin ── -->
       <hr style="border:none;border-top:1.5px dashed #e8e8e8;margin:0">
       <div>
-        <div style="font-size:13px;font-weight:700;color:#1b2a4a;margin-bottom:10px">🐘 Cloud Storage — Neon Postgres</div>
+        <div style="font-size:13px;font-weight:700;color:#1b2a4a;margin-bottom:10px">☁️ Cloud Storage — JSONBin</div>
         <div id="set-fb-status" style="margin-bottom:10px"></div>
         <div style="display:flex;flex-direction:column;gap:10px">
-          <div style="background:#f6f8fa;border:1.5px solid #e8e8e8;border-radius:8px;padding:10px 14px;font-size:12px;color:#5a6472;line-height:1.7">
-            ข้อมูลถูกเก็บในฐานข้อมูล Neon Postgres ผ่าน API ของเว็บนี้ (<code>/api/snapshot</code>)<br>
-            ไม่ต้องกรอก Key ในเบราว์เซอร์อีก — รหัสเชื่อมต่อฐานข้อมูลอยู่ที่เซิร์ฟเวอร์เท่านั้น
+          <div>
+            <label class="field-label">Bin ID <span style="font-weight:400;color:#aaa">(เว้นว่างเพื่อสร้างใหม่)</span></label>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input id="set-fb-url" class="field-input" type="text"
+                placeholder="66xxxxxxxxxxxxxxxxxxxxxx" autocomplete="off" style="flex:1">
+              <button class="btn btn-outline btn-sm" title="คัดลอก Bin ID" onclick="copyBinId()" style="flex-shrink:0;white-space:nowrap">📋 คัดลอก</button>
+            </div>
+            <div id="set-bin-copy-ok" style="display:none;font-size:11px;color:#2e7d32;margin-top:3px">✅ คัดลอกแล้ว — นำไปใส่บนเครื่องใหม่ได้เลย</div>
+          </div>
+          <div>
+            <label class="field-label">Master Key</label>
+            <input id="set-fb-key" class="field-input key-input" type="password"
+              placeholder="$2a$10$…" autocomplete="off">
+            <div style="font-size:11px;color:#aaa;margin-top:4px">สมัครฟรีที่ <a href="https://jsonbin.io" target="_blank">jsonbin.io</a> แล้วคัดลอก Master Key จาก Account Settings</div>
           </div>
           <div class="auth-err" id="set-fb-err" style="text-align:left"></div>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <button class="btn btn-primary btn-sm" onclick="forcePushToCloud()" style="width:100%"><svg class="ico-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg><span>Push ข้อมูลในเครื่องนี้ขึ้นฐานข้อมูลทันที</span></button>
-            <button class="btn btn-outline btn-sm" onclick="pullFromCloud(true)" style="width:100%">⬇ ดึงข้อมูลล่าสุดจากฐานข้อมูล</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button id="set-fb-disconnect" class="btn btn-danger btn-sm" onclick="adminDisconnectCloud()" style="display:none">ยกเลิกการเชื่อมต่อ</button>
+            <button class="btn btn-blue btn-sm" onclick="adminConnectCloud()" style="min-width:140px">☁️      ื่อมต่อ JSONBin</button>
+          </div>
+          <div id="set-fb-bake-box" style="display:none;margin-top:8px;background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:10px 14px;font-size:12px;color:#2e7d32;line-height:1.6">
+            ✅ JSONBin เชื่อมต่อแล้ว — กดปุ่มด้านล่างเพื่อสร้างไฟล์ใหม่ที่<b>ฝัง JSONBin ไว้ในตัว</b><br>
+            ทุกเบราว์เซอร์ที่เปิดไฟล์นี้จะ<b>เชื่อมต่อ JSONBin อัตโนมัติ</b> โดยไม่ต้องตั้งค่าอีก
+            <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
+              <button class="btn btn-primary btn-sm" onclick="forcePushToCloud()" style="width:100%"><svg class="ico-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg><span>Push ข้อมูลในเครื่องนี้ขึ้น Cloud ทันที</span></button>
+              <button class="btn btn-success btn-sm" onclick="downloadBakedFile()" style="width:100%"><svg class="ico-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg><span>ดาวน์โหลดไฟล์ฝัง JSONBin (แจกจ่ายได้เลย)</span></button>
+            </div>
           </div>
         </div>
       </div>
-
 
     </div>
     <div class="modal-foot">
@@ -1161,13 +1208,27 @@ function clearAllProfiles() {
   renderProfilesList(); toast('ล้าง Profiles ทั้งหมดแล้ว','warning');
 }
 
-//  CLOUD — Neon Postgres ผ่าน API ของเว็บนี้เอง (/api/snapshot)
+//  CLOUD — JSONBin REST API
 // ══════════════════════════════════════════════
-// ไม่มี Master Key ฝังในหน้าเว็บอีกแล้ว — คีย์ฐานข้อมูลอยู่ฝั่งเซิร์ฟเวอร์ (DATABASE_URL)
+const LS_JBBIN  = 'jb_bin_v1';
+const LS_JBKEY  = 'jb_key_v1';
 const LS_CACHE  = 'parcel_cache_v2';
 const TTL_MS    = 7 * 24 * 60 * 60 * 1000; // 7 วัน
-const API_URL   = '/api/snapshot';
 
+// ╔═══════════════════════════════════════════════════════════════════
+// ║  ⚡ ใส่ค่า JSONBin ด้านล่าง แล้ว push ขึ้น GitHub ได้เลย        ║
+// ║  ทุกคนที่เปิด URL จะเชื่อมต่อ JSONBin อัตโนมัติทันที            ║
+// ╠══════════════════════════════════════════════════════════════════╣
+const EMBED_JB_BIN = '6a6b3941f5f4af5e29d56663';  // JSONBin Bin ID
+const EMBED_JB_KEY = '$2a$10$9CiVVjDORSuDvaiIwvp3NOYGtNLcS/kwI5BIHDYm8SSQyAqY7lb/i';  // JSONBin Master Key
+// ╚══════════════════════════════════════════════════════════════════╝
+
+let cloudBin = localStorage.getItem(LS_JBBIN) || EMBED_JB_BIN;
+let cloudKey = localStorage.getItem(LS_JBKEY) || EMBED_JB_KEY;
+
+// ถ้ามี embedded credentials ให้บันทึกลง localStorage ด้วยเพื่อให้ใช้ได้ต่อเนื่อง
+if (EMBED_JB_BIN && cloudBin) localStorage.setItem(LS_JBBIN, cloudBin);
+if (EMBED_JB_KEY && cloudKey) localStorage.setItem(LS_JBKEY, cloudKey);
 let syncTimer = null;
 let syncPending = false;
 // จนกว่าจะโหลดข้อมูลจาก cloud สำเร็จอย่างน้อย 1 ครั้ง ห้ามเขียนทับ cloud (กันข้อมูลหาย)
@@ -1175,13 +1236,14 @@ let cloudReady = false;
 let syncing    = false;   // ล็อกไม่ให้ save ซ้อนกัน (กัน race)
 let queuedSave = false;   // มีคำขอ save เข้ามาระหว่างกำลัง sync อยู่
 
-// Cloud พร้อมใช้เสมอ — ฐานข้อมูลผูกกับเซิร์ฟเวอร์ ไม่ต้องตั้งค่าในเบราว์เซอร์
-function hasCloud() { return true; }
+function hasCloud() { return !!(cloudBin && cloudKey); }
 // ── กัน cache ของเบราว์เซอร์/มือถือ/พร็อกซี ──
 // สาเหตุใหญ่ที่ "บางเครื่องเห็นข้อมูลเก่า" คือ GET ถูกตอบจาก cache ไม่ได้ยิงถึงเซิร์ฟเวอร์จริง
 // จึงต้องต่อ query กันซ้ำ + no-store + no-cache header ทุกครั้ง
-function dbGetUrl()  { return API_URL + '?_=' + Date.now() + '-' + Math.random().toString(36).slice(2,8); }
-function dbGetHeaders() { return { 'Cache-Control': 'no-cache, no-store, max-age=0', 'Pragma': 'no-cache' }; }
+function jbGetUrl()  { return 'https://api.jsonbin.io/v3/b/' + cloudBin + '/latest?meta=false&_=' + Date.now() + '-' + Math.random().toString(36).slice(2,8); }
+function jbPutUrl()  { return 'https://api.jsonbin.io/v3/b/' + cloudBin; }
+function jbHeaders() { return { 'Content-Type': 'application/json', 'X-Master-Key': cloudKey, 'X-Bin-Versioning': 'false' }; }
+function jbGetHeaders() { return { 'X-Master-Key': cloudKey, 'X-Bin-Meta': 'false', 'Cache-Control': 'no-cache, no-store, max-age=0', 'Pragma': 'no-cache' }; }
 
 let lastSyncAt = 0;   // เวลาที่ติดต่อ Cloud ได้สำเร็จครั้งล่าสุด
 function setSyncBadge(state, text) {
@@ -1203,17 +1265,17 @@ let lastCloudGetOk = false; // GET ล่าสุดสำเร็จหรื
 async function cloudGet() {
   if (!hasCloud()) { lastCloudGetOk = false; return null; }
   try {
-    const r = await fetch(dbGetUrl(), { headers: dbGetHeaders(), cache: 'no-store' });
+    const r = await fetch(jbGetUrl(), { headers: jbGetHeaders(), cache: 'no-store' });
     if (!r.ok) throw new Error('status ' + r.status);
     const json = await r.json();
     lastCloudGetOk = true;          // เชื่อมต่อสำเร็จ (แม้ record จะว่าง)
     lastSyncAt = Date.now();
-    // API ตอบเป็น { record: {...} } — รองรับทั้งแบบมีและไม่มี .record
+    // ถ้าปิด meta แล้ว JSONBin จะคืนข้อมูลตรง ๆ (ไม่มี .record) → รองรับทั้งสองแบบ
     const rec = (json && typeof json === 'object' && 'record' in json) ? (json.record || null) : (json || null);
     if (typeof observeSnapshotTs === 'function') observeSnapshotTs(rec); // ปรับนาฬิกาให้ตรงกับส่วนกลาง
     return rec;
   } catch(e) {
-    console.warn('neon get error', e);
+    console.warn('jsonbin get error', e);
     lastCloudGetOk = false;         // เชื่อมต่อไม่ได้ — ห้ามเปิด cloudReady
     return null;
   }
@@ -1239,41 +1301,23 @@ function deviceId() {
 }
 function sleep(ms) { return new Promise(res => setTimeout(res, ms)); }
 
-// เขียนขึ้น Neon แบบมีเงื่อนไข (conditional write ด้วยเลข rev)
-// ถ้าเซิร์ฟเวอร์ตอบ 409 = มีเครื่องอื่นเขียนแทรก → merge กับของล่าสุดแล้วลองใหม่
-async function cloudPutRaw(data, attempt) {
-  attempt = attempt || 0;
-  const baseRev = Number(data.rev) || 0;         // รุ่นที่เราอ่านมา
-  data.rev      = baseRev + 1;                   // เลขรุ่นข้อมูล เพิ่มขึ้นทุกครั้งที่เขียน
+async function cloudPutRaw(data) {
+  data.rev      = (Number(data.rev) || 0) + 1;   // เลขรุ่นข้อมูล เพิ่มขึ้นทุกครั้งที่เขียน
   data.savedAt  = nowTs();
   data.savedBy  = deviceId();
-  const r = await fetch(API_URL, {
+  const r = await fetch(jbPutUrl(), {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: jbHeaders(),
     cache: 'no-store',
-    body: JSON.stringify({ baseRev: baseRev, record: data })
+    body: JSON.stringify(data)
   });
-  if (r.status === 409) {
-    // ชนกัน — เอาของบนเซิร์ฟเวอร์มา merge แล้วเขียนใหม่ (ไม่มีข้อมูลหาย)
-    if (attempt >= 3) throw new Error('conflict');
-    const j = await r.json().catch(() => ({}));
-    const remote = (j && j.record) || null;
-    const merged = mergeSnapshots(remote, localSnapshot());
-    merged.rev = Number(remote && remote.rev) || 0;
-    applyMergedToLocal(merged);
-    const ok = await cloudPutRaw(merged, attempt + 1);
-    refreshUIFromLocal();
-    return ok;
-  }
   if (!r.ok) throw new Error('status ' + r.status);
-  const saved = await r.json().catch(() => null);
-  if (saved && saved.record) Object.assign(data, saved.record);
   localStorage.setItem(LS_CACHE, JSON.stringify(data));
   return true;
 }
 
 // ── กันการเขียนทับกันเมื่อ 2 เครื่องบันทึกพร้อมกัน (lost update) ──
-// ตอนนี้ Neon มี conditional write (rev) แล้ว แต่ยังตรวจย้อนหลังไว้อีกชั้นเพื่อความมั่นใจ
+// JSONBin ไม่มี conditional write จึงใช้วิธี "เขียนแล้วอ่านกลับมาตรวจ"
 // ถ้าของบน cloud ไม่ตรงกับที่เพิ่งเขียน = มีเครื่องอื่นเขียนทับ → merge แล้วเขียนใหม่
 async function verifyWrite(written, attempt) {
   attempt = attempt || 0;
@@ -1283,7 +1327,6 @@ async function verifyWrite(written, attempt) {
   if (!lastCloudGetOk) return false;
   if (snapFingerprint(back) === snapFingerprint(written)) return true;
   const merged = mergeSnapshots(back, localSnapshot());
-  merged.rev = Number(back && back.rev) || 0;   // ใช้ rev ของเซิร์ฟเวอร์เป็นฐาน
   applyMergedToLocal(merged);
   await cloudPutRaw(merged);
   refreshUIFromLocal();
@@ -1371,7 +1414,6 @@ async function syncNow(showToast) {
     const remote = await cloudGet();            // ดึงของล่าสุดบน cloud ก่อนเสมอ
     if (!lastCloudGetOk) throw new Error('cloud get failed'); // อ่านไม่ได้ → ห้ามเขียนทับ
     const merged = mergeSnapshots(remote, localSnapshot()); // รวมแบบ newest-wins + tombstones
-    merged.rev = Number(remote && remote.rev) || 0;         // ใช้ rev ของเซิร์ฟเวอร์เป็นฐานเสมอ
     applyMergedToLocal(merged);                 // อัปเดต local ให้ตรงกับผลรวม
     await cloudPutRaw(merged);                  // เขียนผลรวมกลับขึ้น cloud
     refreshUIFromLocal();                       // วาดจอใหม่ให้ตรงกับผลรวมทันที
@@ -1573,7 +1615,7 @@ function normDoc(doc) {
   return doc;
 }
 // ── ประทับ createdAt ให้ครบทุกรายการ โดย "ไม่ทำให้ลำดับเดิมเปลี้ยน" ──
-// ข้อมูลเก่าบ  งรายการไม่มี scannedAt และ id เป็นเลขรัน จึงหาเวลาที่ยิงไม่ได้
+// ข้อมูลเก่าบางรายการไม่มี scannedAt และ id เป็นเลขรัน จึงหาเวลาที่ยิงไม่ได้
 // วิธีแก้: ยืมเวลาจากรายการข้างเคียงในลำดับเดิม (เดินหน้า แล้วย้อนหลัง)
 // ค่านี้ถูกบันทึกลงข้อมูลจริง ทำให้ทุกเครื่องเห็นลำดับเดียวกันอย่างถาวร
 function stampEntryOrder(list) {
@@ -1763,7 +1805,7 @@ function mergeSnapshots(a, b) {
     }
   });
 
-  // documents: รวมตาม id — และถ้า id เดียวกันอยู่ทั้งสองฝั่ง ต้อง "  วมรายการภายใน" ไม่ใช่ทับทั้งชีท
+  // documents: รวมตาม id — และถ้า id เดียวกันอยู่ทั้งสองฝั่ง ต้อง "รวมรายการภายใน" ไม่ใช่ทับทั้งชีท
   const byId = new Map();
   const consider = doc => {
     if (!doc || doc.id == null) return;
@@ -1842,7 +1884,7 @@ function mergeSnapshots(a, b) {
     if (!cur || (Number(p.updatedAt)||0) >= (Number(cur.updatedAt)||0)) dimSeen.set(key, p);
   });
   const dimProfiles = [...dimSeen.values()]
-    //    ้าลบทีหลังการแก้ไขล่าสุด → ไม่เอากลับมา (ลบแล้วต้องหายจริง ไม่เด้งกลับตอนซิงค์)
+    // ถ้าลบทีหลังการแก้ไขล่าสุด → ไม่เอากลับมา (ลบแล้วต้องหายจริง ไม่เด้งกลับตอนซิงค์)
     .filter(p => { const delAt = dimTomb[[p.l,p.w,p.h].join('x')]; return !(delAt && delAt >= (Number(p.updatedAt)||0)); })
     .sort((x,y)=>(Number(y.updatedAt)||0)-(Number(x.updatedAt)||0));
 
@@ -2096,7 +2138,7 @@ function useDimProfile(id, prefix) {
   if (!target) { toast('เปิดจากหน้ากรอกข้อมูลเพื่อใช้ขนาดนี้','error'); return; }
   applyDimUse(target, true); storeDimUse(true);   // เลือกขนาดแล้ว = ต้องใส่ขนาดแน่นอน
   setDimInputs(target, p.l, p.w, p.h);
-  // ถ้ากำลังล็อคอยู่ ให้ล็อคเปลี่ยนตามขนาดที่เพ   ่งเลือก
+  // ถ้ากำลังล็อคอยู่ ให้ล็อคเปลี่ยนตามขนาดที่เพิ่งเลือก
   if (loadDimLock()) setDimLock(p);
   // เลื่อนโปรไฟล์ที่ใช้ล่าสุดขึ้นบนสุด
   const list = loadDimProfiles(); const i = list.findIndex(x => x.id === id);
@@ -2360,10 +2402,27 @@ async function tryAutoLogin() {
   const authStatusEl = document.getElementById('cloud-status-auth');
   if (authStatusEl) authStatusEl.innerHTML = '';
 
-  // ไม่มีขั้นตอนตั้งค่า Cloud อีกแล้ว — ฐานข้อมูลผูกกับเซิร์ฟเวอร์
-  const fs = document.getElementById('first-setup');
-  if (fs) fs.style.display = 'none';
-
+  // ถ้าไม่มี credentials ครบ → แสดงหน้าตั้งค่า
+  if (!hasCloud()) {
+    document.getElementById('first-setup').style.display = 'flex';
+    document.getElementById('auth').style.display = 'none';
+    // pre-fill ค่าที่ embed ไว้
+    if (EMBED_JB_BIN) document.getElementById('fs-url').value = EMBED_JB_BIN;
+    if (EMBED_JB_KEY) document.getElementById('fs-key').value = EMBED_JB_KEY;
+    if (!cloudBin && cloudKey) {
+      document.getElementById('fs-setup-hint').style.display = '';
+      document.getElementById('fs-setup-new').style.display  = 'none';
+      setTimeout(() => document.getElementById('fs-url').focus(), 80);
+    } else {
+      document.getElementById('fs-setup-hint').style.display = 'none';
+      document.getElementById('fs-setup-new').style.display  = '';
+      setTimeout(() => {
+        const el = document.getElementById(EMBED_JB_BIN ? 'fs-key' : 'fs-url');
+        if (el) el.focus();
+      }, 80);
+    }
+    return;
+  }
 
   // แสดงหน้า login โดยไม่มีสถานะคลาวน์
   const authEl = document.getElementById('auth');
@@ -2431,7 +2490,7 @@ function savePw() {
   const oldPw=document.getElementById('pw-old').value, newPw=document.getElementById('pw-new').value, confPw=document.getElementById('pw-confirm').value;
   const err=document.getElementById('pw-err');
   if (!oldPw)  { err.textContent='กรุณากรอกรหัสปัจจุบัน'; return; }
-  if (!newPw)  { err.textContent='กรุณากรอกรหัส   หม่'; return; }
+  if (!newPw)  { err.textContent='กรุณากรอกรหัสใหม่'; return; }
   if (newPw!==confPw) { err.textContent='รหัสใหม่ไม่ตรงกัน'; return; }
   const users=loadUsers(), idx=users.findIndex(u=>u.id===currentUser.id);
   if (idx===-1||users[idx].password!==oldPw) { err.textContent='รหัส  ัจจุบันไม่ถูกต้อง'; return; }
@@ -3291,13 +3350,87 @@ function loadBgSetting() {
 
 
 function openSettingsModalRefreshFb() {
-  const status = document.getElementById('set-fb-status');
-  const err    = document.getElementById('set-fb-err');
-  if (err) err.textContent = '';
-  if (status) status.innerHTML =
-    '<div style="background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:8px 12px;font-size:12px;color:#2e7d32;font-weight:600">✅ เชื่อมต่อ Neon Postgres แล้ว</div>';
+  const binEl   = document.getElementById('set-fb-url');
+  const keyEl   = document.getElementById('set-fb-key');
+  const discBtn = document.getElementById('set-fb-disconnect');
+  const status  = document.getElementById('set-fb-status');
+  const bakeBox = document.getElementById('set-fb-bake-box');
+  const connected = !!(cloudBin && cloudKey);
+  if (binEl)   binEl.value = cloudBin;
+  if (keyEl)   keyEl.value = cloudKey ? '••••••••' : '';
+  if (discBtn) discBtn.style.display = connected ? '' : 'none';
+  if (bakeBox) bakeBox.style.display = connected ? '' : 'none';
+  if (status)  status.innerHTML = connected
+    ? '<div style="background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:8px 12px;font-size:12px;color:#2e7d32;font-weight:600">✅ JSONBin เชื่อมต่อแล้ว</div>'
+    : '';
 }
 
+function downloadBakedFile() {
+  if (!cloudBin || !cloudKey) { toast('ยังไม่ได้เชื่อมต่อ Cloud', 'error'); return; }
+  // อ่าน HTML ต้นฉบับแล้วแทนที่ค่า embedded credentials
+  let html = document.documentElement.outerHTML;
+  // แทนที่บรรทัด EMBED_JB_BIN และ EMBED_JB_KEY
+  html = html.replace(
+    /const EMBED_JB_BIN\s*=\s*'[^']*';/,
+    "const EMBED_JB_BIN = " + JSON.stringify(cloudBin) + ";"
+  );
+  html = html.replace(
+    /const EMBED_JB_KEY\s*=\s*'[^']*';/,
+    "const EMBED_JB_KEY = " + JSON.stringify(cloudKey) + ";"
+  );
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ct-sournong-jsonbin.html';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast('ดาวน์โหลดไฟล์สำเร็จ', 'success');
+}
+
+async function adminConnectCloud() {
+  const binEl  = document.getElementById('set-fb-url');
+  const keyEl  = document.getElementById('set-fb-key');
+  const errEl  = document.getElementById('set-fb-err');
+  let bin      = (binEl.value || '').trim();
+  let key      = (keyEl.value || '').trim();
+  if (key === '••••••••') key = cloudKey;
+  errEl.textContent = '';
+  if (!key) { errEl.textContent = '   รุณาใส่ Master Key'; return; }
+
+  const btn = document.querySelector('#settings-modal .btn-blue');
+  btn.textContent = '⏳ กำลังเชื่อมต่อ…'; btn.disabled = true;
+  try {
+    if (!bin) {
+      // สร้าง Bin ใหม่อัตโนมัต  
+      const initData = localSnapshot();
+      const cr = await fetch('https://api.jsonbin.io/v3/b', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': key, 'X-Bin-Name': 'ct-sournong' },
+        body: JSON.stringify(initData)
+      });
+      if (!cr.ok) throw new Error('สร้าง Bin ไม่ได้: HTTP ' + cr.status + ' — ตรวจสอบ Master Key อีกครั้ง');
+      const cj = await cr.json();
+      bin = cj.metadata.id;
+    } else {
+      // ทดสอบการเชื่อมต่อกับ Bin ที่มีอยู่
+      const tr = await fetch('https://api.jsonbin.io/v3/b/' + bin + '/latest', {
+        headers: { 'X-Master-Key': key }
+      });
+      if (!tr.ok) throw new Error('เชื่อมต่อ Bin ไม่ได้: HTTP ' + tr.status + ' — ตรวจสอบ Bin ID และ Master Key');
+    }
+    cloudBin = bin; cloudKey = key;
+    localStorage.setItem(LS_JBBIN, cloudBin);
+    localStorage.setItem(LS_JBKEY, cloudKey);
+    openSettingsModalRefreshFb();
+    setSyncBadge('ok', 'ซิงค์แล้ว');
+    updateCloudAuthBadge();
+    toast('เชื่อมต่อ JSONBin สำเร็จ ✅ — Bin ID: ' + bin + ' — กด "ด   วน์โหลดไฟล์ฝัง" เพื่อแจกจ่าย');
+  } catch(e) {
+    errEl.textContent = 'เชื่อมต่อไม่ได้: ' + (e.message || String(e));
+  } finally {
+    if (btn) { btn.textContent = '☁️ เชื่อมต่อ JSONBin'; btn.disabled = false; }
+  }
+}
 
 async function forcePushToCloud() {
   if (!hasCloud()) { toast('ยังไม่ได้เชื่อมต่อ Cloud', 'error'); return; }
@@ -3314,6 +3447,28 @@ async function forcePushToCloud() {
   }
 }
 
+function copyBinId() {
+  if (!cloudBin) { toast('ยังไม่มี Bin ID', 'error'); return; }
+  navigator.clipboard.writeText(cloudBin).then(() => {
+    const ok = document.getElementById('set-bin-copy-ok');
+    if (ok) { ok.style.display = ''; setTimeout(() => ok.style.display = 'none', 3000); }
+  }).catch(() => {
+    // fallback
+    const el = document.getElementById('set-fb-url');
+    if (el) { el.select(); document.execCommand('copy'); }
+    toast('คัดลอก Bin ID แล้ว', 'success');
+  });
+}
+
+function adminDisconnectCloud() {
+  if (!confirm('ยกเลิกการเชื่อมต่อ JSONBin ใช่ไหม?')) return;
+  cloudBin = ''; cloudKey = '';
+  localStorage.removeItem(LS_JBBIN); localStorage.removeItem(LS_JBKEY);
+  openSettingsModalRefreshFb();
+  setSyncBadge('', '');
+  updateCloudAuthBadge();
+  toast('ยกเลิกการเชื่อมต่อ Cloud แล้ว', 'info');
+}
 
 function openSettingsModal() {
   const url = localStorage.getItem(LS_BG) || '';
@@ -3360,6 +3515,78 @@ function clearBg() {
 }
 
 
+// ══════════════════════════════════════════════
+//  FIRST-TIME SETUP
+// ══════════════════════════════════════════════
+async function fsConnect() {
+  let bin = (document.getElementById('fs-url').value || '').trim();
+  const key = (document.getElementById('fs-key').value || '').trim();
+  const err = document.getElementById('fs-err');
+  if (!key) { err.textContent = 'กรุณาใส่ Master Key'; return; }
+  err.textContent = '';
+
+  const btn = document.querySelector('#first-setup .auth-btn-main');
+  const btnLbl = btn.querySelector('span');   // เปลี่ยนแค่ข้อความ คงไอคอนแผ่นดิสก์ไว้
+  if (btnLbl) btnLbl.textContent = 'กำลังเชื่อมต่อ…';
+  btn.disabled = true;
+
+  try {
+    if (!bin) {
+      // สร้าง Bin ใหม่อัตโนมัติ
+      const initData = { users: [{id:1,username:'admin',password:'1234',isAdmin:true}], documents: [], bgUrl: '' };
+      const cr = await fetch('https://api.jsonbin.io/v3/b', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': key, 'X-Bin-Name': 'ct-sournong' },
+        body: JSON.stringify(initData)
+      });
+      if (!cr.ok) throw new Error('สร้าง Bin ไม่ได้: HTTP ' + cr.status + ' — ตรวจสอบ Master Key อีกครั้ง');
+      const cj = await cr.json();
+      bin = cj.metadata.id;
+    }
+
+    // ทดสอบการดึงข้อมูล
+    const r = await fetch('https://api.jsonbin.io/v3/b/' + bin + '/latest', {
+      headers: { 'X-Master-Key': key }
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status + ' — ตรวจสอบ Bin ID และ Master Key อีกครั้ง');
+
+    // บันทึกลง localStorage — ครั้งต่อไปจะเชื่อมต่ออัตโนมัติ
+    cloudBin = bin; cloudKey = key;
+    localStorage.setItem(LS_JBBIN, cloudBin);
+    localStorage.setItem(LS_JBKEY, cloudKey);
+
+    // ดึงข้อมูลทั้งหมดจาก JSONBin
+    const rj = await r.json();
+    const data = rj.record || null;
+    if (data) mergeCloudData(data);
+
+    updateCloudAuthBadge();
+    setSyncBadge('ok', 'Cloud ✓');
+
+    // ซ่อนหน้าตั้งค่า → แสดงหน้า login
+    document.getElementById('first-setup').style.display = 'none';
+    document.getElementById('auth').style.display = 'flex';
+
+    // ถ้ามี session อยู่แล้ว → เข้าระบบเลย
+    const session = loadSession();
+    if (session) {
+      const users = loadUsers();
+      const user = users.find(u => u.id === session.id);
+      if (user) {
+        currentUser = { id:user.id, username:user.username, isAdmin:!!user.isAdmin };
+        documents = loadDocs();
+        enterMain();
+        return;
+      }
+    }
+    setTimeout(() => { const el = document.getElementById('auth-user'); if (el) el.focus(); }, 80);
+  } catch(e) {
+    err.textContent = '  ชื่อมต่อไม่ได้: ' + (e.message || String(e));
+  } finally {
+    if (btnLbl) btnLbl.textContent = 'บันทึกและเชื่อมต่อ';
+    btn.disabled = false;
+  }
+}
 
 // ══════════════════════════════════════════════
 //  BOOT
