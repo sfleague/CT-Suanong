@@ -1051,7 +1051,9 @@
           <div style="display:flex;flex-direction:column;gap:8px">
             <button class="btn btn-primary btn-sm" onclick="forcePushToCloud()" style="width:100%"><svg class="ico-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg><span>Push ข้อมูลในเครื่องนี้ขึ้นฐานข้อมูลทันที</span></button>
             <button class="btn btn-outline btn-sm" onclick="pullFromCloud(true)" style="width:100%">⬇ ดึงข้อมูลล่าสุดจากฐานข้อมูล</button>
+            <button class="btn btn-outline btn-sm" onclick="checkCloudHealth()" style="width:100%">🩺 ตรวจสอบระบบ Cloud</button>
           </div>
+          <div id="cloud-health" style="font-size:12px;line-height:1.8;color:#5a6472"></div>
         </div>
       </div>
 
@@ -1473,6 +1475,38 @@ async function cloudProbeChanged() {
   } catch (e) {
     lastCloudGetOk = false;
     return null;                            // null = ติดต่อไม่ได้
+  }
+}
+
+// ── ตรวจสุขภาพระบบ Cloud (เรียก /api/health) ──
+// บอกได้ชัดว่าปัญหาอยู่ที่ตัวแปรลับ (DATABASE_URL) หรือที่การเชื่อมต่อฐานข้อมูล
+async function checkCloudHealth() {
+  const box = document.getElementById('cloud-health');
+  if (box) box.innerHTML = 'กำลังตรวจสอบ…';
+  const line = (label, val) => '<div><b style="color:#1b2a4a">' + label + ':</b> ' + val + '</div>';
+  try {
+    const r = await fetch('/api/health?_=' + Date.now(), { cache: 'no-store' });
+    const j = await r.json().catch(() => ({}));
+    if (!box) return j;
+    if (j.ok) {
+      const kb = j.sizeBytes ? (j.sizeBytes / 1024).toFixed(1) + ' KB' : '0 KB';
+      box.innerHTML =
+        '<div style="color:#2e7d32;font-weight:700">✅ ระบบ Cloud ทำงานปกติ</div>'
+        + line('ฐานข้อมูล', 'เชื่อมต่อสำเร็จ')
+        + line('ตาราง app_snapshot', j.tableExists ? 'พร้อมใช้งาน' : 'ยังไม่ถูกสร้าง (จะสร้างอัตโนมัติเมื่อบันทึกครั้งแรก)')
+        + line('เลขรุ่นข้อมูล (rev)', String(j.rev ?? 0))
+        + line('ขนาดข้อมูล', kb)
+        + line('อัปเดตล่าสุด', j.updatedAt ? new Date(j.updatedAt).toLocaleString('th-TH') : '—');
+    } else {
+      const hint = j.stage === 'env'
+        ? 'ยังไม่ได้ตั้งค่า <code>DATABASE_URL</code> — เพิ่มใน Environment Variables ของโปรเจกต์ แล้วรีเฟรช'
+        : 'เชื่อมต่อฐานข้อมูลไม่ได้: ' + (j.message || 'ไม่ทราบสาเหตุ');
+      box.innerHTML = '<div style="color:#c62828;font-weight:700">❌ ระบบ Cloud ยังใช้งานไม่ได้</div><div>' + hint + '</div>';
+    }
+    return j;
+  } catch (e) {
+    if (box) box.innerHTML = '<div style="color:#c62828;font-weight:700">❌ เรียก /api/health ไม่สำเร็จ</div><div>' + String(e) + '</div>';
+    return null;
   }
 }
 
@@ -2417,7 +2451,11 @@ function enterMain() {
   document.getElementById('h-username').textContent = '\uD83D\uDC64 ' + currentUser.username;
   document.getElementById('btn-users').style.display = currentUser.isAdmin ? '' : 'none';
   document.getElementById('btn-site-settings').style.display = currentUser.isAdmin ? '' : 'none';
-  if (hasCloud()) setSyncBadge('ok', 'Cloud เชื่อมต่อ');
+  // แสดงสถานะจริงของการเชื่อมต่อ ไม่ใช่แสดง "เชื่อมต่อ" ไว้ล่วงหน้า
+  if (hasCloud()) {
+    if (lastCloudGetOk) setSyncBadge('ok', 'Cloud เชื่อมต่อ');
+    else setSyncBadge('error', 'ออฟไลน์ ⚠️');
+  }
   startIdleTimer();
   // ประหยัดโควต้า: ไม่เรียก pullFromCloud() ซ้ำที่นี่ — ผู้ที่เรียก enterMain() (login/auto-login)
   // ดึงข้อมูลเต็มก้อนไปแล้ว 1 ครั้ง หลังจากนั้นปล่อยให้ startAutoPull เช็คด้วยเลขรุ่นอย่างเดียว
@@ -3379,8 +3417,14 @@ function openSettingsModalRefreshFb() {
   const status = document.getElementById('set-fb-status');
   const err    = document.getElementById('set-fb-err');
   if (err) err.textContent = '';
-  if (status) status.innerHTML =
-    '<div style="background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:8px 12px;font-size:12px;color:#2e7d32;font-weight:600">✅ เชื่อมต่อ Neon Postgres แล้ว</div>';
+  if (!status) return;
+  // แสดงตามสถานะจริงที่ตรวจได้ล่าสุด ไม่ใช่ขึ้นเขียวไว้เสมอ
+  const ok = lastCloudGetOk;
+  status.innerHTML = ok
+    ? '<div style="background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:8px 12px;font-size:12px;color:#2e7d32;font-weight:600">✅ เชื่อมต่อ Neon Postgres แล้ว</div>'
+    : '<div style="background:#fde8e8;border:1.5px solid #f5b5b5;border-radius:8px;padding:8px 12px;font-size:12px;color:#c62828;font-weight:600">⚠️ ยังติดต่อฐานข้อมูลไม่ได้ — กด “ตรวจสอบระบบ Cloud” ด้านล่างเพื่อดูสาเหตุ</div>';
+  // ตรวจสุขภาพให้เลยทันทีที่เปิดหน้าตั้งค่า
+  checkCloudHealth();
 }
 
 
