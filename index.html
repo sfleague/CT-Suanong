@@ -658,7 +658,7 @@
         autocomplete="off" style="margin-bottom:0">
     </div>
     <div class="auth-err" id="fs-err" style="text-align:left;margin:4px 0 10px"></div>
-    <button id="fs-jb-btn" class="auth-btn auth-btn-main" onclick="fsConnect()"><svg class="ico-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg><span>บันทึกและเชื่อมต่อ</span></button>
+    <button id="fs-jb-btn" class="auth-btn auth-btn-main" onclick="fsConnect()"><svg class="ico-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg><span>บันทึกและเชื่  มต่อ</span></button>
       <div style="margin-top:12px;font-size:11.5px">
         <a href="#" onclick="event.preventDefault();fsShowSupabase()" style="color:#2980b9;font-weight:700">← กลับไปใช้ Supabase (แนะนำ)</a>
       </div>
@@ -1291,6 +1291,7 @@ function clearAllProfiles() {
 // ══════════════════════════════════════════════
 const LS_JBBIN  = 'jb_bin_v1';
 const LS_JBKEY  = 'jb_key_v1';
+const LS_SBSKIP = 'sb_skip_v1';   // ผู้ใช้เลือกใช้ JSONBin ต่อ — ไม่ต้องถามเรื่อง Supabase อีก
 const LS_SBURL  = 'sb_url_v1';
 const LS_SBKEY  = 'sb_key_v1';
 const LS_CACHE  = 'parcel_cache_v2';
@@ -1605,7 +1606,7 @@ async function cloudPutRaw(data) {
   return true;
 }
 
-// ── กันการเขียนทับกันเมื่อ 2 เครื่องบันทึกพร้อมกัน (lost update) ──
+// ── กั   การเขียนทับกันเมื่อ 2 เครื่องบันทึกพร้อมกัน (lost update) ──
 // JSONBin ไม่มี conditional write จึงใช้วิธี "เขียนแล้วอ่านกลับมาตรวจ"
 // ถ้าของบน cloud ไม่ตรงกับที่เพิ่งเขียน = มีเครื่องอื่นเขียนทับ → merge แล้วเขียนใหม่
 async function verifyWrite(written, attempt) {
@@ -1726,7 +1727,7 @@ async function syncNow(showToast) {
       if (!done) throw new Error('เขียนชนกันหลายครั้ง');
     } else {
       await cloudPutRaw(merged);                // เขียนผลรวมกลับขึ้น cloud
-      verifyWrite(merged).catch(() => {});      // JSONBin ไม่มี conditional write จึงต้องอ่านย้อนตรวจ
+      verifyWrite(merged).catch(() => {});      // JSONBin ไ   ่มี conditional write จึงต้องอ่านย้อนตรวจ
     }
 
     refreshUIFromLocal();                       // วาดจอใหม่ให้ตรงกับผลรวมทันที
@@ -2302,7 +2303,7 @@ function docTotals(doc) {
 // ══ DIMENSION PROFILE: บันทึกขนาดพร้อมชื่อ + ล็อคขนาด ══
 const LS_DIM_PRESETS  = 'dim_presets_v1';    // (เก่า) ขนาดที่บันทึกไว้แบบไม่มีชื่อ — ใช้ย้ายเข้าโปรไฟล์ครั้งแรก
 const LS_DIM_PROFILES = 'dim_profiles_v1';   // โปรไฟล์ขนาด { id, name, l, w, h, updatedAt }
-const LS_DIM_LOCK     = 'dim_lock_v1';       // ขนาดที่ล็อคไว้ — เติมอัตโนมัติทุกครั้ง
+const LS_DIM_LOCK     = 'dim_lock_v1';       // ขนาดที่ล   อคไว้ — เติมอัตโนมัติทุกครั้ง
 const LS_DIM_TOMB     = 'dim_tomb_v1';       // โปรไฟล์ที่ลบแล้ว { 'lxwxh': เวลาที่ลบ } — กัน Cloud ส่งกลับมาใหม่
 
 let dimProfileTarget = null;   // 'ep' | 'ee' | null — ป็อปอัปที่จะรับค่าขนาดที่เ  ือก
@@ -2394,7 +2395,7 @@ function toggleLockDimProfile(id) {
   else { setDimLock(p); toast('🔒 ล็อคขนาด '+dimSizeText(p)+' ซม. ไว้แล้ว','success'); }
   renderDimProfileList();
 }
-// ══ ติ๊กเลือก "ใส่ขนาด Dimension" — ถ้าไม่ติ๊ก กรอกน้ำหนักเสร็จกด Enter บันทึกได้เลย ══
+// ══ ติ๊กเลือก "ใส่ขนาด Dimension" —   ้าไม่ติ๊ก กรอกน้ำหนักเสร็จกด Enter บันทึกได้เลย ══
 const LS_DIM_USE = 'dim_use_v1';
 function loadDimUse() { return localStorage.getItem(LS_DIM_USE) === '1'; }
 function storeDimUse(on) { localStorage.setItem(LS_DIM_USE, on ? '1' : '0'); }
@@ -2422,7 +2423,7 @@ function toggleDimUse(prefix) {
   applyDimUse(prefix, on);
   if (!on) {
     setDimInputs(prefix, 0, 0, 0);
-    if (loadDimLock()) { setDimLock(null); toast('ปิดการใส่ขนาด — ปลดล็อคขนาดให้แล้ว','warning'); }
+    if (loadDimLock()) { setDimLock(null); toast('ปิดการใส่ข  าด — ปลดล็อคขนาดให้แล้ว','warning'); }
   } else if (loadDimLock()) {
     const lk = loadDimLock(); setDimInputs(prefix, lk.l, lk.w, lk.h);
   }
@@ -2634,7 +2635,7 @@ function nextId(arr) { return (!arr||arr.length===0) ? 1 : Math.max(...arr.map(x
 function uid() { return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,10); }
 // ── นาฬิกากันเครื่องตั้งเวลาเพี้ยน ──
 // ถ้าเครื่องหนึ่งตั้งเวลาช้ากว่าเครื่องอื่น การแก้ไขของมันจะ "แพ้" ตลอดและข้อมูลจะเพี้ยน
-// จึงจำเวลาสูงสุดที่เคยเห็น (ทั้งของตัวเองและที่ดึงมาจาก Cloud) แล้วออกเวลาใหม่ให้มากกว่าเสมอ
+// จึงจำเวลาสูงสุดที่เคยเห็น (ทั้งของตัวเองและที่ดึงมาจาก Cloud) แ   ้วออกเวลาใหม่ให้มากกว่าเสมอ
 const LS_TS_HW = 'parcel_ts_hw_v1';
 let _tsHigh = parseInt(localStorage.getItem(LS_TS_HW) || '0', 10) || 0;
 function observeTs(t) {
@@ -2739,8 +2740,8 @@ async function tryAutoLogin() {
   const authStatusEl = document.getElementById('cloud-status-auth');
   if (authStatusEl) authStatusEl.innerHTML = '';
 
-  // ถ้าไม่มี credentials ครบ → แสดงหน้าตั้งค่า
-  if (!hasCloud()) {
+  // แสดงหน้าตั้งค่าเมื่อ: ยังไม่มี cloud เลย หรือ ยังไม่ได้ตั้ง Supabase และยังไม่เคยเลือกใช้ JSONBin ต่อ
+  if (!hasCloud() || (!hasSupabase() && !localStorage.getItem(LS_SBSKIP))) {
     document.getElementById('first-setup').style.display = 'flex';
     document.getElementById('auth').style.display = 'none';
     fillSetupSql();
@@ -2772,7 +2773,7 @@ async function tryAutoLogin() {
   const authEl = document.getElementById('auth');
   authEl.style.display = 'flex';
 
-  // ตรวจสอบ session ก่อน (เพื่อ auto-login เร็ว ถ้ายังอยู่ในช่วง idle timeout)
+  // ตรวจสอบ session ก่อน (เพื่อ auto-login เร็ว ถ้าย   งอยู่ในช่วง idle timeout)
   const session = loadSession();
   const lastAct = parseInt(sessionStorage.getItem('parcel_last_active') || '0', 10);
   const sessionStillValid = session && (Date.now() - lastAct < IDLE_TIMEOUT_MS);
@@ -2906,7 +2907,7 @@ function genDocCode() {
   const n=documents.filter(d=>d.docCode&&d.docCode.startsWith('P'+t)).length+1;
   return 'P'+t+'-'+String(n).padStart(3,'0');
 }
-// ══════════════════════════════════════════════
+// ═════════════════════  ════════════════════════
 //  FLIGHT PROFILES — saved autocomplete records
 // ═══════  ══════════════════════════════════════
 const LS_FLIGHT_PROFILES = 'flight_profiles_v1';
@@ -3163,7 +3164,7 @@ function saveEntryPopup() {
   if (doc.maxWeight>0) {
     const cur=docTotals(doc).weight;
     if (cur+weight>doc.maxWeight) {
-      toast(`⛔ น้ำหนักเกิน! รวมจะเป็น ${(cur+weight).toFixed(2)} Kg เกินลิมิต ${doc.maxWeight} Kg`,'error');
+      toast(`⛔ น้ำหนักเกิน! รว  จะเป็น ${(cur+weight).toFixed(2)} Kg เกินลิมิต ${doc.maxWeight} Kg`,'error');
       return;
     }
   }
@@ -3515,7 +3516,7 @@ function renderList() {
   </div>`;
 }
 
-// ══════════════════════════════════════════════
+// ═══  ══════════════════════════════════════════
 //  UPLOAD + CREATE
 //    ═════════════════════════════════════════════
 const BAG_ALIASES=['bag no','bagno','bag_no','bag number','เลขถุง','หมายเลขถุง','bag'];
@@ -4043,6 +4044,7 @@ async function sbTryConnect(url, key) {
     const data = await sbGet();
     localStorage.setItem(LS_SBURL, sbUrl);
     localStorage.setItem(LS_SBKEY, sbKey);
+    localStorage.removeItem(LS_SBSKIP);
     return data;
   } catch (e) {
     sbUrl = prevUrl; sbKey = prevKey; sbRev = prevRev;
@@ -4127,6 +4129,7 @@ async function fsConnect() {
     cloudBin = bin; cloudKey = key;
     localStorage.setItem(LS_JBBIN, cloudBin);
     localStorage.setItem(LS_JBKEY, cloudKey);
+    localStorage.setItem(LS_SBSKIP, '1');   // เลือกใช้ JSONBin ต่อ — ไม่ถามเรื่อง Supabase อีก
 
     // ดึงข้อมูลทั้งหมดจาก JSONBin
     const rj = await r.json();
