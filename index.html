@@ -654,7 +654,8 @@
     <span class="h-user" id="h-username"></span>
     <span class="h-sp"></span>
     <div class="h-acts">
-
+      <!-- สถานะซิงค์ — คลิกเพื่อดึงข้อมูลล่าสุดจาก Cloud ทันที -->
+      <span id="h-sync-badge" style="cursor:pointer" title="คลิกเพื่อดึงข้อมูลล่าสุดจาก Cloud" onclick="pullFromCloud(true)"></span>
       <button class="btn btn-primary" onclick="createDocument()">+ สร้างชีทใหม่</button>
       <button class="btn btn-success" onclick="openUploadCreateModal()">📂 Upload</button>
       <button class="btn btn-ghost btn-sm" id="btn-users" onclick="openUsersModal()" style="display:none" title="จัดการผู้ใช้งาน"><span>👥</span></button>
@@ -991,7 +992,7 @@
 <!-- ══ PW ══ -->
 <div id="pw-modal" class="modal-overlay" onclick="if(event.target===this)closePwModal()">
   <div class="modal-box">
-    <div class="modal-head"><h2>เปลี่  นรหัสผ่าน</h2><button class="modal-close" onclick="closePwModal()">×</button></div>
+    <div class="modal-head"><h2>เปลี่  นร��ัสผ่าน</h2><button class="modal-close" onclick="closePwModal()">×</button></div>
     <div class="modal-body">
       <div style="display:flex;flex-direction:column;gap:14px">
         <div><label class="field-label">รหัสปัจจุบัน</label><input id="pw-old" type="password" class="field-input" placeholder="รหัสเดิม"></div>
@@ -1082,7 +1083,7 @@
           <div class="auth-err" id="set-fb-err" style="text-align:left"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button id="set-fb-disconnect" class="btn btn-danger btn-sm" onclick="adminDisconnectCloud()" style="display:none">ยกเลิกการเชื่อมต่อ</button>
-            <button class="btn btn-blue btn-sm" onclick="adminConnectCloud()" style="min-width:140px">☁️   ชื่อมต่อ JSONBin</button>
+            <button class="btn btn-blue btn-sm" onclick="adminConnectCloud()" style="min-width:140px">☁️   ���ื่อมต่อ JSONBin</button>
           </div>
           <div id="set-fb-bake-box" style="display:none;margin-top:8px;background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:10px 14px;font-size:12px;color:#2e7d32;line-height:1.6">
             ✅ JSONBin เชื่อมต่อแล้ว — กดปุ่มด้านล่างเพื่อสร้างไฟล์ใหม่ที่<b>ฝัง JSONBin ไว้ในตัว</b><br>
@@ -1106,7 +1107,7 @@
 <div id="profiles-modal" class="modal-overlay" onclick="if(event.target===this)closeProfilesModal()">
   <div class="modal-box">
     <div class="modal-head">
-      <div><h2>📋 จัดการ Flight Profiles</h2><div class="mh-sub">บันทึกข้อมูลไฟลท์ที่ใช้บ่อย — คลิก "ลบ" เพื่อลบรายการที่ไม่ต้องการ</div></div>
+      <div><h2>📋 จัดการ Flight Profiles</h2><div class="mh-sub">บันทึกข้อมูลไฟลท์ที่ใช้บ่อย — คลิก "ลบ" เพื่อลบราย��ารที่ไม่ต้องการ</div></div>
       <button class="modal-close" onclick="closeProfilesModal()">×</button>
     </div>
     <div id="profiles-modal-body" style="max-height:60vh;overflow-y:auto"></div>
@@ -1256,7 +1257,9 @@ async function cloudGet() {
     if (!r.ok) throw new Error('status ' + r.status);
     const json = await r.json();
     lastCloudGetOk = true;          // เชื่อมต่อสำเร็จ (แม้ record จะว่าง)
-    return json.record || null;
+    const rec = json.record || null;
+    if (typeof observeSnapshotTs === 'function') observeSnapshotTs(rec); // ปรับนาฬิกาให้ตรงกับส่วนกลาง
+    return rec;
   } catch(e) {
     console.warn('jsonbin get error', e);
     lastCloudGetOk = false;         // เชื่อมต่อไม่ได้ — ห้ามเปิด cloudReady
@@ -1328,7 +1331,7 @@ async function syncNow(showToast) {
     queuedSave = true;
     clearTimeout(syncTimer);
     syncTimer = setTimeout(() => { if (queuedSave) { queuedSave = false; syncNow(false); } }, 5000);
-    if (showToast) toast('ซิงค์ Cloud ไม่สำเร็จ — จะลองใหม่อัตโนมัติ (ข้อมูลยังอยู่ในเครื่อง)', 'warning');
+    if (showToast) toast('ซิงค์ Cloud ไม่สำเร็จ — จะลองใหม่อั��โนมัติ (ข้อมูลยังอยู่ในเครื่อง)', 'warning');
     return false;
   }
 }
@@ -1350,6 +1353,70 @@ function scheduleSave() {
   }, 800);
 }
 
+
+// ═══ AUTO-PULL — ดึงข้อมูลล่าสุดจาก Cloud อัตโนมัติ ═══
+// เดิม: ดึงแค่ตอน login / รีเฟรชหน้า → แต่ละเครื่องจึงเห็นยอดไม่เท่ากันจนกว่าจะรีเฟรช
+// ใหม่: ดึงทุก 10 วินาที + ตอนกลับมาที่แท็บ + ตอนเน็ตกลับมา แล้ววาดหน้าจอใหม่ให้ตรงกันทุกเครื่อง
+const PULL_MS = 10000;
+let pullTimer = null, pulling = false;
+
+// ลายนิ้วมือของข้อมูล — ใช้เช็คว่าหลัง merge มีอะไรเปลี่ยนจริงไหม (ไม่วาดจอใหม่ถ้าไม่เปลี่ยน)
+function docsFingerprint() {
+  return (loadDocs() || []).map(d => {
+    const t = docTotals(d);
+    return [d.id, d.updatedAt || 0, (d.entries || []).length, t.shipment, t.weight.toFixed(2)].join(':');
+  }).join('|');
+}
+
+async function pullFromCloud(showToast) {
+  if (!hasCloud() || !currentUser) return false;
+  if (pulling || syncing) return false;
+  pulling = true;
+  try {
+    const remote = await cloudGet();
+    if (!lastCloudGetOk) {
+      setSyncBadge('error', 'ออฟไลน์ ⚠️');
+      if (showToast) toast('ดึงข้อมูลจาก Cloud ไม่ได้ — ตรวจสอบอินเทอร์เน็ต', 'warning');
+      return false;
+    }
+    const before = docsFingerprint();
+    if (remote) mergeCloudData(remote);
+    const after = docsFingerprint();
+    if (before !== after) {
+      documents = loadDocs();
+      renderList();
+      const cur = currentDocId ? getDocById(currentDocId) : null;
+      if (cur && document.getElementById('detail-popup') && document.getElementById('detail-popup').classList.contains('open')) {
+        const bagInp = document.getElementById('inp-bag');
+        const typing = bagInp && bagInp.value.trim() !== '';
+        if (!typing) refreshDetailPopup(cur);   // ไม่รบกวนถ้ากำลังพิมพ์ Bag No ค้างอยู่
+      }
+      scheduleSave();                            // ส่งของที่มีเฉพาะในเครื่องนี้ขึ้น Cloud ด้วย
+      if (!showToast) toast('อัปเดตข้อมูลล่าสุดจาก Cloud แล้ว', 'success');
+    }
+    markCloudReadyAndFlush();
+    setSyncBadge('ok', 'ซิงค์แล้ว');
+    if (showToast) toast('ข้อมูลตรงกับ Cloud แล้ว ☁️', 'success');
+    return true;
+  } finally {
+    pulling = false;
+  }
+}
+
+function startAutoPull() {
+  stopAutoPull();
+  if (!hasCloud()) return;
+  pullTimer = setInterval(() => { if (document.visibilityState !== 'hidden') pullFromCloud(false); }, PULL_MS);
+}
+function stopAutoPull() { if (pullTimer) { clearInterval(pullTimer); pullTimer = null; } }
+
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pullFromCloud(false); });
+window.addEventListener('focus',  () => pullFromCloud(false));
+window.addEventListener('online', () => pullFromCloud(false));
+// ปิดหน้า/รีเฟรช ระหว่างที่ยังมีของค้างไม่ได้ส่งขึ้น Cloud → เตือนก่อน (กันยอดหาย)
+window.addEventListener('beforeunload', (e) => {
+  if (hasCloud() && (syncPending || queuedSave || syncing)) { e.preventDefault(); e.returnValue = ''; }
+});
 
 function updateCloudAuthBadge() {
   const el = document.getElementById('cloud-status-auth');
@@ -1408,12 +1475,70 @@ function normDoc(doc) {
     const fromId = parseInt(String(doc.id || '').split('-')[0], 36);
     doc.createdAt = (isFinite(fromId) && fromId > 0) ? fromId : (Number(doc.updatedAt) || 0);
   }
+  // entryTomb = รายการ (Bag) ที่ถูกลบ { entryId: เวลาที่ลบ } — ทำให้การลบมีผลข้ามเครื่อง
+  if (!doc.entryTomb || typeof doc.entryTomb !== 'object') doc.entryTomb = {};
   if (Array.isArray(doc.entries)) doc.entries.forEach(e => {
-    if (e && e.id != null) e.id = String(e.id);
+    if (!e) return;
+    if (e.id != null) e.id = String(e.id);
     // ขนาด Dimension (CM) — ข้อมูลเก่าที่ไม่มีค่าจะถูกตั้งเป็น 0
-    if (e) { ['dimL','dimW','dimH'].forEach(k => { const n = parseFloat(e[k]); e[k] = (isFinite(n) && n > 0) ? n : 0; }); }
+    ['dimL','dimW','dimH'].forEach(k => { const n = parseFloat(e[k]); e[k] = (isFinite(n) && n > 0) ? n : 0; });
   });
+  if (Array.isArray(doc.entries)) {
+    stampEntryOrder(doc.entries);                 // ให้ทุกรายการมี createdAt ที่คงที่
+    doc.entries = sortEntriesStable(doc.entries); // ลำดับเหมือนกันทุกเครื่อง ไม่อิงลำดับใน array
+  }
   return doc;
+}
+// ── ประทับ createdAt ให้ครบทุกรายการ โดย "ไม่ทำให้ลำดับเดิมเปลี้ยน" ──
+// ข้อมูลเก่าบางรายการไม่มี scannedAt และ id เป็นเลขรัน จึงหาเวลาที่ยิงไม่ได้
+// วิธีแก้: ยืมเวลาจากรายการข้างเคียงในลำดับเดิม (เดินหน้า แล้วย้อนหลัง)
+// ค่านี้ถูกบันทึกลงข้อมูลจริง ทำให้ทุกเครื่องเห็นลำดับเดียวกันอย่างถาวร
+function stampEntryOrder(list) {
+  const n = list.length;
+  const key = list.map(e => (Number(e && e.createdAt) || 0) || entryBornAt(e));
+  for (let i = 0; i < n; i++) {                   // เดินหน้า: ยืมจากรายการก่อนหน้า
+    if (!key[i] && i > 0 && key[i - 1]) key[i] = key[i - 1] + 1;
+  }
+  for (let i = n - 2; i >= 0; i--) {              // ย้อนหลัง: ยืมจากรายการถัดไป
+    if (!key[i] && key[i + 1]) key[i] = key[i + 1] - 1;
+  }
+  for (let i = 0; i < n; i++) {
+    if (!list[i]) continue;
+    list[i].createdAt = key[i] || 0;
+    if (!list[i].updatedAt) list[i].updatedAt = list[i].createdAt;
+  }
+}
+// เวลาที่รายการถูกสร้าง — ใช้ scannedAt เป็นหลัก
+// id รูปแบบใหม่คือ base36 ของเวลา (เช่น "msgw9ydf-xxxx") แต่ข้อมูลเก่าเป็นเลขรัน (เช่น "212")
+// จึงยอมรับค่าจาก id เฉพาะเมื่อถอดออกมาแล้วเป็นเวลาที่สมเหตุสมผล (หลังปี 2001) เท่านั้น
+const TS_MIN_VALID = 1000000000000;   // ~ก.ย. 2001 (ms)
+function entryBornAt(e) {
+  if (!e) return 0;
+  const s = Date.parse(e.scannedAt || '');
+  if (isFinite(s) && s > 0) return s;
+  const head = String(e.id || '').split('-')[0];
+  if (/^[0-9a-z]+$/.test(head)) {
+    const fromId = parseInt(head, 36);
+    if (isFinite(fromId) && fromId >= TS_MIN_VALID) return fromId;
+  }
+  return 0;
+}
+// เรียงรายการแบบคงที่: ยิงก่อนอยู่บน — ถ้าเวลาเท่ากัน/ไม่มีเวลา ใช้ id ตัดสิน
+// (เลขรันเทียบแบบตัวเลข เพื่อให้ 9 มาก่อน 10 ไม่ใช่เรียงแบบตัวอักษร)
+function entrySortKey(e) { return (Number(e && e.createdAt) || 0) || entryBornAt(e); }
+function sortEntriesStable(list) {
+  return (Array.isArray(list) ? list.slice() : []).sort((a, b) => {
+    const ta = entrySortKey(a), tb = entrySortKey(b);
+    if (ta !== tb) {
+      if (ta === 0) return 1;          // ไม่มีเวลา → ไปท้ายสุด
+      if (tb === 0) return -1;
+      return ta - tb;
+    }
+    const ia = String((a && a.id) || ''), ib = String((b && b.id) || '');
+    const na = /^\d+$/.test(ia) ? Number(ia) : NaN, nb = /^\d+$/.test(ib) ? Number(ib) : NaN;
+    if (isFinite(na) && isFinite(nb) && na !== nb) return na - nb;
+    return ia.localeCompare(ib);
+  });
 }
 // ── ลำดับมาตรฐานของชีท: ใหม่สุดอยู่บนสุด (เหมือนกันทุกเครื่อง) ──
 // ใช้ createdAt เป็นหลัก ถ้าเท่ากันใช้ id เป็นตัวตัดสิน เพื่อให้ผลลัพธ์คงที่เสมอ
@@ -1427,9 +1552,9 @@ function sortDocsNewestFirst(list) {
 }
 function loadDocs()    { return sortDocsNewestFirst(safeJSON(localStorage.getItem(STORE_DOCS),  []).map(normDoc)); }
 function saveDocs(d)   {
-  // ประทับ updatedAt ให้เอกสารที่ยังไม่มี เพื่อให้ merge ทำงานถูกต้อง
+  // ประทับ updatedAt ใ��้เอกสารที่ยังไม่มี เพื่อให้ merge ทำงานถูกต้อง
   (d||[]).forEach(doc => { if (doc && !doc.updatedAt) doc.updatedAt = nowTs(); });
-  // เก็บลงเครื่องแบบเรียงแล้ว (ใหม่สุดอยู่บนสุด) เพื่อให้ทุกเครื่องเห็นลำดับเดียวกัน
+  // เก็บลงเครื่องแบบเรียงแล้ว (ใหม่สุดอยู่บนสุด) เพื่อให้ทุก���ครื่องเห็นลำดับเดียวกัน
   const sorted = sortDocsNewestFirst(d);
   if (Array.isArray(d)) d.length = 0, sorted.forEach(x => d.push(x));
   localStorage.setItem(STORE_DOCS,  JSON.stringify(sorted)); scheduleSave();
@@ -1490,7 +1615,60 @@ function stopIdleTimer() {
 }
 
 // ═══ MERGE ENGINE — รวมข้อมูล 2 ชุดแบบปลอดภัย ═══
-// กติกา: เอกสาร id ซ้ำ → ใช้อันที่ updatedAt ใหม่กว่า | ถ้าถูกลบ (tombstone) หลังแก้ไขล่าสุด → ลบทิ้ง
+// กติกา: เอกสาร id ซ้ำ → รวมรายการภายในทีละรายการ (ไม่ทับกันทั้งชีท)
+//        ข้อมูลหัวชีท (Gateway/Flight/…) ใช้ฝั่งที่ updatedAt ใหม่กว่า
+//        รายการ (Bag) ใช้ updatedAt ของแต่ละรายการ + เคารพ entryTomb (การลบ)
+//        Bag No ซ้ำกัน (2 เครื่องยิงใบเดียวกัน) → เก็บไว้ใบเดียว ไม่นับยอดซ้ำ
+function mergeTombMap(x, y) {
+  const out = {};
+  [x, y].forEach(t => {
+    if (t && typeof t === 'object') {
+      for (const k in t) { const ts = Number(t[k]) || 0; if (ts > (out[k] || 0)) out[k] = ts; }
+    }
+  });
+  return out;
+}
+function mergeEntryLists(listA, listB, tomb) {
+  const byId = new Map();
+  [...(Array.isArray(listA) ? listA : []), ...(Array.isArray(listB) ? listB : [])].forEach(e => {
+    if (!e || e.id == null) return;
+    const id = String(e.id);
+    const cur = byId.get(id);
+    if (!cur || (Number(e.updatedAt) || 0) >= (Number(cur.updatedAt) || 0)) byId.set(id, e);
+  });
+  // ตัดรายการที่ถูกลบออก (ลบทีหลังการแก้ไขล่าสุด → หายจริง ไม่เด้งกลับตอนซิงค์)
+  let list = [...byId.values()].filter(e => {
+    const delAt = tomb && tomb[String(e.id)];
+    return !(delAt && delAt >= (Number(e.updatedAt) || 0));
+  });
+  // กันยอดเบิ้ล: Bag No เดียวกันเก็บใบที่แก้ล่าสุด (ถ้าเท่ากันใช้ id ที่เล็กกว่า = ยิงก่อน)
+  const byBag = new Map();
+  list.forEach(e => {
+    const key = String(e.bagNo || '').trim().toUpperCase();
+    if (!key) { byBag.set('__nobag__' + e.id, e); return; }
+    const cur = byBag.get(key);
+    if (!cur) { byBag.set(key, e); return; }
+    const te = Number(e.updatedAt) || 0, tc = Number(cur.updatedAt) || 0;
+    if (te > tc || (te === tc && String(e.id) < String(cur.id))) byBag.set(key, e);
+  });
+  return sortEntriesStable([...byBag.values()]);
+}
+function mergeDocPair(x, y) {
+  const tx = Number(x.updatedAt) || 0, ty = Number(y.updatedAt) || 0;
+  const newer = ty >= tx ? y : x, older = ty >= tx ? x : y;
+  const tomb = mergeTombMap(x.entryTomb, y.entryTomb);
+  // ล้างประวัติการลบที่เก่าเกิน 30 วัน กันข้อมูลบวม
+  const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  for (const k in tomb) { if (tomb[k] < cutoff) delete tomb[k]; }
+  const out = { ...older, ...newer };        // ข้อมูลหัวชีทจากฝั่งที่ใหม่กว่า
+  out.entries   = mergeEntryLists(x.entries, y.entries, tomb);
+  out.entryTomb = tomb;
+  out.updatedAt = Math.max(tx, ty);
+  // createdAt ต้องคงที่ (ใช้จัดลำดับชีท) → ใช้ค่าที่เก่าที่สุดที่มีจริง
+  const cs = [Number(x.createdAt) || 0, Number(y.createdAt) || 0].filter(n => n > 0);
+  if (cs.length) out.createdAt = Math.min(...cs);
+  return out;
+}
 function mergeSnapshots(a, b) {
   a = a || {}; b = b || {};
 
@@ -1502,13 +1680,12 @@ function mergeSnapshots(a, b) {
     }
   });
 
-  // documents: รวมตาม id, newest-wins ด้วย updatedAt
+  // documents: รวมตาม id — และถ้า id เดียวกันอยู่ทั้งสองฝั่ง ต้อง "รวมรายการภายใน" ไม่ใช่ทับทั้งชีท
   const byId = new Map();
   const consider = doc => {
     if (!doc || doc.id == null) return;
     const cur = byId.get(doc.id);
-    const t = doc.updatedAt || 0;
-    if (!cur || t >= (cur.updatedAt || 0)) byId.set(doc.id, doc);
+    byId.set(doc.id, cur ? mergeDocPair(cur, doc) : doc);
   };
   (Array.isArray(a.documents) ? a.documents : []).map(normDoc).forEach(consider);
   (Array.isArray(b.documents) ? b.documents : []).map(normDoc).forEach(consider);
@@ -1711,7 +1888,7 @@ function updateDimProfile(id, l, w, h, name) {
   if (dimKey(old) !== dimKey(p)) markDimDeleted(old);   // ขนาดเดิมถือว่าถูกลบ
   clearDimDeleted(p);
   storeDimProfiles(list);
-  if (wasLocked) setDimLock(p);   // ถ้าขนาดนี้กำลังล็อคอยู่ ให้ล็อคตามขนาดใหม่
+  if (wasLocked) setDimLock(p);   // ถ้าขนาดนี้กำ���ังล็อคอ��ู่ ให้ล็อคตามขนาดใหม่
   return p;
 }
 function deleteDimProfile(id) {
@@ -1970,7 +2147,28 @@ function renderDimProfileList() {
 function nextId(arr) { return (!arr||arr.length===0) ? 1 : Math.max(...arr.map(x=>x.id||0))+1; }
 // Collision-proof unique id (timestamp + random) — ปลอดภัยข้ามหลายเครื่อง
 function uid() { return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,10); }
-function nowTs() { return Date.now(); }
+// ── นาฬิกากันเครื่องตั้งเวลาเพี้ยน ──
+// ถ้าเครื่องหนึ่งตั้งเวลาช้ากว่าเครื่องอื่น การแก้ไขของมันจะ "แพ้" ตลอดและข้อมูลจะเพี้ยน
+// จึงจำเวลาสูงสุดที่เคยเห็น (ทั้งของตัวเองและที่ดึงมาจาก Cloud) แล้วออกเวลาใหม่ให้มากกว่าเสมอ
+const LS_TS_HW = 'parcel_ts_hw_v1';
+let _tsHigh = parseInt(localStorage.getItem(LS_TS_HW) || '0', 10) || 0;
+function observeTs(t) {
+  t = Number(t) || 0;
+  if (t > _tsHigh) { _tsHigh = t; try { localStorage.setItem(LS_TS_HW, String(_tsHigh)); } catch {} }
+}
+function nowTs() { const t = Math.max(Date.now(), _tsHigh + 1); observeTs(t); return t; }
+// อ่านเวลาสูงสุดจากข้อมูลที่ดึงมาจาก Cloud เพื่อให้ทุกเครื่องอยู่บนไทม์ไลน��เดียวกัน
+function observeSnapshotTs(snap) {
+  if (!snap || typeof snap !== 'object') return;
+  (Array.isArray(snap.documents) ? snap.documents : []).forEach(d => {
+    if (!d) return;
+    observeTs(d.updatedAt);
+    (Array.isArray(d.entries) ? d.entries : []).forEach(e => e && observeTs(e.updatedAt));
+    if (d.entryTomb) for (const k in d.entryTomb) observeTs(d.entryTomb[k]);
+  });
+  if (snap.tombstones) for (const k in snap.tombstones) observeTs(snap.tombstones[k]);
+  if (snap.dimTombstones) for (const k in snap.dimTombstones) observeTs(snap.dimTombstones[k]);
+}
 // ประทับเวลาแก้ไขล่าสุดของเอกสาร (ใช้ตัดสิน conflict ตอน merge)
 function touchDoc(doc) { if (doc) doc.updatedAt = nowTs(); return doc; }
 
@@ -2015,12 +2213,15 @@ function enterMain() {
   document.getElementById('btn-site-settings').style.display = currentUser.isAdmin ? '' : 'none';
   if (hasCloud()) setSyncBadge('ok', 'Cloud เชื่อมต่อ');
   startIdleTimer();
+  startAutoPull();          // ดึงข้อมูลล่าสุดอัตโนมัติ ทุกเครื่องจะเห็นยอดเดียวกัน
+  pullFromCloud(false);
   renderList();
   toast('โหลดสำเร็จ — ยินดีต้อนรับ ' + currentUser.username, 'success');
 }
 
 function logout() {
   stopIdleTimer();
+  stopAutoPull();
   clearSession(); currentUser=null; documents=[]; currentDocId=null;
   document.getElementById('main').style.display = 'none';
   document.getElementById('auth').style.display = 'flex';
@@ -2128,7 +2329,7 @@ function savePw() {
   if (!newPw)  { err.textContent='กรุณากรอกรหัสใหม่'; return; }
   if (newPw!==confPw) { err.textContent='รหัสใหม่ไม่ตรงกัน'; return; }
   const users=loadUsers(), idx=users.findIndex(u=>u.id===currentUser.id);
-  if (idx===-1||users[idx].password!==oldPw) { err.textContent='รหัสปัจจุบันไม่ถูกต้อง'; return; }
+  if (idx===-1||users[idx].password!==oldPw) { err.textContent='รหัส��ัจจุบันไม่ถูกต้อง'; return; }
   users[idx].password=newPw; saveUsers(users); closePwModal(); toast('เปลี่ยนรหัสผ่านสำเร็จ', 'success');
 }
 
@@ -2199,7 +2400,7 @@ function genDocCode() {
 }
 // ══════════════════════════════════════════════
 //  FLIGHT PROFILES — saved autocomplete records
-// ══════════════════════════════════════════════
+// ═══════��══════════════════════════════════════
 const LS_FLIGHT_PROFILES = 'flight_profiles_v1';
 function loadFlightProfiles() {
   try { return JSON.parse(localStorage.getItem(LS_FLIGHT_PROFILES)||'[]'); } catch { return []; }
@@ -2282,7 +2483,7 @@ function confirmCreateDocument() {
   const maxWt=parseFloat((document.getElementById('cf-maxWeight')||{}).value)||0;
   const doc={id:uid(),docCode:genDocCode(),gateway:g('cf-gateway'),exportDate:gd('cf-exportDate'),
     shift:g('cf-shift'),flightNo:g('cf-flightNo'),flightTime:g('cf-flightTime'),destination:g('cf-destination'),
-    documentDate:gd('cf-documentDate'),carTag:g('cf-carTag'),mawb:g('cf-mawb'),remark:g('cf-remark'),maxWeight:maxWt,createdAt:Date.now(),updatedAt:nowTs(),entries:[]};
+    documentDate:gd('cf-documentDate'),carTag:g('cf-carTag'),mawb:g('cf-mawb'),remark:g('cf-remark'),maxWeight:maxWt,createdAt:nowTs(),updatedAt:nowTs(),entries:[]};
   saveFlightProfile(doc); documents.unshift(doc); saveDocs(documents); closeCreatePopup(); renderList(); openDetailPopup(doc.id); toast('สร้างชีท '+doc.docCode);
 }
 
@@ -2462,7 +2663,8 @@ function saveEntryPopup() {
   const {l:dimL,w:dimW,h:dimH}=dimUseOn('ep')?readDimInputs('ep'):{l:0,w:0,h:0};
   // ถ้าเปิดล็อคอยู่ → อัปเดตค่าที่ล็อคเป็นขนาดที่กรอกล่าสุด (ไม่สร้างโปรไฟล์อัตโนมัติ)
   if (loadDimLock()) setDimLock(dimL>0&&dimW>0&&dimH>0?{l:dimL,w:dimW,h:dimH}:null);
-  const entry={id:uid(),bagNo:entryBagNo,shipment,weight,dimL,dimW,dimH,scannedAt:new Date().toISOString()};
+  const _ts=nowTs();
+  const entry={id:uid(),bagNo:entryBagNo,shipment,weight,dimL,dimW,dimH,scannedAt:new Date().toISOString(),createdAt:_ts,updatedAt:_ts};
   if (!doc.entries) doc.entries=[];
   doc.entries.push(entry); touchDoc(doc); saveDocs(documents); refreshDetailPopup(doc); renderList();
   toast('บันทึก '+entryBagNo+' แล้ว', 'success'); closeEntryPopup(false);
@@ -2472,7 +2674,10 @@ function deleteEntry(docId,entryId) {
   const doc=getDocById(docId); if (!doc) return;
   const entry=(doc.entries||[]).find(e=>e.id===entryId); if (!entry) return;
   showConfirm('ยืนยันการลบ',`ลบ Bag No ${entry.bagNo} ใช่ไหม?`,'ไม่สามารถกู้คืนได้','🗑 ลบ',()=>{
-    doc.entries=(doc.entries||[]).filter(e=>e.id!==entryId);
+    doc.entries=(doc.entries||[]).filter(e=>String(e.id)!==String(entryId));
+    // บันทึกการลบระดับรายการ เพื่อไม่ให้ Cloud/เครื่องอื่นส่งรายการนี้กลับมาอีก
+    if (!doc.entryTomb || typeof doc.entryTomb!=='object') doc.entryTomb={};
+    doc.entryTomb[String(entryId)]=nowTs();
     touchDoc(doc); saveDocs(documents); refreshDetailPopup(doc); renderList();
     toast('ลบรายการแล้ว','warning');
   });
@@ -2512,7 +2717,7 @@ function saveEditEntry() {
     }
   }
   const {l:dimL,w:dimW,h:dimH}=dimUseOn('ee')?readDimInputs('ee'):{l:0,w:0,h:0};
-  doc.entries[idx]={...doc.entries[idx],bagNo,shipment,weight,dimL,dimW,dimH};
+  doc.entries[idx]={...doc.entries[idx],bagNo,shipment,weight,dimL,dimW,dimH,updatedAt:nowTs()};
   touchDoc(doc); saveDocs(documents); refreshDetailPopup(doc); renderList();
   toast('แก้ไข '+bagNo+' แล้ว', 'success');
   closeEditEntry();
@@ -2931,13 +3136,14 @@ function confirmUploadCreate() {
       const bag=ucBagIdx>=0?String(row[ucBagIdx]||'').trim():''; if (!bag||seen.has(bag)) return;
       const ship=parseFloat(ucShipIdx>=0?row[ucShipIdx]:1)||1, wt=parseFloat(ucWtIdx>=0?row[ucWtIdx]:0)||0;
       const dm=rowDims(row);
-      entries.push({id:uid(),bagNo:bag,shipment:ship,weight:wt,dimL:dm.dimL,dimW:dm.dimW,dimH:dm.dimH}); seen.add(bag);
+      const _et=nowTs();
+      entries.push({id:uid(),bagNo:bag,shipment:ship,weight:wt,dimL:dm.dimL,dimW:dm.dimW,dimH:dm.dimH,createdAt:_et,updatedAt:_et}); seen.add(bag);
     });
   }
   const maxWtUc=parseFloat((document.getElementById('uc-maxWeight')||{}).value)||0;
   const doc={id:uid(),docCode:genDocCode(),gateway:g('uc-gateway'),exportDate:gd('uc-exportDate'),
     shift:g('uc-shift'),flightNo:g('uc-flightNo'),flightTime:g('uc-flightTime'),destination:g('uc-destination'),
-    documentDate:gd('uc-documentDate'),carTag:g('uc-carTag'),mawb:g('uc-mawb'),remark:g('uc-remark'),maxWeight:maxWtUc,createdAt:Date.now(),updatedAt:nowTs(),entries};
+    documentDate:gd('uc-documentDate'),carTag:g('uc-carTag'),mawb:g('uc-mawb'),remark:g('uc-remark'),maxWeight:maxWtUc,createdAt:nowTs(),updatedAt:nowTs(),entries};
   saveFlightProfile(doc); documents.unshift(doc); saveDocs(documents); renderList(); closeUploadCreateModal(); openDetailPopup(doc.id);
   toast(entries.length>0?`\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e0a\u0e35\u0e17 ${doc.docCode} \u0e19\u0e33\u0e40\u0e02\u0e49\u0e32 ${entries.length} \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23`:'\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e0a\u0e35\u0e17 '+doc.docCode);
 }
