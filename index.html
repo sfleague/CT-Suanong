@@ -1237,27 +1237,41 @@ let syncing    = false;   // ล็อกไม่ให้ save ซ้อนก
 let queuedSave = false;   // มีคำขอ save เข้ามาระหว่างกำลัง sync อยู่
 
 function hasCloud() { return !!(cloudBin && cloudKey); }
-function jbGetUrl()  { return 'https://api.jsonbin.io/v3/b/' + cloudBin + '/latest'; }
+// ── กัน cache ของเบราว์เซอร์/มือถือ/พร็อกซี ──
+// สาเหตุใหญ่ที่ "บางเครื่องเห็นข้อมูลเก่า" คือ GET ถูกตอบจาก cache ไม่ได้ยิงถึงเซิร์ฟเวอร์จริง
+// จึงต้องต่อ query กันซ้ำ + no-store + no-cache header ทุกครั้ง
+function jbGetUrl()  { return 'https://api.jsonbin.io/v3/b/' + cloudBin + '/latest?meta=false&_=' + Date.now() + '-' + Math.random().toString(36).slice(2,8); }
 function jbPutUrl()  { return 'https://api.jsonbin.io/v3/b/' + cloudBin; }
-function jbHeaders() { return { 'Content-Type': 'application/json', 'X-Master-Key': cloudKey }; }
+function jbHeaders() { return { 'Content-Type': 'application/json', 'X-Master-Key': cloudKey, 'X-Bin-Versioning': 'false' }; }
+function jbGetHeaders() { return { 'X-Master-Key': cloudKey, 'X-Bin-Meta': 'false', 'Cache-Control': 'no-cache, no-store, max-age=0', 'Pragma': 'no-cache' }; }
 
+let lastSyncAt = 0;   // เวลาที่ติดต่อ Cloud ได้สำเร็จครั้งล่าสุด
 function setSyncBadge(state, text) {
   const el = document.getElementById('h-sync-badge');
   if (!el) return;
   if (!hasCloud()) { el.innerHTML = ''; return; }
   const cls = { ok:'sync-ok', saving:'sync-saving', error:'sync-error' }[state] || 'sync-ok';
-  el.innerHTML = `<span class="sync-badge ${cls}"><span class="sync-dot"></span>${text}</span>`;
+  // แสดงเวลาที่ซิงค์ล่าสุด เพื่อให้เห็นชัดว่าเครื่องนี้ข้อมูลสดหรือค้าง
+  let stamp = '';
+  if (state === 'ok' && lastSyncAt) {
+    const d = new Date(lastSyncAt);
+    const p = n => String(n).padStart(2, '0');
+    stamp = ' · ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+  }
+  el.innerHTML = `<span class="sync-badge ${cls}"><span class="sync-dot"></span>${text}${stamp}</span>`;
 }
 
 let lastCloudGetOk = false; // GET ล่าสุดสำเร็จหรือไม่ (แยกกรณี "เชื่อมต่อไม่ได้" ออกจาก "bin ว่าง")
 async function cloudGet() {
   if (!hasCloud()) { lastCloudGetOk = false; return null; }
   try {
-    const r = await fetch(jbGetUrl(), { headers: { 'X-Master-Key': cloudKey } });
+    const r = await fetch(jbGetUrl(), { headers: jbGetHeaders(), cache: 'no-store' });
     if (!r.ok) throw new Error('status ' + r.status);
     const json = await r.json();
     lastCloudGetOk = true;          // เชื่อมต่อสำเร็จ (แม้ record จะว่าง)
-    const rec = json.record || null;
+    lastSyncAt = Date.now();
+    // ถ้าปิด meta แล้ว JSONBin จะคืนข้อมูลตรง ๆ (ไม่มี .record) → รองรับทั้งสองแบบ
+    const rec = (json && typeof json === 'object' && 'record' in json) ? (json.record || null) : (json || null);
     if (typeof observeSnapshotTs === 'function') observeSnapshotTs(rec); // ปรับนาฬิกาให้ตรงกับส่วนกลาง
     return rec;
   } catch(e) {
@@ -1278,10 +1292,23 @@ function markCloudReadyAndFlush() {
 }
 
 // เขียนข้อมูลขึ้น cloud แบบดิบ (ใช้เฉพาะภายใน syncNow หลัง merge แล้วเ  ่านั้น)
+// รหัสเครื่อง — ใช้ดูว่าใครเขียนล่าสุด (ช่วยตรวจการเขียนทับพร้อมกัน)
+const LS_DEVICE = 'parcel_device_v1';
+function deviceId() {
+  let d = localStorage.getItem(LS_DEVICE);
+  if (!d) { d = Math.random().toString(36).slice(2,10); localStorage.setItem(LS_DEVICE, d); }
+  return d;
+}
+function sleep(ms) { return new Promise(res => setTimeout(res, ms)); }
+
 async function cloudPutRaw(data) {
+  data.rev      = (Number(data.rev) || 0) + 1;   // เลขรุ่นข้อมูล เพิ่มขึ้นทุกครั้งที่เขียน
+  data.savedAt  = nowTs();
+  data.savedBy  = deviceId();
   const r = await fetch(jbPutUrl(), {
     method: 'PUT',
     headers: jbHeaders(),
+    cache: 'no-store',
     body: JSON.stringify(data)
   });
   if (!r.ok) throw new Error('status ' + r.status);
@@ -1289,17 +1316,88 @@ async function cloudPutRaw(data) {
   return true;
 }
 
+// ── กันการเขียนทับกันเมื่อ 2 เครื่องบันทึกพร้อมกัน (lost update) ──
+// JSONBin ไม่มี conditional write จึงใช้วิธี "เขียนแล้วอ่านกลับมาตรวจ"
+// ถ้าของบน cloud ไม่ตรงกับที่เพิ่งเขียน = มีเครื่องอื่นเขียนทับ → merge แล้วเขียนใหม่
+async function verifyWrite(written, attempt) {
+  attempt = attempt || 0;
+  if (attempt > 2) return false;
+  await sleep(500 + Math.floor(Math.random() * 600));   // เว้นจังหวะแบบสุ่ม ลดการชนกันซ้ำ
+  const back = await cloudGet();
+  if (!lastCloudGetOk) return false;
+  if (snapFingerprint(back) === snapFingerprint(written)) return true;
+  const merged = mergeSnapshots(back, localSnapshot());
+  applyMergedToLocal(merged);
+  await cloudPutRaw(merged);
+  refreshUIFromLocal();
+  return verifyWrite(merged, attempt + 1);
+}
+
 // สร้าง snapshot ปัจจุบันจาก local
 function localSnapshot() {
   return {
-    users:          loadUsers(),
-    documents:      loadDocs(),
-    tombstones:     loadTombstones(),
-    bgUrl:          localStorage.getItem(LS_BG) || '',
-    flightProfiles: loadFlightProfiles(),
-    dimProfiles:    loadDimProfiles(),
-    dimTombstones:  loadDimTomb()
+    users:           loadUsers(),
+    userTombstones:  loadUserTomb(),
+    documents:       loadDocs(),
+    tombstones:      loadTombstones(),
+    bgUrl:           localStorage.getItem(LS_BG) || '',
+    bgUpdatedAt:     Number(localStorage.getItem(LS_BG_TS) || 0) || 0,
+    flightProfiles:  loadFlightProfiles(),
+    dimProfiles:     loadDimProfiles(),
+    dimTombstones:   loadDimTomb(),
+    rev:             Number(safeJSON(localStorage.getItem(LS_CACHE), {}).rev) || 0
   };
+}
+
+// ── ลายนิ้วมือของ snapshot (ใช้เทียบว่า "ข้อมูลเหมือนกันจริงไหม") ──
+// ต้องครอบคลุมทุกอย่างที่แสดงบนหน้าจอ ไม่ใช่แค่ยอดรวม มิฉะนั้นข้อมูลหัวชีท/ผู้ใช้จะไม่วาดใหม่
+const SNAP_HEAD_KEYS = ['docCode','gateway','exportDate','shift','flightNo','flightTime',
+                        'destination','documentDate','carTag','mawb','remark','createdAt'];
+function snapFingerprint(s) {
+  s = s || {};
+  const docs = (Array.isArray(s.documents) ? s.documents : []).slice()
+    .sort((a,b) => String(a && a.id).localeCompare(String(b && b.id)));
+  const dpart = docs.map(d => {
+    if (!d) return '';
+    const entries = Array.isArray(d.entries) ? d.entries : [];
+    let ship = 0, wt = 0;
+    entries.forEach(e => { ship += Number(e && e.shipment) || 0; wt += Number(e && e.weight) || 0; });
+    const rows = entries.slice()
+      .sort((x,y) => String(x && x.id).localeCompare(String(y && y.id)))
+      .map(e => [e.id, e.updatedAt||0, e.bagNo||'', e.shipment||0, e.weight||0, e.dimL||'', e.dimW||'', e.dimH||''].join('~'))
+      .join(';');
+    const head = SNAP_HEAD_KEYS.map(k => d[k] == null ? '' : String(d[k])).join(',');
+    return [d.id, d.updatedAt||0, entries.length, ship, wt.toFixed(2), head,
+            Object.keys(d.entryTomb||{}).length, rows].join(':');
+  }).join('|');
+  const upart = (Array.isArray(s.users) ? s.users : [])
+    .map(u => [u.id, u.username, u.password, u.isAdmin?1:0, u.updatedAt||0].join(':')).sort().join(',');
+  const dppart = (Array.isArray(s.dimProfiles) ? s.dimProfiles : [])
+    .map(p => [p.name||'', p.l, p.w, p.h, p.updatedAt||0].join(':')).sort().join(',');
+  const fppart = (Array.isArray(s.flightProfiles) ? s.flightProfiles : [])
+    .map(p => SNAP_HEAD_KEYS.map(k => p[k]||'').join(':')).sort().join(',');
+  return [dpart, upart, dppart, fppart,
+          Object.keys(s.tombstones||{}).sort().join(','),
+          Object.keys(s.userTombstones||{}).sort().join(','),
+          Object.keys(s.dimTombstones||{}).sort().join(','),
+          String(s.bgUrl||'')].join('#');
+}
+
+// วาดหน้าจอใหม่จากข้อมูลใน local (เรียกหลัง merge ทุกครั้งที่ข้อมูลเปลี่ยน)
+function refreshUIFromLocal() {
+  if (!currentUser) return;
+  documents = loadDocs();
+  if (typeof renderList === 'function') renderList();
+  const detail = document.getElementById('detail-popup');
+  const cur = currentDocId ? getDocById(currentDocId) : null;
+  if (cur && detail && detail.classList.contains('open')) {
+    const bagInp = document.getElementById('inp-bag');
+    const typing = bagInp && bagInp.value.trim() !== '';
+    if (!typing && typeof refreshDetailPopup === 'function') refreshDetailPopup(cur);
+  }
+  if (document.getElementById('users-modal')?.classList.contains('open') && typeof refreshUserList === 'function') refreshUserList();
+  if (document.getElementById('dim-profile-modal')?.classList.contains('open') && typeof renderDimProfileList === 'function') renderDimProfileList();
+  if (document.getElementById('profiles-modal')?.classList.contains('open') && typeof renderProfilesList === 'function') renderProfilesList();
 }
 
 // ═══ หัวใจของการกันข้อมูลหาย ═══
@@ -1314,9 +1412,13 @@ async function syncNow(showToast) {
   setSyncBadge('saving', 'กำลังบันทึก…');
   try {
     const remote = await cloudGet();            // ดึงของล่าสุดบน cloud ก่อนเสมอ
+    if (!lastCloudGetOk) throw new Error('cloud get failed'); // อ่านไม่ได้ → ห้ามเขียนทับ
     const merged = mergeSnapshots(remote, localSnapshot()); // รวมแบบ newest-wins + tombstones
     applyMergedToLocal(merged);                 // อัปเดต local ให้ตรงกับผลรวม
     await cloudPutRaw(merged);                  // เขียนผลรวมกลับขึ้น cloud
+    refreshUIFromLocal();                       // วาดจอใหม่ให้ตรงกับผลรวมทันที
+    notifyOtherTabs();                          // บอกแท็บ/หน้าต่างอื่นในเครื่องเดียวกัน
+    verifyWrite(merged).catch(() => {});        // ตรวจย้อนหลังว่าไม่มีใครเขียนทับ (ไม่บล็อก UI)
     setSyncBadge('ok', 'ซิงค์แล้ว');
     if (showToast) toast('บันทึกขึ้น Cloud สำเร็จ ☁️', 'success');
     // ถ้าระหว่างนั้นมีการแก้ไขเข้ามาอีก → sync ซ้ำอีกรอบ
@@ -1357,16 +1459,11 @@ function scheduleSave() {
 // ═══ AUTO-PULL — ดึงข้อมูลล่าสุดจาก Cloud อัตโนมัติ ═══
 // เดิม: ดึงแค่ตอน login / รีเฟรชหน้า → แต่ละเครื่องจึงเห็นยอดไม่เท่ากันจนกว่าจะรีเฟรช
 // ใหม่: ดึงทุก 10 วินาที + ตอนกลับมาที่แท็บ + ตอนเน็ตกลับมา แล้ววาดหน้าจอใหม่ให้ตรงกันทุกเครื่อง
-const PULL_MS = 10000;
+const PULL_MS = 5000;   // ดึงข้อมูลถี่ขึ้น ทุกเครื่องจึงเห็นยอดตรงกันเร็วขึ้น
 let pullTimer = null, pulling = false;
 
-// ลายนิ้วมือของข้อมูล — ใช้เช็คว่าหลัง merge มีอะไรเปลี่ยนจริงไหม (ไม่วาดจอใหม่ถ้าไม่เปลี่ยน)
-function docsFingerprint() {
-  return (loadDocs() || []).map(d => {
-    const t = docTotals(d);
-    return [d.id, d.updatedAt || 0, (d.entries || []).length, t.shipment, t.weight.toFixed(2)].join(':');
-  }).join('|');
-}
+// ลายนิ้วมือของข้อมูลในเครื่อง — ใช้เช็คว่าหลัง merge มีอะไรเปลี่ยนจริงไหม
+function docsFingerprint() { return snapFingerprint(localSnapshot()); }
 
 async function pullFromCloud(showToast) {
   if (!hasCloud() || !currentUser) return false;
@@ -1383,15 +1480,10 @@ async function pullFromCloud(showToast) {
     if (remote) mergeCloudData(remote);
     const after = docsFingerprint();
     if (before !== after) {
-      documents = loadDocs();
-      renderList();
-      const cur = currentDocId ? getDocById(currentDocId) : null;
-      if (cur && document.getElementById('detail-popup') && document.getElementById('detail-popup').classList.contains('open')) {
-        const bagInp = document.getElementById('inp-bag');
-        const typing = bagInp && bagInp.value.trim() !== '';
-        if (!typing) refreshDetailPopup(cur);   // ไม่รบกวนถ้ากำลังพิมพ์ Bag No ค้างอยู่
-      }
-      scheduleSave();                            // ส่งของที่มีเฉพาะในเครื่องนี้ขึ้น Cloud ด้วย
+      refreshUIFromLocal();
+      notifyOtherTabs();
+      // ถ้าในเครื่องนี้มีของที่ cloud ยังไม่มี ให้ส่งขึ้นด้วย (ไม่ใช่ทุกครั้งที่ cloud มีของใหม่)
+      if (snapFingerprint(remote) !== after) scheduleSave();
       if (!showToast) toast('อัปเดตข้อมูลล่าสุดจาก Cloud แล้ว', 'success');
     }
     markCloudReadyAndFlush();
@@ -1413,6 +1505,20 @@ function stopAutoPull() { if (pullTimer) { clearInterval(pullTimer); pullTimer =
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pullFromCloud(false); });
 window.addEventListener('focus',  () => pullFromCloud(false));
 window.addEventListener('online', () => pullFromCloud(false));
+
+// ── ซิงค์ข้ามแท็บ/หน้าต่างในเครื่องเดียวกัน (ไม่ต้องรอรอบ 5 วิ) ──
+let _bc = null;
+try { _bc = ('BroadcastChannel' in window) ? new BroadcastChannel('parcel_sync') : null; } catch { _bc = null; }
+function notifyOtherTabs() {
+  try { localStorage.setItem('parcel_ping_v1', String(Date.now())); } catch {}
+  if (_bc) { try { _bc.postMessage({ t: Date.now(), from: deviceId() }); } catch {} }
+}
+if (_bc) _bc.onmessage = () => { refreshUIFromLocal(); };
+// แท็บอื่นเขียน localStorage → วาดจอใหม่ทันที
+window.addEventListener('storage', (e) => {
+  if (!e || !e.key) return;
+  if ([STORE_DOCS, STORE_TOMB, STORE_USERS, 'parcel_ping_v1'].includes(e.key)) refreshUIFromLocal();
+});
 // ปิดหน้า/รีเฟรช ระหว่างที่ยังมีของค้างไม่ได้ส่งขึ้น Cloud → เตือนก่อน (กันยอดหาย)
 window.addEventListener('beforeunload', (e) => {
   if (hasCloud() && (syncPending || queuedSave || syncing)) { e.preventDefault(); e.returnValue = ''; }
@@ -1455,6 +1561,8 @@ async function retryCloudLoad() {
 //  STORAGE (localStorage + cloud)
 // ══════════════════════════════════════════════
 const STORE_USERS   = 'parcel_users_v1';
+const STORE_UTOMB   = 'parcel_user_tomb_v1'; // { userId: deletedAt } — ผู้ใช้ที่ถูกลบ ต้องไม่เด้งกลับจาก Cloud
+const LS_BG_TS      = 'site_bg_url_ts_v1';   // เวลาที่แก้พื้นหลังล่าสุด (ตัดสินตอน merge)
 const STORE_DOCS    = 'parcel_docs_v1';
 const STORE_TOMB    = 'parcel_tombstones_v1'; // { docId: deletedAt } — จำการลบเพื่อไม่ให้ข้อมูลกลับมา
 const STORE_SESSION = 'parcel_session_v1';
@@ -1462,8 +1570,25 @@ const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 นาที — logout อัต�
 
 function safeJSON(str, fb) { try { const v=JSON.parse(str); return v??fb; } catch { return fb; } }
 
-function loadUsers()   { return safeJSON(localStorage.getItem(STORE_USERS), []); }
-function saveUsers(u)  { localStorage.setItem(STORE_USERS, JSON.stringify(u)); scheduleSave(); }
+function loadUsers()    { return safeJSON(localStorage.getItem(STORE_USERS), []); }
+function loadUserTomb() { const o = safeJSON(localStorage.getItem(STORE_UTOMB), {}); return (o && typeof o === 'object') ? o : {}; }
+function saveUserTomb(t){ localStorage.setItem(STORE_UTOMB, JSON.stringify(t || {})); }
+// ประทับเวลาแก้ไขให้ผู้ใช้ + จำการลบ เพื่อให้การเพิ่ม/แก้/ลบผู้ใช้ ซิงค์ตรงกันทุกเครื่อง
+function saveUsers(u) {
+  const prev = loadUsers();
+  const prevById = new Map(prev.map(x => [String(x.id), x]));
+  const arr = (Array.isArray(u) ? u : []).map(x => {
+    const p = prevById.get(String(x.id));
+    const same = p && p.username === x.username && p.password === x.password && !!p.isAdmin === !!x.isAdmin;
+    return Object.assign({}, x, { updatedAt: same ? (Number(p.updatedAt) || Number(x.updatedAt) || 0) : nowTs() });
+  });
+  const keep = new Set(arr.map(x => String(x.id)));
+  const tomb = loadUserTomb();
+  prev.forEach(p => { if (!keep.has(String(p.id))) tomb[String(p.id)] = nowTs(); });
+  saveUserTomb(tomb);
+  localStorage.setItem(STORE_USERS, JSON.stringify(arr));
+  scheduleSave();
+}
 // แปลง id ของเอกสารและ entry ให้เป็น string เสมอ (รองรับข้อมูลเก่าที่เป็นตัวเลข)
 function normDoc(doc) {
   if (!doc) return doc;
@@ -1705,10 +1830,28 @@ function mergeSnapshots(a, b) {
   const CUTOFF = nowTs() - 30 * 24 * 60 * 60 * 1000;
   for (const id in tomb) { if (tomb[id] < CUTOFF) delete tomb[id]; }
 
-  // users: ฝั่งที่มีข้อมูลมากกว่าเป็นหลัก (โดยปกติแก้ไม่บ่อย)
-  const usersA = Array.isArray(a.users) ? a.users : [];
-  const usersB = Array.isArray(b.users) ? b.users : [];
-  const users = usersA.length >= usersB.length ? (usersA.length ? usersA : usersB) : usersB;
+  // users: รวมทีละคน (id เดียวกัน = คนเดียวกัน) ใครแก้ล่าสุดชนะ + เคารพการลบ
+  // เดิมใช้ "ฝั่งที่มีจำนวนมากกว่า" ทั้งก้อน → การเปลี่ยนรหัส/ลบผู้ใช้จึงหายหรือเด้งกลับ
+  const uTomb = {};
+  [a.userTombstones, b.userTombstones].forEach(t => {
+    if (t && typeof t === 'object') {
+      for (const id in t) { const ts = Number(t[id]) || 0; if (ts > (uTomb[id] || 0)) uTomb[id] = ts; }
+    }
+  });
+  const uMap = new Map();
+  [...(Array.isArray(a.users) ? a.users : []), ...(Array.isArray(b.users) ? b.users : [])].forEach(x => {
+    if (!x || x.id == null) return;
+    const k = String(x.id);
+    const cur = uMap.get(k);
+    if (!cur || (Number(x.updatedAt) || 0) >= (Number(cur.updatedAt) || 0)) uMap.set(k, x);
+  });
+  let users = [...uMap.values()].filter(x => {
+    const delAt = uTomb[String(x.id)];
+    return !(delAt && delAt >= (Number(x.updatedAt) || 0));
+  }).sort((x, y) => (Number(x.id) || 0) - (Number(y.id) || 0));
+  // กันล็อกอินไม่ได้: ต้องเหลือ admin อย่างน้อย 1 คนเสมอ
+  if (!users.length) users = [{ id:1, username:'admin', password:'1234', isAdmin:true, updatedAt:0 }];
+  for (const id in uTomb) { if (uTomb[id] < CUTOFF) delete uTomb[id]; }
 
   // flightProfiles: รวม dedupe
   const sig = p => [p.flightNo||'',p.gateway||'',p.destination||'',p.shift||''].join('|');
@@ -1717,9 +1860,11 @@ function mergeSnapshots(a, b) {
     const s = sig(p); if (!seen.has(s)) { seen.add(s); profiles.push(p); }
   });
 
-  // bgUrl: ใช้ค่าที่มี (ฝั่ง b/local ก่อน ถ้าไม่มีค่อยใช้ a)
-  const bgUrl = (typeof b.bgUrl === 'string' && b.bgUrl !== '') ? b.bgUrl
-              : (typeof a.bgUrl === 'string' ? a.bgUrl : '');
+  // bgUrl: ใครตั้งค่าล่าสุดชนะ (เดิมฝั่ง local ชนะเสมอ → เครื่องเก่าดันรูปเก่ากลับขึ้น cloud)
+  const bgA = Number(a.bgUpdatedAt) || 0, bgB = Number(b.bgUpdatedAt) || 0;
+  const bgSrc = bgB >= bgA ? b : a;
+  const bgUrl = typeof bgSrc.bgUrl === 'string' ? bgSrc.bgUrl : '';
+  const bgUpdatedAt = Math.max(bgA, bgB);
 
   // dimTombstones: โปรไฟล์ขนาดที่ถูกลบ — รวมทั้งสองฝั่ง เอาเวลาลบล่าสุด
   const dimTomb = {};
@@ -1743,14 +1888,17 @@ function mergeSnapshots(a, b) {
     .filter(p => { const delAt = dimTomb[[p.l,p.w,p.h].join('x')]; return !(delAt && delAt >= (Number(p.updatedAt)||0)); })
     .sort((x,y)=>(Number(y.updatedAt)||0)-(Number(x.updatedAt)||0));
 
-  return { users, documents, tombstones: tomb, bgUrl, flightProfiles: profiles.slice(0, 60),
-           dimProfiles: dimProfiles.slice(0, 60), dimTombstones: dimTomb };
+  return { users, userTombstones: uTomb, documents, tombstones: tomb, bgUrl, bgUpdatedAt,
+           flightProfiles: profiles.slice(0, 60),
+           dimProfiles: dimProfiles.slice(0, 60), dimTombstones: dimTomb,
+           rev: Math.max(Number(a.rev) || 0, Number(b.rev) || 0) };
 }
 
 // นำผล merge ไปเขียนลง local ทั้งหมด
 function applyMergedToLocal(m) {
   if (!m) return;
   if (Array.isArray(m.users) && m.users.length > 0) localStorage.setItem(STORE_USERS, JSON.stringify(m.users));
+  if (m.userTombstones && typeof m.userTombstones === 'object') saveUserTomb(m.userTombstones);
   localStorage.setItem(STORE_DOCS, JSON.stringify(m.documents || []));
   saveTombstones(m.tombstones || {});
   localStorage.setItem(LS_FLIGHT_PROFILES, JSON.stringify(m.flightProfiles || []));
@@ -1759,6 +1907,7 @@ function applyMergedToLocal(m) {
   if (document.getElementById('dim-profile-modal')?.classList.contains('open')) renderDimProfileList();
   if (typeof m.bgUrl === 'string') {
     if (m.bgUrl) localStorage.setItem(LS_BG, m.bgUrl); else localStorage.removeItem(LS_BG);
+    localStorage.setItem(LS_BG_TS, String(Number(m.bgUpdatedAt) || 0));
     applyBg(m.bgUrl);
   }
 }
@@ -2168,6 +2317,11 @@ function observeSnapshotTs(snap) {
   });
   if (snap.tombstones) for (const k in snap.tombstones) observeTs(snap.tombstones[k]);
   if (snap.dimTombstones) for (const k in snap.dimTombstones) observeTs(snap.dimTombstones[k]);
+  if (snap.userTombstones) for (const k in snap.userTombstones) observeTs(snap.userTombstones[k]);
+  (Array.isArray(snap.users) ? snap.users : []).forEach(u => u && observeTs(u.updatedAt));
+  (Array.isArray(snap.dimProfiles) ? snap.dimProfiles : []).forEach(p => p && observeTs(p.updatedAt));
+  observeTs(snap.bgUpdatedAt);
+  observeTs(snap.savedAt);
 }
 // ประทับเวลาแก้ไขล่าสุดของเอกสาร (ใช้ตัดสิน conflict ตอน merge)
 function touchDoc(doc) { if (doc) doc.updatedAt = nowTs(); return doc; }
@@ -2182,8 +2336,18 @@ async function doAuth() {
   if (!password) { showAuthErr('กรุณาใส่ Password'); return; }
 
   // ตรวจสอบผู้ใช้จาก local ก่อน ไม่รอ cloud
-  const users = loadUsers();
-  const user  = users.find(u => u.username === username && u.password === password);
+  let user = loadUsers().find(u => u.username === username && u.password === password);
+  // ถ้าไม่เจอ ให้ดึงรายชื่อผู้ใช้ล่าสุดจาก Cloud มาลองอีกครั้ง
+  // (ผู้ใช้ที่ถูกสร้าง/เปลี่ยนรหัสจากเครื่องอื่น จะล็อกอินได้ทันทีไม่ต้องรอ)
+  if (!user && hasCloud()) {
+    showAuthErr('⏳ กำลังตรวจสอบกับ Cloud…');
+    const data = await cloudGet();
+    if (lastCloudGetOk && data) {
+      mergeCloudData(data);
+      markCloudReadyAndFlush();
+      user = loadUsers().find(u => u.username === username && u.password === password);
+    }
+  }
   if (!user) { showAuthErr('username หรือ password ไม่ถูกต้อง'); document.getElementById('auth-inp').value=''; return; }
 
   currentUser = { id:user.id, username:user.username, isAdmin:!!user.isAdmin };
@@ -3338,6 +3502,7 @@ function saveBg() {
   } else {
     localStorage.removeItem(LS_BG);
   }
+  localStorage.setItem(LS_BG_TS, String(nowTs()));  // ประทับเวลา เพื่อให้ค่าล่าสุดชนะตอนซิงค์
   applyBg(url);
   scheduleSave(); // sync to Firebase
   closeSettingsModal();
