@@ -2740,8 +2740,9 @@ async function tryAutoLogin() {
   const authStatusEl = document.getElementById('cloud-status-auth');
   if (authStatusEl) authStatusEl.innerHTML = '';
 
-  // แสดงหน้าตั้งค่าเมื่อ: ยังไม่มี cloud เลย หรือ ยังไม่ได้ตั้ง Supabase และยังไม่เคยเลือกใช้ JSONBin ต่อ
-  if (!hasCloud() || (!hasSupabase() && !localStorage.getItem(LS_SBSKIP))) {
+  // แสดงหน้าตั้งค่า "เฉพาะเมื่อไม่มี cloud credentials เลย" เท่านั้น
+  // (ถ้าไฟล์นี้ฝังค่าไว้แล้ว ทุกเบราว์เซอร์ใหม่จะเข้าใช้งานได้ทันที ไม่ต้องตั้งค่าซ้ำ)
+  if (!hasCloud()) {
     document.getElementById('first-setup').style.display = 'flex';
     document.getElementById('auth').style.display = 'none';
     fillSetupSql();
