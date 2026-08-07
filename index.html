@@ -1373,6 +1373,18 @@ async function sbGet() {
   return Object.assign({}, data, { rev: sbRev });
 }
 
+// อ่านเฉพาะเลข rev (~30 ไบต์) เพื่อเช็คว่า cloud มีของใหม่จริงไหม
+// ใช้เป็นด่านแรกของ polling — ถ้า rev ไม่ขยับก็ไม่ต้องดาวน์โหลดข้อมูลทั้งก้อน
+async function sbGetRev() {
+  const r = await fetch(sbRestUrl('id=eq.' + SB_ROW_ID + '&select=rev'), {
+    headers: sbHeaders(), cache: 'no-store'
+  });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const rows = await r.json();
+  if (!Array.isArray(rows) || !rows.length) return null;
+  return Number(rows[0].rev) || 0;
+}
+
 // เขียนแบบ conditional write — Postgres ตรวจ rev ให้เอง
 // สำเร็จ = 1 request  (ไม่ต้องอ่านกลับมาตรวจเหมือน JSONBin)
 // คืน false เมื่อมีเครื่องอื่นเขียนแซง → ให้ผู้เรียก merge ใหม่แล้วลองอีกครั้ง
@@ -1797,6 +1809,22 @@ async function pullFromCloud(showToast) {
   if (pulling || syncing) return false;
   pulling = true;
   try {
+    // ── ด่านประหยัดโควต้า: polling รอบปกติจะถาม "rev" ก่อน (~30 ไบต์)
+    //    ถ้าเลขเท่าเดิม = ไม่มีใครแก้อะไร จึงไม่ต้องดาวน์โหลด snapshot ทั้งก้อน
+    //    (การกด "ซิงค์" เองด้วยมือ showToast=true จะข้ามด่านนี้ ดึงเต็มเสมอ)
+    if (hasSupabase() && !showToast && sbRev > 0) {
+      try {
+        const rev = await sbGetRev();
+        if (rev !== null && rev === sbRev) {
+          lastCloudGetOk = true;
+          lastSyncAt = Date.now();
+          markCloudReadyAndFlush();
+          setSyncBadge('ok', rtConnected() ? 'เรียลไทม์' : 'ซิงค์แล้ว');
+          return true;
+        }
+      } catch (e) { /* เช็ค rev ไม่ได้ → ตกไปดึงเต็มตามปกติ */ }
+    }
+
     const remote = await cloudGet();
     if (!lastCloudGetOk) {
       setSyncBadge('error', 'ออฟไลน์ ⚠️');
